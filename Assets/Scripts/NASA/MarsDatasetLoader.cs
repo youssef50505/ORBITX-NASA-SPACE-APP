@@ -167,7 +167,8 @@ namespace MarsSentinel.NASA
                       $"Routes: Safest({RoutesData.safest.unityPositions.Count}pts), " +
                       $"Shortest({RoutesData.shortest.unityPositions.Count}pts), " +
                       $"Science({RoutesData.science.unityPositions.Count}pts). " +
-                      $"Sample Tubes: {SampleTubes.Count}, Geology Units: {GeologyUnits.Count}.");
+                      $"Sample Tubes: {SampleTubes.Count}, Geology Units: {GeologyUnits.Count}, " +
+                      $"Stratigraphy Epochs: {Stratigraphy.epochs.Count}.");
 
             OnDataLoaded?.Invoke();
         }
@@ -361,7 +362,7 @@ namespace MarsSentinel.NASA
                 if (string.IsNullOrEmpty(json)) return;
 
                 GeologyUnits.Clear();
-                MatchCollection unitMatches = Regex.Matches(json, @"\{\s*""symbol""\s*:\s*""([^""]+)""(.*?)\}");
+                MatchCollection unitMatches = Regex.Matches(json, @"\{\s*""symbol""\s*:\s*""([^""]+)""(.*?)\}", RegexOptions.Singleline);
                 foreach (Match m in unitMatches)
                 {
                     string sym = m.Groups[1].Value;
@@ -396,7 +397,7 @@ namespace MarsSentinel.NASA
                 Stratigraphy.reference_ellipsoid = ExtractString(json, "reference_ellipsoid", "IAU2000 Mars (R = 3396190 m)");
 
                 Stratigraphy.epochs.Clear();
-                MatchCollection epochMatches = Regex.Matches(json, @"\{\s*""name""\s*:\s*""([^""]+)""\s*,\s*""symbol""\s*:\s*""([^""]+)""(.*?)\}\s*(?=,\s*\{|\s*\])");
+                MatchCollection epochMatches = Regex.Matches(json, @"\{\s*""name""\s*:\s*""([^""]+)""\s*,\s*""symbol""\s*:\s*""([^""]+)""(.*?)\}\s*(?=,\s*\{|\s*\])", RegexOptions.Singleline);
                 foreach (Match m in epochMatches)
                 {
                     string name = m.Groups[1].Value;
@@ -423,7 +424,7 @@ namespace MarsSentinel.NASA
             double originLat = DEFAULT_ORIGIN_LAT, double originLon = DEFAULT_ORIGIN_LON, double originAlt = DEFAULT_ORIGIN_ELEV)
         {
             double dLat = (lat - originLat) * Math.PI / 180.0;
-            double dLonDeg = (lon - originLon + 180.0) % 360.0 - 180.0;
+            double dLonDeg = ((lon - originLon + 180.0) % 360.0 + 360.0) % 360.0 - 180.0;
             double dLon = dLonDeg * Math.PI / 180.0;
             double midLat = ((lat + originLat) / 2.0) * Math.PI / 180.0;
 

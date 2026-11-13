@@ -216,13 +216,21 @@ namespace MarsSentinel.NASA
                                  $"• Science Path:  {r.science.distance_m:F1} m (Slope: {r.science.max_slope_deg:F1}°)";
             }
 
-            if (txtGeology != null && datasetLoader.GeologyUnits.Count > 0)
+            if (txtGeology != null)
             {
-                var g = datasetLoader.GeologyUnits[0];
-                txtGeology.text = $"USGS SIM 3292 GEOLOGY\n" +
-                                  $"Unit: {g.symbol} ({g.name})\n" +
-                                  $"System: {g.system} | Trafficability: {g.trafficability}/5\n" +
-                                  $"Note: {g.trafficability_desc}";
+                if (datasetLoader.GeologyUnits != null && datasetLoader.GeologyUnits.Count > 0)
+                {
+                    var g = datasetLoader.GeologyUnits[0];
+                    txtGeology.text = $"USGS SIM 3292 GEOLOGY\n" +
+                                      $"Unit: {g.symbol} ({g.name})\n" +
+                                      $"System: {g.system} | Trafficability: {g.trafficability}/5\n" +
+                                      $"Note: {g.trafficability_desc}";
+                }
+                else
+                {
+                    Debug.LogWarning("[MarsSceneManager] No geology units loaded from dataset.");
+                    txtGeology.text = "USGS SIM 3292 GEOLOGY\n[Warning] No geology units loaded from dataset.";
+                }
             }
         }
 
@@ -317,7 +325,7 @@ namespace MarsSentinel.NASA
                 new Vector2(1.0f, 0.0f), new Vector2(1.0f, 0.0f), new Vector2(1.0f, 0.0f),
                 new Vector2(-25, 25), new Vector2(400, 160));
             txtGeology = CreateText("TxtGeology", geoPanel.transform,
-                "USGS SIM 3292 GEOLOGY\nUnit: AHi (Amazonian and Hesperian impact unit)\nSystem: Impact crater & ejecta floor\nTrafficability: 2/5 (Rugged regolith / corridor safe)",
+                "USGS SIM 3292 GEOLOGY\nLoading geological dataset...",
                 13, FontStyle.Normal, new Color(1.0f, 0.8f, 0.4f), TextAnchor.UpperLeft, defaultFont);
 
             // UGS Identity Status & Camera Legend Panel (Top-Right)
