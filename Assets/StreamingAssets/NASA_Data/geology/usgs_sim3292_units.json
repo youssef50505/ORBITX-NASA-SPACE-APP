@@ -1,0 +1,706 @@
+[
+  {
+    "symbol": "AHi",
+    "name": "Amazonian and Hesperian impact unit",
+    "epoch": "Amazonian-Hesperian",
+    "system": "Impact",
+    "rgb": [
+      255,
+      241,
+      0
+    ],
+    "hex": "#FFF100",
+    "trafficability": 2,
+    "trafficability_desc": "High boulder concentration, impact melt breccias, rugged ejecta blankets.",
+    "water_ice_potential": "Low in equatorial latitudes; potential impact melt hydrated minerals.",
+    "description": "Impact craters, crater rims, central peaks, and continuous ejecta blankets formed during the Amazonian and Hesperian periods."
+  },
+  {
+    "symbol": "AHTu",
+    "name": "Amazonian and Hesperian transition undivided unit",
+    "epoch": "Amazonian-Hesperian",
+    "system": "Transition",
+    "rgb": [
+      233,
+      228,
+      216
+    ],
+    "hex": "#E9E4D8",
+    "trafficability": 3,
+    "trafficability_desc": "Variable roughness; moderately cemented regolith.",
+    "water_ice_potential": "Moderate subsurface permafrost potential at mid-latitudes.",
+    "description": "Undivided transitional terrain between highlands and lowlands characterized by degraded scarps, mesas, and knobby plains."
+  },
+  {
+    "symbol": "AHv",
+    "name": "Amazonian and Hesperian volcanic",
+    "epoch": "Amazonian-Hesperian",
+    "system": "Volcanic",
+    "rgb": [
+      248,
+      149,
+      106
+    ],
+    "hex": "#F8956A",
+    "trafficability": 4,
+    "trafficability_desc": "Cohesive basaltic lava sheets; excellent load-bearing surface.",
+    "water_ice_potential": "Low; primary basaltic lithologies with localized hydrous alteration.",
+    "description": "Extensive volcanic lava plains and flows erupted across Tharsis, Elysium, and Syrtis Major provinces."
+  },
+  {
+    "symbol": "ANa",
+    "name": "Amazonian and Noachian apron unit",
+    "epoch": "Amazonian-Noachian",
+    "system": "Apron",
+    "rgb": [
+      189,
+      166,
+      51
+    ],
+    "hex": "#BDA633",
+    "trafficability": 2,
+    "trafficability_desc": "Mass wasting debris aprons, steep scree slopes.",
+    "water_ice_potential": "High; often represents lobate debris aprons harboring debris-covered glacial ice.",
+    "description": "Colluvial and debris aprons surrounding highland massifs and crater walls formed by protracted mass wasting."
+  },
+  {
+    "symbol": "Aa",
+    "name": "Amazonian apron unit",
+    "epoch": "Amazonian",
+    "system": "Apron",
+    "rgb": [
+      238,
+      209,
+      18
+    ],
+    "hex": "#EED112",
+    "trafficability": 2,
+    "trafficability_desc": "Convex-upward lobate aprons, hummocky transverse ridges.",
+    "water_ice_potential": "Very High; contains Lobate Debris Aprons (LDA) with 80-90% pure subsurface water ice cores.",
+    "description": "Lobate debris aprons, lineated valley fill, and concentric crater fill exhibiting glacial flow morphology."
+  },
+  {
+    "symbol": "Apu",
+    "name": "Amazonian polar undivided unit",
+    "epoch": "Amazonian",
+    "system": "Polar",
+    "rgb": [
+      155,
+      180,
+      190
+    ],
+    "hex": "#9BB4BE",
+    "trafficability": 3,
+    "trafficability_desc": "Firm icy permafrost surface; seasonal CO2 snow frost.",
+    "water_ice_potential": "Maximum; near-surface massive water ice deposits.",
+    "description": "Undivided high-latitude deposits composed of alternating layers of dust, water ice, and carbon dioxide frost."
+  },
+  {
+    "symbol": "Ap",
+    "name": "Amazonian polar unit",
+    "epoch": "Amazonian",
+    "system": "Polar",
+    "rgb": [
+      0,
+      156,
+      203
+    ],
+    "hex": "#009CCB",
+    "trafficability": 3,
+    "trafficability_desc": "Layered polar deposits; smooth plateau surfaces dissected by spiral troughs.",
+    "water_ice_potential": "Maximum; North and South Polar Layered Deposits (NPLD/SPLD).",
+    "description": "Fine-scale stratigraphy of water ice and eolian dust forming the central Martian polar caps."
+  },
+  {
+    "symbol": "Ave",
+    "name": "Amazonian volcanic edifice",
+    "epoch": "Amazonian",
+    "system": "Volcanic",
+    "rgb": [
+      204,
+      124,
+      89
+    ],
+    "hex": "#CC7C59",
+    "trafficability": 2,
+    "trafficability_desc": "Steep volcanic flanks (>10-15°), caldera scarps, lava tube collapses.",
+    "water_ice_potential": "Moderate in summit calderas where orographic water ice clouds condense.",
+    "description": "Giant shield volcanoes (Olympus Mons, Ascraeus, Pavonis, Arsia Mons, Alba Mons) constructed by repeated basaltic effusion."
+  },
+  {
+    "symbol": "Av",
+    "name": "Amazonian volcanic unit",
+    "epoch": "Amazonian",
+    "system": "Volcanic",
+    "rgb": [
+      248,
+      170,
+      158
+    ],
+    "hex": "#F8AA9E",
+    "trafficability": 4,
+    "trafficability_desc": "Broad basaltic lava plains, minimal dust mantling in younger flows.",
+    "water_ice_potential": "Low; dense unweathered igneous basalt.",
+    "description": "Undivided Amazonian lava flows and sheet basalts spreading through the Tharsis volcanic province."
+  },
+  {
+    "symbol": "eAb",
+    "name": "Early Amazonian basin unit",
+    "epoch": "Early Amazonian",
+    "system": "Basin",
+    "rgb": [
+      153,
+      212,
+      191
+    ],
+    "hex": "#99D4BF",
+    "trafficability": 4,
+    "trafficability_desc": "Smooth sedimentary fill, low regional relief.",
+    "water_ice_potential": "Moderate; deep cryogenic permafrost.",
+    "description": "Sedimentary and volcaniclastic basin floor deposits accumulating within Northern Lowland depressions."
+  },
+  {
+    "symbol": "eHb",
+    "name": "Early Hesperian basin unit",
+    "epoch": "Early Hesperian",
+    "system": "Basin",
+    "rgb": [
+      67,
+      162,
+      174
+    ],
+    "hex": "#43A2AE",
+    "trafficability": 4,
+    "trafficability_desc": "Level plains with wrinkle ridges; excellent trafficability.",
+    "water_ice_potential": "Moderate; buried clay/sulfate layers holding chemically bound water.",
+    "description": "Basin fill material in large impact basins (Hellas, Argyre, Isidis) laid down during the catastrophic transition."
+  },
+  {
+    "symbol": "eHh",
+    "name": "Early Hesperian highland unit",
+    "epoch": "Early Hesperian",
+    "system": "Highland",
+    "rgb": [
+      234,
+      204,
+      175
+    ],
+    "hex": "#EACCAF",
+    "trafficability": 3,
+    "trafficability_desc": "Moderate crater density; undulating intercrater plains.",
+    "water_ice_potential": "Moderate; smectite clays and phyllosilicates.",
+    "description": "Highland plateau plains modified by volcanic resurfacing and extensive fluvial dissection."
+  },
+  {
+    "symbol": "eHt",
+    "name": "Early Hesperian transition unit",
+    "epoch": "Early Hesperian",
+    "system": "Transition",
+    "rgb": [
+      224,
+      176,
+      36
+    ],
+    "hex": "#E0B024",
+    "trafficability": 2,
+    "trafficability_desc": "Chaotic collapsed terrain; steep fretted mesas.",
+    "water_ice_potential": "High; groundwater sapping origin implies ancient massive subsurface aquifers.",
+    "description": "Fretted and chaotic terrain bordering the dichotomy boundary (e.g. Deuteronilus and Protonilus Mensae)."
+  },
+  {
+    "symbol": "eHv",
+    "name": "Early Hesperian volcanic unit",
+    "epoch": "Early Hesperian",
+    "system": "Volcanic",
+    "rgb": [
+      178,
+      122,
+      181
+    ],
+    "hex": "#B27AB5",
+    "trafficability": 5,
+    "trafficability_desc": "Extremely flat flood basalts; optimal high-speed traverse terrain.",
+    "water_ice_potential": "Low surface ice; prime site for durable base foundations and sulfur concrete.",
+    "description": "Extensive ridged plains (e.g., Hesperia Planum, Syrtis Major) composed of low-viscosity flood basalts marked by wrinkle ridges."
+  },
+  {
+    "symbol": "eNhm",
+    "name": "Early Noachian highland massif unit",
+    "epoch": "Early Noachian",
+    "system": "Highland",
+    "rgb": [
+      141,
+      142,
+      130
+    ],
+    "hex": "#8D8E82",
+    "trafficability": 1,
+    "trafficability_desc": "Extremely steep, rugged mountainous terrain; impassable to wheeled vehicles.",
+    "water_ice_potential": "Low; exposed deep primordial crustal anorthosites and pyroxenes.",
+    "description": "Rugged, uplifted crustal blocks forming the primary structural rims of the ancient Hellas, Isidis, and Argyre impact basins."
+  },
+  {
+    "symbol": "eNh",
+    "name": "Early Noachian highland unit",
+    "epoch": "Early Noachian",
+    "system": "Highland",
+    "rgb": [
+      185,
+      135,
+      95
+    ],
+    "hex": "#B9875F",
+    "trafficability": 2,
+    "trafficability_desc": "Heavily cratered, saturated with impact rubble and boulder fields.",
+    "water_ice_potential": "Phyllosilicates holding 7-10% chemically bound H2O extractable by heating.",
+    "description": "The oldest exposed crust of Mars, preserving records of the Late Heavy Bombardment and dense valley networks."
+  },
+  {
+    "symbol": "HNb",
+    "name": "Hesperian and Noachian basin unit",
+    "epoch": "Hesperian-Noachian",
+    "system": "Basin",
+    "rgb": [
+      109,
+      166,
+      159
+    ],
+    "hex": "#6DA69F",
+    "trafficability": 4,
+    "trafficability_desc": "Sedimentary basin fill with moderate roughness.",
+    "water_ice_potential": "Moderate to high; thick lacustrine sedimentary sequences.",
+    "description": "Lacustrine and volcaniclastic strata deposited in ancient impact basins during the wet-to-arid climate transition."
+  },
+  {
+    "symbol": "HNh",
+    "name": "Hesperian and Noachian highland undivided unit",
+    "epoch": "Hesperian-Noachian",
+    "system": "Highland",
+    "rgb": [
+      204,
+      194,
+      191
+    ],
+    "hex": "#CCC2BF",
+    "trafficability": 3,
+    "trafficability_desc": "Undulating highland terrain with degraded craters.",
+    "water_ice_potential": "Moderate; hydrated minerals and deep cryosphere.",
+    "description": "Undifferentiated highland terrains showing superposition of Hesperian volcanics over degraded Noachian crust."
+  },
+  {
+    "symbol": "HNt",
+    "name": "Hesperian and Noachian transition unit",
+    "epoch": "Hesperian-Noachian",
+    "system": "Transition",
+    "rgb": [
+      251,
+      166,
+      28
+    ],
+    "hex": "#FBA61C",
+    "trafficability": 2,
+    "trafficability_desc": "Rugged dichotomy scarp terrain.",
+    "water_ice_potential": "High; sapping canyons with debris aprons.",
+    "description": "Transitional zones along the planetary dichotomy exhibiting complex faulting and fluvial erosion."
+  },
+  {
+    "symbol": "Hpe",
+    "name": "Hesperian polar edifice unit",
+    "epoch": "Hesperian",
+    "system": "Polar",
+    "rgb": [
+      0,
+      137,
+      208
+    ],
+    "hex": "#0089D0",
+    "trafficability": 3,
+    "trafficability_desc": "Mounded polar structures; consolidated ice-dust matrices.",
+    "water_ice_potential": "Very High; relict polar deposits.",
+    "description": "Ancient polar mounded terrain (such as Dorsa Argentea Formation) interpreted as subglacial volcanic or glaciofluvial constructs."
+  },
+  {
+    "symbol": "Hpu",
+    "name": "Hesperian polar undivided unit",
+    "epoch": "Hesperian",
+    "system": "Polar",
+    "rgb": [
+      129,
+      173,
+      189
+    ],
+    "hex": "#81ADBD",
+    "trafficability": 3,
+    "trafficability_desc": "Firm permafrost plains.",
+    "water_ice_potential": "High; frozen permafrost ground.",
+    "description": "Subpolar deposits pre-dating modern polar caps, retaining relict volatile-rich layers."
+  },
+  {
+    "symbol": "Hp",
+    "name": "Hesperian polar unit",
+    "epoch": "Hesperian",
+    "system": "Polar",
+    "rgb": [
+      0,
+      156,
+      178
+    ],
+    "hex": "#009CB2",
+    "trafficability": 3,
+    "trafficability_desc": "Consolidated polar plains.",
+    "water_ice_potential": "High; perennial cryogenic reservoir.",
+    "description": "Densely layered Hesperian icy plains in the south polar region."
+  },
+  {
+    "symbol": "Hto",
+    "name": "Hesperian transition outflow unit",
+    "epoch": "Hesperian",
+    "system": "Transition",
+    "rgb": [
+      170,
+      225,
+      250
+    ],
+    "hex": "#AAE1FA",
+    "trafficability": 4,
+    "trafficability_desc": "Carved catastrophic channel floors; scoured bedrock with streamlined islands.",
+    "water_ice_potential": "Moderate; deep gravel terraces containing frozen brine aquifers.",
+    "description": "Scoured channel floors of mega-outflow systems (Kasei, Ares, Tiu, Simud Valles) carved by catastrophic floods."
+  },
+  {
+    "symbol": "Htu",
+    "name": "Hesperian transition undivided unit",
+    "epoch": "Hesperian",
+    "system": "Transition",
+    "rgb": [
+      220,
+      213,
+      210
+    ],
+    "hex": "#DCD5D2",
+    "trafficability": 3,
+    "trafficability_desc": "Variable slope topography with localized scree.",
+    "water_ice_potential": "Moderate.",
+    "description": "Undivided transitional terrains showing intermediate degrees of denudation and resurfacing."
+  },
+  {
+    "symbol": "Ht",
+    "name": "Hesperian transition unit",
+    "epoch": "Hesperian",
+    "system": "Transition",
+    "rgb": [
+      255,
+      221,
+      163
+    ],
+    "hex": "#FFDDA3",
+    "trafficability": 3,
+    "trafficability_desc": "Fretted channels and dissected plateaus.",
+    "water_ice_potential": "Moderate to High.",
+    "description": "Plateaus dissected by network channels and mass wasting along the highland boundary."
+  },
+  {
+    "symbol": "Hve",
+    "name": "Hesperian volcanic edifice unit",
+    "epoch": "Hesperian",
+    "system": "Volcanic",
+    "rgb": [
+      243,
+      111,
+      35
+    ],
+    "hex": "#F36F23",
+    "trafficability": 2,
+    "trafficability_desc": "Deeply gullied volcanic slopes (e.g. Apollinaris, Tyrrhena, Hadriaca Paterae).",
+    "water_ice_potential": "Moderate; hydrothermal alteration zones with silica and sulfate minerals.",
+    "description": "Low-profile explosive pyroclastic volcanic shields exhibiting radial erosional channels."
+  },
+  {
+    "symbol": "lAa",
+    "name": "Late Amazonian apron unit",
+    "epoch": "Late Amazonian",
+    "system": "Apron",
+    "rgb": [
+      255,
+      215,
+      0
+    ],
+    "hex": "#FFD700",
+    "trafficability": 2,
+    "trafficability_desc": "Fresh talus slopes and dynamic glacial debris tongues.",
+    "water_ice_potential": "Very High; shallow pure water ice protected by 0.5-2m regolith cover.",
+    "description": "Youngest active and relict glacial debris aprons exhibiting viscous flow lobes at mid-latitudes (30°-50° N/S)."
+  },
+  {
+    "symbol": "lAb",
+    "name": "Late Amazonian polar cap unit",
+    "epoch": "Late Amazonian",
+    "system": "Polar",
+    "rgb": [
+      218,
+      242,
+      253
+    ],
+    "hex": "#DAF2FD",
+    "trafficability": 3,
+    "trafficability_desc": "Smooth residual ice cap.",
+    "water_ice_potential": "Maximum (>95% pure H2O ice in north, CO2 slab in south).",
+    "description": "Perennial residual polar caps of Planum Boreum and Planum Australe."
+  },
+  {
+    "symbol": "lAd",
+    "name": "Late Amazonian polar dunes unit",
+    "epoch": "Late Amazonian",
+    "system": "Dunes",
+    "rgb": [
+      254,
+      234,
+      186
+    ],
+    "hex": "#FEEABA",
+    "trafficability": 1,
+    "trafficability_desc": "EXTREME HAZARD: Loose basaltic sand dunes (Olympia Undae); high rover sinkage and wheel entrapment risk.",
+    "water_ice_potential": "Seasonal interstitial frost only; dry mobile sands.",
+    "description": "Active sand seas (ergs), barchan dune fields, and transverse ripples encircling the polar caps and crater interiors."
+  },
+  {
+    "symbol": "lAvf",
+    "name": "Late Amazonian volcanic field unit",
+    "epoch": "Late Amazonian",
+    "system": "Volcanic",
+    "rgb": [
+      204,
+      176,
+      166
+    ],
+    "hex": "#CCB0A6",
+    "trafficability": 4,
+    "trafficability_desc": "Fresh basalt pavements; minimal dust.",
+    "water_ice_potential": "Low; fresh basalt glass.",
+    "description": "Pristine fissure vents, cinder cones, and lava flow fields in Cerberus Fossae and Elysium Planitia."
+  },
+  {
+    "symbol": "lAv",
+    "name": "Late Amazonian volcanic unit",
+    "epoch": "Late Amazonian",
+    "system": "Volcanic",
+    "rgb": [
+      250,
+      190,
+      183
+    ],
+    "hex": "#FABEB7",
+    "trafficability": 4,
+    "trafficability_desc": "Unaltered basaltic flows.",
+    "water_ice_potential": "Low.",
+    "description": "Youngest volcanic sheet flows on Mars, preserving cooling wrinkles and surface flow textures."
+  },
+  {
+    "symbol": "lHb",
+    "name": "Late Hesperian basin unit",
+    "epoch": "Late Hesperian",
+    "system": "Basin",
+    "rgb": [
+      159,
+      179,
+      159
+    ],
+    "hex": "#9FB39F",
+    "trafficability": 4,
+    "trafficability_desc": "Consolidated plains sediments.",
+    "water_ice_potential": "Moderate.",
+    "description": "Sedimentary and volcanic deposits flooring the northern lowlands (Vastitas Borealis interior)."
+  },
+  {
+    "symbol": "lHl",
+    "name": "Late Hesperian lowland unit",
+    "epoch": "Late Hesperian",
+    "system": "Lowland",
+    "rgb": [
+      140,
+      198,
+      63
+    ],
+    "hex": "#8CC63F",
+    "trafficability": 4,
+    "trafficability_desc": "Vastitas Borealis Formation: Vast, flat, polygonally patterned ground.",
+    "water_ice_potential": "Very High; extensive subsurface ground ice detected by Phoenix lander and radar.",
+    "description": "The Vastitas Borealis Formation covering the entire Northern Lowlands, interpreted as residue of an ancient ocean or catastrophic flood sediments."
+  },
+  {
+    "symbol": "lHt",
+    "name": "Late Hesperian transition unit",
+    "epoch": "Late Hesperian",
+    "system": "Transition",
+    "rgb": [
+      255,
+      203,
+      6
+    ],
+    "hex": "#FFCB06",
+    "trafficability": 3,
+    "trafficability_desc": "Terraced canyon walls and deltaic deposits.",
+    "water_ice_potential": "Moderate to High; clay and sulfate strata.",
+    "description": "Sedimentary deposits flooring deltaic environments such as the Jezero Crater fan and Western Ladon delta."
+  },
+  {
+    "symbol": "lHvf",
+    "name": "Late Hesperian volcanic field unit",
+    "epoch": "Late Hesperian",
+    "system": "Volcanic",
+    "rgb": [
+      204,
+      158,
+      143
+    ],
+    "hex": "#CC9E8F",
+    "trafficability": 4,
+    "trafficability_desc": "Basaltic plain with lava tubes.",
+    "water_ice_potential": "Low.",
+    "description": "Volcanic fields exhibiting dense networks of volcanic vents, collapse pits, and wrinkle ridges."
+  },
+  {
+    "symbol": "lHv",
+    "name": "Late Hesperian volcanic unit",
+    "epoch": "Late Hesperian",
+    "system": "Volcanic",
+    "rgb": [
+      204,
+      158,
+      143
+    ],
+    "hex": "#CC9E8F",
+    "trafficability": 5,
+    "trafficability_desc": "Optimal rover traverse terrain; firm rock with moderate dust dusting.",
+    "water_ice_potential": "Low.",
+    "description": "Extensive planar basalt flows capping Hesperian stratigraphy across Syrtis Major and Malea Planum."
+  },
+  {
+    "symbol": "lNh",
+    "name": "Late Noachian highland unit",
+    "epoch": "Late Noachian",
+    "system": "Highland",
+    "rgb": [
+      206,
+      174,
+      136
+    ],
+    "hex": "#CEAE88",
+    "trafficability": 3,
+    "trafficability_desc": "Cratered highland plateaus dissected by valley networks.",
+    "water_ice_potential": "High mineral-bound water in phyllosilicates (smectites, nontronite).",
+    "description": "Highland surfaces characterized by the peak development of branching valley networks and open-basin lakes (e.g., Jezero crater paleolake)."
+  },
+  {
+    "symbol": "lNv",
+    "name": "Late Noachian volcanic unit",
+    "epoch": "Late Noachian",
+    "system": "Volcanic",
+    "rgb": [
+      136,
+      130,
+      189
+    ],
+    "hex": "#8882BD",
+    "trafficability": 4,
+    "trafficability_desc": "Ancient intercrater volcanic plains.",
+    "water_ice_potential": "Moderate.",
+    "description": "Oldest recognizable volcanic plains resurfacing intercrater areas of Terra Sabaea and Tyrrhena Terra."
+  },
+  {
+    "symbol": "mAl",
+    "name": "Middle Amazonian lowland unit",
+    "epoch": "Middle Amazonian",
+    "system": "Lowland",
+    "rgb": [
+      189,
+      192,
+      50
+    ],
+    "hex": "#BDC032",
+    "trafficability": 4,
+    "trafficability_desc": "Smooth northern plains; moderate eolian ripples.",
+    "water_ice_potential": "High; shallow permafrost.",
+    "description": "Intermediate-age sedimentary and volcanic deposits filling Utopia and Acidalia Planitiae."
+  },
+  {
+    "symbol": "mNhm",
+    "name": "Middle Noachian highland massif unit",
+    "epoch": "Middle Noachian",
+    "system": "Highland",
+    "rgb": [
+      160,
+      164,
+      152
+    ],
+    "hex": "#A0A498",
+    "trafficability": 1,
+    "trafficability_desc": "Impassable mountain massifs; steep structural scarps.",
+    "water_ice_potential": "Low.",
+    "description": "Uplifted structural mountains and central crater rings composed of deep crustal breccias."
+  },
+  {
+    "symbol": "mNh",
+    "name": "Middle Noachian highland unit",
+    "epoch": "Middle Noachian",
+    "system": "Highland",
+    "rgb": [
+      205,
+      157,
+      129
+    ],
+    "hex": "#CD9D81",
+    "trafficability": 2,
+    "trafficability_desc": "Heavily cratered, blocky terrain with impact ejecta.",
+    "water_ice_potential": "Rich in Fe/Mg-smectites and carbonates.",
+    "description": "Widespread cratered terrain preserving heavy bombardment crater morphology and intense hydrothermal alteration."
+  },
+  {
+    "symbol": "Nhe",
+    "name": "Noachian highland edifice unit",
+    "epoch": "Noachian",
+    "system": "Highland",
+    "rgb": [
+      166,
+      44,
+      78
+    ],
+    "hex": "#A62C4E",
+    "trafficability": 2,
+    "trafficability_desc": "Ancient degraded massifs.",
+    "water_ice_potential": "Moderate.",
+    "description": "Isolated highland peaks and degraded crater rims projecting through younger volcanic and sedimentary plains."
+  },
+  {
+    "symbol": "Nhu",
+    "name": "Noachian highland undivided unit",
+    "epoch": "Noachian",
+    "system": "Highland",
+    "rgb": [
+      181,
+      170,
+      166
+    ],
+    "hex": "#B5AAA6",
+    "trafficability": 2,
+    "trafficability_desc": "Undifferentiated rugged highland crust.",
+    "water_ice_potential": "Moderate.",
+    "description": "Undivided complex ancient Noachian crust in the southern highlands."
+  },
+  {
+    "symbol": "Nve",
+    "name": "Noachian volcanic edifice unit",
+    "epoch": "Noachian",
+    "system": "Volcanic",
+    "rgb": [
+      201,
+      36,
+      44
+    ],
+    "hex": "#C9242C",
+    "trafficability": 2,
+    "trafficability_desc": "Highly degraded volcanic constructs with deep circumferential radial canyons.",
+    "water_ice_potential": "Moderate; hydrothermal clay deposits.",
+    "description": "Ancient Noachian volcanic constructs such as Hadriaca Patera and Syrtis Major pre-caldera volcanic centres."
+  }
+]

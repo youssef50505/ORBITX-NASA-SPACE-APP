@@ -1,0 +1,136 @@
+{
+  "title": "USGS SIM 3292 Chronostratigraphic System of Mars",
+  "authors": "Kenneth L. Tanaka, James A. Skinner Jr., James M. Dohm, et al. (2014)",
+  "scale": "1:20,000,000",
+  "reference_ellipsoid": "IAU2000 Mars (R = 3396190 m)",
+  "epochs": [
+    {
+      "name": "Late Amazonian",
+      "symbol": "lA",
+      "age_range_ga": "0.3 - 0.0",
+      "climate": "Hyper-arid, cold desert, low atmospheric pressure (~600 Pa), dominated by eolian activity and obliquity-driven ice mobilization.",
+      "major_processes": [
+        "Active eolian dunes (lAd)",
+        "Glacial lobate debris aprons (lAa)",
+        "Polar layered cap deposits (lAb)",
+        "Localized young volcanism (lAvf)"
+      ],
+      "survival_implications": {
+        "trafficability": "Extreme caution around active dune fields (lAd) which pose wheel sinkage traps; smooth volcanic plains provide excellent travel corridors.",
+        "isru_water": "Highest near-surface pure water ice abundance in lobate debris aprons and polar caps.",
+        "radiation": "Lava tubes in Tharsis/Elysium provide 100% cosmic ray and solar storm shielding."
+      }
+    },
+    {
+      "name": "Middle Amazonian",
+      "symbol": "mA",
+      "age_range_ga": "1.0 - 0.3",
+      "climate": "Hyper-arid cold desert with periodic glacial deposition during high-obliquity cycles.",
+      "major_processes": [
+        "Northern lowlands sedimentary filling (mAl)",
+        "Intermediate-age volcanic plain cooling"
+      ],
+      "survival_implications": {
+        "trafficability": "Generally favorable across northern lowland plains.",
+        "isru_water": "Buried permafrost ice within upper 1-3 meters.",
+        "radiation": "Requires sintered regolith shielding or subterranean habitats."
+      }
+    },
+    {
+      "name": "Early Amazonian",
+      "symbol": "eA",
+      "age_range_ga": "3.0 - 1.0",
+      "climate": "Transition to hyper-aridity, cessation of major surface water, giant shield volcano growth.",
+      "major_processes": [
+        "Emplacement of massive shield volcanoes (Olympus Mons, Tharsis Montes)",
+        "Northern lowland basin fill (eAb)"
+      ],
+      "survival_implications": {
+        "trafficability": "Steep volcanic slopes require tracked/tethered rovers; surrounding basalt flows provide flat routes.",
+        "isru_water": "Cryosphere permafrost; deep ice reservoirs.",
+        "radiation": "Abundant volcanic lava tube networks."
+      }
+    },
+    {
+      "name": "Late Hesperian",
+      "symbol": "lH",
+      "age_range_ga": "3.4 - 3.0",
+      "climate": "Arid with episodic catastrophic releases of groundwater forming giant outflow channels and transient lakes/seas.",
+      "major_processes": [
+        "Vastitas Borealis Formation deposition (lHl)",
+        "Catastrophic outflow channels",
+        "Deltaic fan deposition in craters (lHt)",
+        "Extensive flood volcanism (lHv)"
+      ],
+      "survival_implications": {
+        "trafficability": "Optimal high-speed traverse terrain across flat flood basalts (lHv) and lowland polygonal plains (lHl).",
+        "isru_water": "Polyhydrated sulfates, gypsum, and cryogenic ice in delta deposits.",
+        "radiation": "Dense basaltic regolith provides high-efficiency gamma ray attenuation."
+      }
+    },
+    {
+      "name": "Early Hesperian",
+      "symbol": "eH",
+      "age_range_ga": "3.7 - 3.4",
+      "climate": "Cooling, drying, and acidifying aqueous environment; decline of valley networks; onset of global catastrophic flood volcanism.",
+      "major_processes": [
+        "Global flood basalts with wrinkle ridges (eHv)",
+        "Chaos terrain collapse and sapping (eHt)",
+        "Sulfate evaporite deposition"
+      ],
+      "survival_implications": {
+        "trafficability": "Flood basalts are ideal; chaotic collapse zones are impassable.",
+        "isru_water": "Hydrated sulfate minerals release water at relatively low temperatures (150-300°C).",
+        "radiation": "Abundant sulfur for sulfur-based concrete and structural masonry."
+      }
+    },
+    {
+      "name": "Late Noachian",
+      "symbol": "lN",
+      "age_range_ga": "3.8 - 3.7",
+      "climate": "Warm and wet or cold and icy with transient melting; dense atmosphere; active hydrological cycle with rainfall/snowmelt and persistent lakes.",
+      "major_processes": [
+        "Formation of dense valley networks",
+        "Lacustrine open-basin crater lakes (Jezero crater delta formation)",
+        "Widespread clay/smectite formation"
+      ],
+      "survival_implications": {
+        "trafficability": "Moderately rugged; crater rims and boulder-strewn slopes require careful path planning.",
+        "isru_water": "Phyllosilicates (smectite clays) contain 5-10% chemically bound water recoverable by microwave heating.",
+        "radiation": "Natural shielding in deep crater floors and canyon walls."
+      }
+    },
+    {
+      "name": "Middle Noachian",
+      "symbol": "mN",
+      "age_range_ga": "3.95 - 3.8",
+      "climate": "Substantial atmosphere, extensive aqueous alteration under neutral-to-alkaline pH conditions.",
+      "major_processes": [
+        "Heavy impact cratering",
+        "Subsurface hydrothermal alteration producing Fe/Mg smectites and carbonates",
+        "Massif uplift (mNhm)"
+      ],
+      "survival_implications": {
+        "trafficability": "Rugged highland plateaus with significant obstacles.",
+        "isru_water": "Carbonates and hydrated silicates offer industrial feedstock and water.",
+        "radiation": "Clay-rich regolith can be pressed and sintered into dense radiation shelter blocks."
+      }
+    },
+    {
+      "name": "Early Noachian",
+      "symbol": "eN",
+      "age_range_ga": "4.1 - 3.95",
+      "climate": "Planetary accretion aftermath, Late Heavy Bombardment, active core dynamo and global magnetic field.",
+      "major_processes": [
+        "Basin-forming impacts (Hellas, Argyre, Isidis)",
+        "Formation of primordial crustal massifs (eNhm)",
+        "Extensive crustal brecciation"
+      ],
+      "survival_implications": {
+        "trafficability": "Steepest and most rugged terrain on Mars; accessible only via aerial/sub-orbital reconnaissance.",
+        "isru_water": "Deep crustal mineral hydration.",
+        "radiation": "High natural topographic shielding within deep basin floors."
+      }
+    }
+  ]
+}
