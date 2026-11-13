@@ -1,6 +1,7 @@
 #if UNITY_EDITOR
 using System.IO;
 using UnityEditor;
+using UnityEditor.Build.Reporting;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -174,6 +175,48 @@ namespace MarsSentinel.Editor
 
             AssetDatabase.SaveAssets();
             Debug.Log("[MarsSceneBuilder] Hero Showcase Scene built and saved successfully to both SampleScene.unity and MarsSentinelHeroScene.unity!");
+        }
+
+        [MenuItem("MarsSentinel/Build Windows Standalone")]
+        public static void BuildWindowsPlayer()
+        {
+            Debug.Log("[MarsSceneBuilder] Building Windows Standalone 64-bit Player...");
+            string buildPath = "Builds/Windows/MarsSentinel.exe";
+            string dir = Path.GetDirectoryName(buildPath);
+            if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
+            {
+                Directory.CreateDirectory(dir);
+            }
+
+            string[] scenes = new[]
+            {
+                "Assets/Scenes/MarsSentinelHeroScene.unity",
+                "Assets/Scenes/SampleScene.unity"
+            };
+
+            BuildPlayerOptions options = new BuildPlayerOptions
+            {
+                scenes = scenes,
+                locationPathName = buildPath,
+                target = BuildTarget.StandaloneWindows64,
+                options = BuildOptions.None
+            };
+
+            BuildReport report = BuildPipeline.BuildPlayer(options);
+            BuildSummary summary = report.summary;
+
+            if (summary.result == BuildResult.Succeeded)
+            {
+                Debug.Log($"[MarsSceneBuilder] Build succeeded: {summary.totalSize} bytes, duration {summary.totalTime.TotalSeconds:F1}s, warnings: {summary.totalWarnings}, errors: {summary.totalErrors}");
+            }
+            else
+            {
+                Debug.LogError($"[MarsSceneBuilder] Build failed with result: {summary.result}, errors: {summary.totalErrors}");
+                if (Application.isBatchMode)
+                {
+                    EditorApplication.Exit(1);
+                }
+            }
         }
 
         private static void InstantiateFleetModel(string modelFile, string nodeName, Transform parent, Vector3 localPos)
