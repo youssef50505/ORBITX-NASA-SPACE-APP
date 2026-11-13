@@ -21,6 +21,10 @@ namespace MarsSentinel.NASA
         [SerializeField] private MarsTelemetryController telemetryController;
         [SerializeField] private MarsCameraController cameraController;
 
+        [Header("Celestial & Constellation Controllers (Milestone 8)")]
+        [SerializeField] private MarsCelestialOrbitController celestialController;
+        [SerializeField] private MarsSatelliteConstellation constellationController;
+
         [Header("Environment & Lighting")]
         [SerializeField] private Light sunLight;
         [SerializeField] private Color sunColor = new Color(1.0f, 0.878f, 0.698f, 1.0f); // #FFE0B2
@@ -57,6 +61,34 @@ namespace MarsSentinel.NASA
             SubscribeEvents();
         }
 
+        private void Update()
+        {
+            HandleInputHotkeys();
+        }
+
+        private void HandleInputHotkeys()
+        {
+            if (UnityEngine.Input.GetKeyDown(KeyCode.L))
+            {
+                if (celestialController != null)
+                {
+                    float hr = celestialController.SolHour;
+                    if (hr < 8f) celestialController.ApplyPreset(SolarLightingPreset.SolarNoon);
+                    else if (hr < 14f) celestialController.ApplyPreset(SolarLightingPreset.Sunset);
+                    else if (hr < 18.2f) celestialController.ApplyPreset(SolarLightingPreset.Twilight);
+                    else if (hr < 20f) celestialController.ApplyPreset(SolarLightingPreset.Night);
+                    else celestialController.ApplyPreset(SolarLightingPreset.Sunrise);
+                }
+            }
+            else if (UnityEngine.Input.GetKeyDown(KeyCode.T))
+            {
+                if (celestialController != null)
+                {
+                    celestialController.SetSolHour(celestialController.SolHour + 1.0f);
+                }
+            }
+        }
+
         private void EnsureRequiredComponents()
         {
             if (datasetLoader == null)
@@ -89,6 +121,18 @@ namespace MarsSentinel.NASA
                 {
                     cameraController = mainCam.gameObject.AddComponent<MarsCameraController>();
                 }
+            }
+
+            if (celestialController == null)
+            {
+                celestialController = FindAnyObjectByType<MarsCelestialOrbitController>();
+                if (celestialController == null) celestialController = gameObject.AddComponent<MarsCelestialOrbitController>();
+            }
+
+            if (constellationController == null)
+            {
+                constellationController = FindAnyObjectByType<MarsSatelliteConstellation>();
+                if (constellationController == null) constellationController = gameObject.AddComponent<MarsSatelliteConstellation>();
             }
 
             EnsureFleetHierarchy();
@@ -124,6 +168,7 @@ namespace MarsSentinel.NASA
             CreateFleetAnchor("MS_MRO_Root", orbitFleet, new Vector3(-120f, 350f, 200f));
             CreateFleetAnchor("MS_MAVEN_Root", orbitFleet, new Vector3(80f, 420f, -150f));
             CreateFleetAnchor("MS_Odyssey_Root", orbitFleet, new Vector3(0f, 380f, 300f));
+            CreateFleetAnchor("MS_GlobalSurveyor_Root", orbitFleet, new Vector3(100f, 360f, 50f));
         }
 
         private void CreateFleetAnchor(string name, Transform parent, Vector3 localPos)
@@ -243,7 +288,9 @@ namespace MarsSentinel.NASA
 
             if (txtCoordinates != null)
             {
-                txtCoordinates.text = $"SOL {t.sol} | SITE: {t.siteName}\n" +
+                float solHr = celestialController != null ? celestialController.SolHour : 12.0f;
+                float sunElev = celestialController != null ? celestialController.SolarElevationDeg : 45.0f;
+                txtCoordinates.text = $"SOL {t.sol} | LMST {solHr:F1}h | SUN ELEV: {sunElev:F1}°\n" +
                                       $"COORDS: {t.longitudeEastDeg:F4}°E, {t.latitudeNorthDeg:F4}°N | ELEV: {t.elevationMeters:F1}m";
             }
 
@@ -343,7 +390,7 @@ namespace MarsSentinel.NASA
             txtActiveCamera.rectTransform.anchoredPosition = new Vector2(0, -50);
 
             txtControlsLegend = CreateText("TxtControlsLegend", statusPanel.transform,
-                "CAMERAS:\n[1] Surface Fleet | [2] Rover Close-Up\n[3] Ingenuity Scout | [4] Route Orbit\n[5] Orbital Fleet Skyward",
+                "CAMERAS: [1]-[5] | [L] Solar Preset | [T] Advance Hour\n[1] Surface Fleet | [2] Rover Close-Up\n[3] Ingenuity Scout | [4] Route Orbit\n[5] Orbital Fleet Skyward",
                 12, FontStyle.Normal, new Color(0.85f, 0.85f, 0.9f), TextAnchor.UpperLeft, defaultFont);
             txtControlsLegend.rectTransform.anchoredPosition = new Vector2(0, -95);
         }

@@ -33,6 +33,9 @@ namespace MarsSentinel.Editor
                 camGo.tag = "MainCamera";
             }
 
+            mainCam.farClipPlane = 10000f; // Prevents clipping Phobos (850m), Deimos (1750m) and orbital paths
+            mainCam.nearClipPlane = 0.3f;
+
             var additionalCamData = mainCam.GetComponent<UniversalAdditionalCameraData>();
             if (additionalCamData == null)
             {
@@ -116,6 +119,19 @@ namespace MarsSentinel.Editor
 
             if (orchestrator.GetComponent<MarsSceneManager>() == null)
                 orchestrator.AddComponent<MarsSceneManager>();
+
+            if (orchestrator.GetComponent<MarsCelestialOrbitController>() == null)
+                orchestrator.AddComponent<MarsCelestialOrbitController>();
+
+            if (orchestrator.GetComponent<MarsSatelliteConstellation>() == null)
+                orchestrator.AddComponent<MarsSatelliteConstellation>();
+
+            var celCtrl = orchestrator.GetComponent<MarsCelestialOrbitController>();
+            celCtrl.EnsureMoonsHierarchy();
+
+            var constCtrl = orchestrator.GetComponent<MarsSatelliteConstellation>();
+            constCtrl.EnsureDefaultConstellation();
+            constCtrl.InitializeOrbitTrails();
 
             // 5. Integrate 3D Fleet Models Hierarchy
             Transform surfaceRoot = orchestrator.transform.Find("MS_Mars_Fleet_Surface");
@@ -216,6 +232,39 @@ namespace MarsSentinel.Editor
                 {
                     EditorApplication.Exit(1);
                 }
+            }
+        }
+
+        [MenuItem("MarsSentinel/Build WebGL Player")]
+        public static void BuildWebGlPlayer()
+        {
+            Debug.Log("[MarsSceneBuilder] Building WebGL Player...");
+            string buildPath = "Builds/WebGL";
+            if (!Directory.Exists(buildPath)) Directory.CreateDirectory(buildPath);
+
+            string[] scenes = new[]
+            {
+                "Assets/Scenes/MarsSentinelHeroScene.unity",
+                "Assets/Scenes/SampleScene.unity"
+            };
+
+            BuildPlayerOptions options = new BuildPlayerOptions
+            {
+                scenes = scenes,
+                locationPathName = buildPath,
+                target = BuildTarget.WebGL,
+                options = BuildOptions.None
+            };
+
+            BuildReport report = BuildPipeline.BuildPlayer(options);
+            if (report.summary.result == BuildResult.Succeeded)
+            {
+                Debug.Log($"[MarsSceneBuilder] WebGL Build succeeded: {report.summary.totalSize} bytes");
+            }
+            else
+            {
+                Debug.LogError($"[MarsSceneBuilder] WebGL Build failed with {report.summary.totalErrors} errors");
+                if (Application.isBatchMode) EditorApplication.Exit(1);
             }
         }
 
