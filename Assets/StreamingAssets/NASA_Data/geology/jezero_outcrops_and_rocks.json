@@ -1,0 +1,410 @@
+[
+  {
+    "id": "jezero_butler_landing",
+    "name": "Octavia E. Butler Landing Pad",
+    "formation": "Máaz Formation (Crater Floor Regolith)",
+    "rock_type": "Basaltic Impact Regolith & Pebbles",
+    "sol": 0,
+    "date": "Feb. 18, 2021",
+    "lat": 18.4447,
+    "lon": 77.4508,
+    "elev_m": -2569.9,
+    "usgs_unit": "HNhu",
+    "crism_mineralogy": "Augite pyroxene, plagioclase feldspar, ferric nanophase dust",
+    "geochemistry_wt_pct": "SiO2 46.2%, FeO 19.8%, MgO 7.4%, Al2O3 10.1%, CaO 7.2%, SO3 4.8%",
+    "thermal_inertia_tiu": 310,
+    "discovery_summary": "Perseverance touchdown site imaged by Skycrane descent cameras; blast-scoured vesicular basalt cobbles and windblown aeolian bedforms.",
+    "source": "NASA Mars 2020 EDL / HiRISE ESP_068294_1985",
+    "source_url": "https://mars.nasa.gov/mars2020/mission/where-is-the-rover/",
+    "unity_pos": [
+      3.5,
+      -14.0
+    ],
+    "scale": [
+      1.8,
+      0.75,
+      1.5
+    ],
+    "style": "basalt",
+    "image_file": "perseverance_sample_raw.jpg",
+    "jezero_enu_m": {
+      "east": 0.0,
+      "north": 0.0,
+      "up": 0.0
+    }
+  },
+  {
+    "id": "jezero_roubion",
+    "name": "Roubion Paver Outcrop",
+    "formation": "Máaz Formation (Polygon Valley)",
+    "rock_type": "Vesicular Basalt (Atmospheric Sample #1)",
+    "sol": 164,
+    "date": "Aug. 6, 2021",
+    "lat": 18.427668,
+    "lon": 77.451673,
+    "elev_m": -2584.82,
+    "usgs_unit": "HNhu",
+    "crism_mineralogy": "Plagioclase, clinopyroxene, weathered clay/sulfate grain coatings",
+    "geochemistry_wt_pct": "Friable weathered basalt; atmospheric gas sealed in Tube #1",
+    "thermal_inertia_tiu": 295,
+    "discovery_summary": "First Perseverance drilling target; powdery weathered interior crumbled during coring, capturing Jezero's first atmospheric sample.",
+    "source": "NASA/JPL-Caltech M20 Sample #1",
+    "source_url": "https://science.nasa.gov/mission/mars-2020-perseverance/mars-rock-samples/",
+    "unity_pos": [
+      16.5,
+      -4.5
+    ],
+    "scale": [
+      2.2,
+      0.9,
+      1.9
+    ],
+    "style": "basalt",
+    "image_file": "rochette_sol194.jpg",
+    "jezero_enu_m": {
+      "east": 49.09,
+      "north": -1009.57,
+      "up": -14.92
+    }
+  },
+  {
+    "id": "jezero_rochette",
+    "name": "Rochette Basalt Ridge (Montdenier + Montagnac)",
+    "formation": "Máaz Formation (Artuby Ridge)",
+    "rock_type": "Crystalline Basalt with Salt Veins",
+    "sol": 194,
+    "date": "Sept. 6-8, 2021",
+    "lat": 18.430735,
+    "lon": 77.444326,
+    "elev_m": -2574.27,
+    "usgs_unit": "HNhu",
+    "crism_mineralogy": "Ca-rich pyroxene, plagioclase, hydrated Ca/Mg-sulfate & perchlorate void salts",
+    "geochemistry_wt_pct": "SiO2 47.5%, FeO 18.6%, Al2O3 11.4%, CaO 8.3%, Na2O+K2O 4.2%, Cl 0.9%",
+    "thermal_inertia_tiu": 490,
+    "discovery_summary": "Historic first intact Mars rock cores (#2 & #3). PIXL/SuperCam detected concentric evaporitic salts inside vesicles proving sustained ancient groundwater.",
+    "source": "NASA/JPL-Caltech PIXL & SuperCam (Farley et al. Science 2022)",
+    "source_url": "https://science.nasa.gov/mission/mars-2020-perseverance/mars-rock-samples/",
+    "unity_pos": [
+      18.0,
+      14.0
+    ],
+    "scale": [
+      3.0,
+      1.5,
+      2.4
+    ],
+    "style": "basalt",
+    "image_file": "rochette_sol194.jpg",
+    "jezero_enu_m": {
+      "east": -364.03,
+      "north": -827.77,
+      "up": -4.37
+    }
+  },
+  {
+    "id": "jezero_brac_seitah",
+    "name": "Brac Olivine Cumulate (South Séítah)",
+    "formation": "Séítah Formation",
+    "rock_type": "Ultramafic Olivine Cumulate + Carbonate",
+    "sol": 262,
+    "date": "Nov. 15-24, 2021",
+    "lat": 18.43398,
+    "lon": 77.443054,
+    "elev_m": -2568.82,
+    "usgs_unit": "Nh",
+    "crism_mineralogy": "Fo55 olivine cumulate crystals (2-3 mm) + Mg/Fe-carbonate alteration rims",
+    "geochemistry_wt_pct": "SiO2 41.8%, MgO 22.4%, FeO 23.1%, Al2O3 4.8%, CaO 4.9%",
+    "thermal_inertia_tiu": 565,
+    "discovery_summary": "Slow-cooled magma body formed beneath Jezero before lake sediments arrived; subsequently infiltrated by CO2-rich water precipitating carbonates.",
+    "source": "NASA/JPL-Caltech PIXL & SHERLOC (Liu et al. Science 2022)",
+    "source_url": "https://science.nasa.gov/mission/mars-2020-perseverance/mars-rock-samples/",
+    "unity_pos": [
+      -28.0,
+      -24.0
+    ],
+    "scale": [
+      2.7,
+      1.35,
+      2.2
+    ],
+    "style": "olivine",
+    "image_file": "rochette_sol194.jpg",
+    "jezero_enu_m": {
+      "east": -435.56,
+      "north": -635.42,
+      "up": 1.08
+    }
+  },
+  {
+    "id": "jezero_issole",
+    "name": "Issole Carbonate-Altered Bedrock",
+    "formation": "Séítah Formation",
+    "rock_type": "Olivine-Carbonate Igneous Cumulate",
+    "sol": 298,
+    "date": "Dec. 22, 2021",
+    "lat": 18.432636,
+    "lon": 77.441344,
+    "elev_m": -2573.99,
+    "usgs_unit": "Nh",
+    "crism_mineralogy": "Olivine, augite, Fe/Mg-carbonate, serpentine/phyllosilicate alteration",
+    "geochemistry_wt_pct": "SiO2 42.1%, MgO 21.0%, FeO 22.8%, CO2-bearing carbonate 12%",
+    "thermal_inertia_tiu": 540,
+    "discovery_summary": "Robine & Malay twin cores preserve water-rock carbonation reactions relevant to early Mars CO2 sequestration.",
+    "source": "NASA/JPL-Caltech M20 Samples #6 & #7",
+    "source_url": "https://science.nasa.gov/mission/mars-2020-perseverance/mars-rock-samples/",
+    "unity_pos": [
+      -38.0,
+      -14.0
+    ],
+    "scale": [
+      2.4,
+      1.15,
+      2.0
+    ],
+    "style": "olivine",
+    "image_file": "rochette_sol194.jpg",
+    "jezero_enu_m": {
+      "east": -531.71,
+      "north": -715.09,
+      "up": -4.09
+    }
+  },
+  {
+    "id": "jezero_skinner_ridge",
+    "name": "Skinner Ridge Delta Conglomerate",
+    "formation": "Shenandoah Formation (Fan Front)",
+    "rock_type": "Laminated Sandstone / Deltaic Mudstone",
+    "sol": 490,
+    "date": "July 7-12, 2022",
+    "lat": 18.458931,
+    "lon": 77.406175,
+    "elev_m": -2520.19,
+    "usgs_unit": "HNu",
+    "crism_mineralogy": "Fe/Mg-smectite, chlorite, detrital pyroxene, Ca-sulfate fracture fill",
+    "geochemistry_wt_pct": "SiO2 48.2%, Al2O3 9.7%, FeO 17.2%, MgO 9.5%, SO3 6.4%",
+    "thermal_inertia_tiu": 395,
+    "discovery_summary": "First sedimentary cores (Swift Run + Skyland) drilled along the base of Jezero's ancient river delta fan.",
+    "source": "NASA/JPL-Caltech M20 Delta Campaign",
+    "source_url": "https://science.nasa.gov/mission/mars-2020-perseverance/mars-rock-samples/",
+    "unity_pos": [
+      -46.0,
+      26.0
+    ],
+    "scale": [
+      3.4,
+      1.9,
+      2.5
+    ],
+    "style": "sedimentary",
+    "image_file": "wildcat_ridge_sol509.jpg",
+    "jezero_enu_m": {
+      "east": -2509.25,
+      "north": 843.54,
+      "up": 49.71
+    }
+  },
+  {
+    "id": "jezero_wildcat_ridge",
+    "name": "Wildcat Ridge Organic Mudstone",
+    "formation": "Shenandoah Formation (Hogwallow Flats)",
+    "rock_type": "Fine-Grained Sulfate-Clay Mudstone",
+    "sol": 509,
+    "date": "July 27 - Aug. 3, 2022",
+    "lat": 18.458637,
+    "lon": 77.405889,
+    "elev_m": -2523.1,
+    "usgs_unit": "HNu",
+    "crism_mineralogy": "Fe/Mg-sulfates, phyllosilicate clay, aromatic organic molecules (SHERLOC 275-360 nm fluorescence)",
+    "geochemistry_wt_pct": "SiO2 39.5%, SO3 18.2%, FeO 19.1%, MgO 8.8%, Organic Carbon signals",
+    "thermal_inertia_tiu": 360,
+    "discovery_summary": "Deposited in a low-energy evaporating ancient lake; SHERLOC detected the strongest organic-sulfate spatial correlation of the delta front campaign.",
+    "source": "NASA/JPL-Caltech SHERLOC (Sharma et al. Nature 2023)",
+    "source_url": "https://www.nasa.gov/universe/nasas-perseverance-rover-makes-intriguing-organic-discovery-on-mars/",
+    "unity_pos": [
+      -26.0,
+      44.0
+    ],
+    "scale": [
+      3.6,
+      1.8,
+      2.8
+    ],
+    "style": "sedimentary",
+    "image_file": "wildcat_ridge_sol509.jpg",
+    "jezero_enu_m": {
+      "east": -2525.33,
+      "north": 826.11,
+      "up": 46.8
+    }
+  },
+  {
+    "id": "jezero_three_forks_depot",
+    "name": "Three Forks Sample Return Depot",
+    "formation": "Crater Floor / Delta Boundary",
+    "rock_type": "Aeolian Regolith Depot (10 Titanium Tubes)",
+    "sol": 686,
+    "date": "Dec. 2022 - Jan. 2023",
+    "lat": 18.451,
+    "lon": 77.4015,
+    "elev_m": -2525.5,
+    "usgs_unit": "HNhu",
+    "crism_mineralogy": "Basaltic-sedimentary sand apron selected for ultra-flat Sample Retrieval Lander access",
+    "geochemistry_wt_pct": "10 sealed titanium backup tubes (rock, regolith, atmosphere) staged on surface",
+    "thermal_inertia_tiu": 265,
+    "discovery_summary": "First human-built sample depot on another planet; 10 backup titanium cores placed at 5-15 m spacing for Mars Sample Return.",
+    "source": "NASA/ESA Mars Sample Return Three Forks Depot",
+    "source_url": "https://mars.nasa.gov/mars2020/mission/science/sample-depot/",
+    "unity_pos": [
+      48.0,
+      6.0
+    ],
+    "scale": [
+      2.2,
+      0.65,
+      2.2
+    ],
+    "style": "regolith",
+    "image_file": "berea_sol749.jpg",
+    "jezero_enu_m": {
+      "east": -2772.13,
+      "north": 373.43,
+      "up": 44.4
+    }
+  },
+  {
+    "id": "jezero_berea",
+    "name": "Berea Upper-Fan Carbonate Sandstone",
+    "formation": "Upper Fan Curvilinear Unit",
+    "rock_type": "Carbonate-Rich Fluvial Sandstone",
+    "sol": 749,
+    "date": "March 30, 2023",
+    "lat": 18.470217,
+    "lon": 77.383945,
+    "elev_m": -2448.91,
+    "usgs_unit": "HNu",
+    "crism_mineralogy": "High Mg/Fe-carbonate clasts & cement, pyroxene, olivine grains",
+    "geochemistry_wt_pct": "Carbonate enrichment ideal for capturing ancient Martian atmospheric & water isotope records",
+    "thermal_inertia_tiu": 430,
+    "discovery_summary": "Core #19 (Melyn) cored from an ancient river channel deposit rich in carbonate cement that traps ancient environmental signatures.",
+    "source": "NASA/JPL-Caltech M20 Sample #19",
+    "source_url": "https://science.nasa.gov/mission/mars-2020-perseverance/mars-rock-samples/",
+    "unity_pos": [
+      52.0,
+      -34.0
+    ],
+    "scale": [
+      3.1,
+      1.65,
+      2.4
+    ],
+    "style": "carbonate",
+    "image_file": "berea_sol749.jpg",
+    "jezero_enu_m": {
+      "east": -3759.24,
+      "north": 1512.51,
+      "up": 120.99
+    }
+  },
+  {
+    "id": "jezero_bunsen_peak",
+    "name": "Bunsen Peak Silica-Carbonate Benchmark",
+    "formation": "Margin Carbonate Unit",
+    "rock_type": "Silica-Cemented Mg-Carbonate",
+    "sol": 1088,
+    "date": "March 12, 2024",
+    "lat": 18.491867,
+    "lon": 77.327219,
+    "elev_m": -2382.43,
+    "usgs_unit": "Nh",
+    "crism_mineralogy": "Hydrated amorphous silica (opal-A/chalcedony) + microcrystalline Mg-carbonate + olivine",
+    "geochemistry_wt_pct": "High SiO2 silica cement + MgCO3 shore-margin lacustrine precipitate",
+    "thermal_inertia_tiu": 510,
+    "discovery_summary": "Core #24 (Comet Geyser); microcrystalline silica + carbonate is one of Earth's premier fossil-preserving lithologies.",
+    "source": "NASA/JPL-Caltech PIXL & SuperCam (Sol 1088)",
+    "source_url": "https://science.nasa.gov/mission/mars-2020-perseverance/mars-rock-samples/",
+    "unity_pos": [
+      -12.0,
+      56.0
+    ],
+    "scale": [
+      3.5,
+      2.1,
+      2.7
+    ],
+    "style": "carbonate",
+    "image_file": "berea_sol749.jpg",
+    "jezero_enu_m": {
+      "east": -6948.93,
+      "north": 2795.81,
+      "up": 187.47
+    }
+  },
+  {
+    "id": "jezero_cheyava_falls",
+    "name": "Cheyava Falls / Bright Angel Outcrop",
+    "formation": "Neretva Vallis Bright Angel Formation",
+    "rock_type": "Veined Mudstone with Redox 'Leopard Spots'",
+    "sol": 1215,
+    "date": "July 21, 2024",
+    "lat": 18.497474,
+    "lon": 77.305149,
+    "elev_m": -2354.24,
+    "usgs_unit": "HNu",
+    "crism_mineralogy": "Hematite mudstone, white Ca-sulfate veins, vivianite/greigite Fe-phosphate/sulfide spots, organic carbon, olivine grains",
+    "geochemistry_wt_pct": "Fe-phosphate/iron-sulfide redox reaction fronts + SHERLOC G-band organic carbon + CaSO4 veins",
+    "thermal_inertia_tiu": 415,
+    "discovery_summary": "Source of Sapphire Canyon core (#25). White sulfate veins, organic compounds, and chemical 'leopard spots' mark ancient water-driven redox energy reactions.",
+    "source": "NASA Science Perseverance Discovery Release (Sol 1215)",
+    "source_url": "https://www.nasa.gov/missions/mars-2020-perseverance/nasas-perseverance-rover-scientists-find-intriguing-mars-rock-bed/",
+    "unity_pos": [
+      22.0,
+      48.0
+    ],
+    "scale": [
+      3.8,
+      1.9,
+      3.0
+    ],
+    "style": "cheyava",
+    "image_file": "cheyava_falls_sol1215.jpg",
+    "jezero_enu_m": {
+      "east": -8189.92,
+      "north": 3128.16,
+      "up": 215.66
+    }
+  },
+  {
+    "id": "jezero_witch_hazel_hill",
+    "name": "Witch Hazel Hill / Tablelands Serpentinite",
+    "formation": "Jezero Crater Rim (Noachian Basement)",
+    "rock_type": "Serpentinized Ultramafic Impactite & Breccia",
+    "sol": 1433,
+    "date": "Jan.-March 2025",
+    "lat": 18.460593,
+    "lon": 77.264659,
+    "elev_m": -1821.05,
+    "usgs_unit": "Nh",
+    "crism_mineralogy": "Serpentine, talc, Mg-carbonate, pre-lake Noachian crust exposed in crater rim",
+    "geochemistry_wt_pct": "Hydrated ultramafic serpentinite (>10% structural H2O equivalent)",
+    "thermal_inertia_tiu": 610,
+    "discovery_summary": "Green Gardens (#27) & Silver Mountain (#26) preserve 3.9+ Gyr ancient Martian crust; serpentinization generates H2 relevant to habitability & ISRU water extraction.",
+    "source": "NASA/JPL-Caltech Crater Rim Ascent (Sols 1401-1483)",
+    "source_url": "https://science.nasa.gov/mission/mars-2020-perseverance/mars-rock-samples/",
+    "unity_pos": [
+      -56.0,
+      -34.0
+    ],
+    "scale": [
+      4.2,
+      2.5,
+      3.3
+    ],
+    "style": "serpentinite",
+    "image_file": "witch_hazel_hill_sol1401.jpg",
+    "jezero_enu_m": {
+      "east": -10466.66,
+      "north": 942.05,
+      "up": 748.85
+    }
+  }
+]

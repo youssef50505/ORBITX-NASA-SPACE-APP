@@ -1,8 +1,11 @@
+using System;
 using System.Collections;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 #if ENABLE_INPUT_SYSTEM
 using UnityEngine.InputSystem;
+using UnityEngine.InputSystem.UI;
 #endif
 using MarsSentinel.Bootstrap;
 
@@ -73,9 +76,20 @@ namespace MarsSentinel.NASA
             SubscribeEvents();
         }
 
+        private float hudRefreshTimer = 0f;
+        private Text txtMuteBtnLabel;
+        private Text txtRoverBtnLabel;
+
         private void Update()
         {
             HandleInputHotkeys();
+
+            hudRefreshTimer += Time.deltaTime;
+            if (hudRefreshTimer >= 0.25f)
+            {
+                hudRefreshTimer = 0f;
+                RefreshLiveExplorationHud();
+            }
         }
 
         private void HandleInputHotkeys()
@@ -86,6 +100,8 @@ namespace MarsSentinel.NASA
             bool pressedD = false;
             bool pressedH = false;
 
+            bool exploreActive = MarsVisualRealismPolish.Instance != null && MarsVisualRealismPolish.Instance.IsExploreModeActive;
+
 #if ENABLE_INPUT_SYSTEM
             var kb = Keyboard.current;
             if (kb != null)
@@ -93,7 +109,7 @@ namespace MarsSentinel.NASA
                 if (kb.lKey.wasPressedThisFrame) pressedL = true;
                 if (kb.tKey.wasPressedThisFrame) pressedT = true;
                 if (kb.gKey.wasPressedThisFrame) pressedG = true;
-                if (kb.dKey.wasPressedThisFrame) pressedD = true;
+                if (kb.cKey.wasPressedThisFrame || (!exploreActive && kb.dKey.wasPressedThisFrame)) pressedD = true;
                 if (kb.hKey.wasPressedThisFrame) pressedH = true;
             }
 #endif
@@ -101,7 +117,7 @@ namespace MarsSentinel.NASA
             if (Input.GetKeyDown(KeyCode.L)) pressedL = true;
             if (Input.GetKeyDown(KeyCode.T)) pressedT = true;
             if (Input.GetKeyDown(KeyCode.G)) pressedG = true;
-            if (Input.GetKeyDown(KeyCode.D)) pressedD = true;
+            if (Input.GetKeyDown(KeyCode.C) || (!exploreActive && Input.GetKeyDown(KeyCode.D))) pressedD = true;
             if (Input.GetKeyDown(KeyCode.H)) pressedH = true;
 #endif
 
@@ -160,6 +176,7 @@ namespace MarsSentinel.NASA
             else dustOpticalDepthTau = 0.45f;
 
             ApplyMartianLighting();
+            MarsAudioManager.Instance?.SetDustOpticalDepth(dustOpticalDepthTau);
             if (telemetryController != null)
             {
                 UpdateTelemetryDisplay(telemetryController.CurrentTelemetry);
@@ -249,6 +266,52 @@ namespace MarsSentinel.NASA
             {
                 ingenuityAnimator = ingAnchor.GetComponent<IngenuityRotorAnimator>();
                 if (ingenuityAnimator == null) ingenuityAnimator = ingAnchor.gameObject.AddComponent<IngenuityRotorAnimator>();
+            }
+
+            EnsureGameplaySystemsAndEventSystem();
+        }
+
+        private void EnsureGameplaySystemsAndEventSystem()
+        {
+            if (FindAnyObjectByType<EventSystem>() == null)
+            {
+                GameObject esGo = new GameObject("EventSystem");
+                esGo.AddComponent<EventSystem>();
+#if ENABLE_INPUT_SYSTEM
+                esGo.AddComponent<InputSystemUIInputModule>();
+#else
+                esGo.AddComponent<StandaloneInputModule>();
+#endif
+            }
+
+            if (FindAnyObjectByType<MarsAudioManager>() == null)
+            {
+                GameObject go = new GameObject("MS_AudioManager");
+                go.AddComponent<MarsAudioManager>();
+            }
+
+            if (FindAnyObjectByType<MarsBaseFacilitiesBuilder>() == null)
+            {
+                GameObject go = new GameObject("MS_BaseFacilitiesBuilder");
+                go.AddComponent<MarsBaseFacilitiesBuilder>();
+            }
+
+            if (FindAnyObjectByType<MarsRoverVehicleController>() == null)
+            {
+                GameObject go = new GameObject("MS_Pressurized_Rover");
+                go.AddComponent<MarsRoverVehicleController>();
+            }
+
+            if (FindAnyObjectByType<MarsAstronautController>() == null)
+            {
+                GameObject go = new GameObject("MS_Astronaut_Player");
+                go.AddComponent<MarsAstronautController>();
+            }
+
+            if (FindAnyObjectByType<MarsInteractionSystem>() == null)
+            {
+                GameObject go = new GameObject("MS_InteractionSystem");
+                go.AddComponent<MarsInteractionSystem>();
             }
         }
 
@@ -426,31 +489,74 @@ namespace MarsSentinel.NASA
             }
         }
 
+        private void RefreshLiveExplorationHud()
+        {
+            if (telemetryController != null)
+            {
+                UpdateTelemetryDisplay(telemetryController.CurrentTelemetry);
+            }
+
+            if (txtActiveCamera != null && MarsVisualRealismPolish.Instance != null && MarsVisualRealismPolish.Instance.IsExploreModeActive)
+            {
+                bool driving = MarsRoverVehicleController.Instance != null && MarsRoverVehicleController.Instance.IsDriverSeated;
+                string modeStr = driving
+                    ? "ROVER DRIVE [E Dismount]"
+                    : (MarsAstronautController.Instance != null && MarsAstronautController.Instance.IsFirstPerson
+                        ? "EVA VISOR [V 3rd-Person]"
+                        : "EVA EXPLORER [WASD / E]");
+                txtActiveCamera.text = $"ACTIVE VIEW: [F] {modeStr}";
+            }
+
+            if (txtMuteBtnLabel != null && MarsAudioManager.Instance != null)
+            {
+                txtMuteBtnLabel.text = MarsAudioManager.Instance.IsMuted ? "Audio: OFF" : "Audio: ON";
+            }
+            if (txtRoverBtnLabel != null && MarsRoverVehicleController.Instance != null)
+            {
+                txtRoverBtnLabel.text = MarsRoverVehicleController.Instance.IsDriverSeated ? "Exit Rover" : "Drive Rover";
+            }
+        }
+
         private void UpdateTelemetryDisplay(RoverTelemetry t)
         {
             if (txtVisorTitle != null)
             {
-                txtVisorTitle.text = "MARSSENTINEL — JEZERO SURFACE SHOWCASE (10 MISSIONS)";
+                int scanned = MarsInspectableTarget.DiscoveredCount;
+                int total = MarsInspectableTarget.TotalCount;
+                txtVisorTitle.text = $"ORBITX · MARS SENTINEL | EXPLORED {scanned}/{total} SITES";
             }
 
             float elevDeg = celestialController != null ? celestialController.SolarElevationDeg : 45.0f;
             float trans = ComputeBeerLambertTransmission(dustOpticalDepthTau, elevDeg);
             float safeRadius = ComputeEvaSafeRadiusMeters(dustOpticalDepthTau, t.batteryPercent / 100.0f);
+            var env = datasetLoader != null ? datasetLoader.EnvironmentData : null;
+            float radDay = env != null ? env.radGcrMsvPerDay : 0.67f;
+            float pressPa = env != null ? env.pressureMeanPa : 715f;
+            float airC = env != null ? env.airTempMeanC : -56f;
+
+            string zoneLabel = MarsAstronautController.Instance != null ? MarsAstronautController.Instance.ActiveZoneName : "Jezero Crater EVA";
+            bool driving = MarsRoverVehicleController.Instance != null && MarsRoverVehicleController.Instance.IsDriverSeated;
+            float liveSpeed = driving
+                ? Mathf.Abs(MarsRoverVehicleController.Instance.CurrentSpeedMps)
+                : (MarsAstronautController.Instance != null ? MarsAstronautController.Instance.CurrentSpeedMps : t.currentSpeedMps);
+            float liveSlope = driving
+                ? MarsRoverVehicleController.Instance.CurrentSlopeDeg
+                : (MarsAstronautController.Instance != null ? MarsAstronautController.Instance.CurrentGroundSlopeDeg : t.currentSlopeDeg);
 
             if (txtCoordinates != null)
             {
                 float solHr = celestialController != null ? celestialController.SolHour : 12.0f;
-                txtCoordinates.text = $"SOL {t.sol} | LMST {solHr:F1}h | SUN ELEV: {elevDeg:F1}° | DUST τ={dustOpticalDepthTau:F2} (Solar {trans * 100f:F0}%)\n" +
-                                      $"COORDS: {t.longitudeEastDeg:F4}°E, {t.latitudeNorthDeg:F4}°N | ELEV: {t.elevationMeters:F1}m";
+                txtCoordinates.text = $"SOL {t.sol} | LMST {solHr:F1}h | SUN {elevDeg:F1}° | DUST τ={dustOpticalDepthTau:F2} ({trans * 100f:F0}%) | ZONE: {zoneLabel}";
             }
 
             if (txtTelemetry != null)
             {
-                txtTelemetry.text = $"EVA & ROVER TELEMETRY (PERSEVERANCE + SUIT)\n" +
-                                    $"• Speed: {t.currentSpeedMps:F2} m/s | Hdg: {t.headingDeg:F1}° | Slope: {t.currentSlopeDeg:F1}°\n" +
-                                    $"• Beer-Lambert Solar Flux: {586.2f * trans:F0} W/m² (τ={dustOpticalDepthTau:F2})\n" +
-                                    $"• EVA O2 Reserve: {t.batteryPercent:F0}% | PNR Safe Radius: {safeRadius:F0} m\n" +
-                                    $"• Traveled: {t.distanceTraveledMeters:F2} m | {t.trafficabilityStatus}";
+                string roleTitle = driving ? "PRESSURIZED ROVER TELEMETRY" : "EVA ASTRONAUT + BASE TELEMETRY";
+                txtTelemetry.text = $"{roleTitle}\n" +
+                                    $"• Speed: {liveSpeed:F2} m/s | Hdg: {t.headingDeg:F1}° | Slope: {liveSlope:F1}°\n" +
+                                    $"• MEDA Surface: {pressPa:F0} Pa | Air {airC:F0}°C | RAD: {radDay:F2} mSv/day\n" +
+                                    $"• Solar Flux: {586.2f * trans:F0} W/m² | Safe PNR: {safeRadius:F0} m | O2: {t.batteryPercent:F0}%\n" +
+                                    $"• Traveled: {t.distanceTraveledMeters:F1} m | {t.trafficabilityStatus}";
             }
         }
 
@@ -542,6 +648,96 @@ namespace MarsSentinel.NASA
                 "CAMERAS: [1]-[5] | [L] Solar | [T] +1h | [D] Dust τ | [G] Geo | [H] History\n[1] Surface Fleet | [2] Rover Close-Up | [3] Ingenuity\n[4] Route Orbit | [5] Orbital Fleet Skyward",
                 12, FontStyle.Normal, new Color(0.85f, 0.85f, 0.9f), TextAnchor.UpperLeft, defaultFont);
             SetTopTextSlot(txtControlsLegend.rectTransform, 106f, 110f);
+
+            BuildQuickNavBar(canvasGo.transform, defaultFont);
+        }
+
+        private void BuildQuickNavBar(Transform canvasTransform, Font font)
+        {
+            GameObject navBar = CreatePanel("ORBITX_QuickNavBar", canvasTransform,
+                new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0.5f, 0f),
+                new Vector2(0f, 22f), new Vector2(890f, 44f));
+
+            HorizontalLayoutGroup hlg = navBar.AddComponent<HorizontalLayoutGroup>();
+            hlg.padding = new RectOffset(8, 8, 5, 5);
+            hlg.spacing = 6f;
+            hlg.childControlWidth = true;
+            hlg.childControlHeight = true;
+            hlg.childForceExpandWidth = true;
+            hlg.childForceExpandHeight = true;
+
+            AddNavButton(navBar.transform, font, "Explore [F]", new Color(0.12f, 0.45f, 0.65f, 0.92f), () =>
+            {
+                MarsVisualRealismPolish.Instance?.EnterExploreMode();
+                MarsAstronautController.Instance?.TeleportToFacility("Spawn");
+            });
+
+            txtRoverBtnLabel = AddNavButton(navBar.transform, font, "Drive Rover", new Color(0.75f, 0.40f, 0.14f, 0.92f), () =>
+            {
+                MarsVisualRealismPolish.Instance?.EnterExploreMode();
+                MarsRoverVehicleController.Instance?.ToggleBoardOrDismount();
+            });
+
+            AddNavButton(navBar.transform, font, "Agri Dome", new Color(0.14f, 0.52f, 0.36f, 0.92f), () =>
+            {
+                MarsVisualRealismPolish.Instance?.EnterExploreMode();
+                MarsAstronautController.Instance?.TeleportToFacility("Agri");
+            });
+
+            AddNavButton(navBar.transform, font, "Med Bay", new Color(0.68f, 0.18f, 0.22f, 0.92f), () =>
+            {
+                MarsVisualRealismPolish.Instance?.EnterExploreMode();
+                MarsAstronautController.Instance?.TeleportToFacility("Medical");
+            });
+
+            AddNavButton(navBar.transform, font, "NASA HDU", new Color(0.22f, 0.34f, 0.52f, 0.92f), () =>
+            {
+                MarsVisualRealismPolish.Instance?.EnterExploreMode();
+                MarsAstronautController.Instance?.TeleportToFacility("Habitat");
+            });
+
+            AddNavButton(navBar.transform, font, "EDL Craft", new Color(0.32f, 0.30f, 0.48f, 0.92f), () =>
+            {
+                MarsVisualRealismPolish.Instance?.EnterExploreMode();
+                MarsAstronautController.Instance?.TeleportToFacility("EDL");
+            });
+
+            AddNavButton(navBar.transform, font, "Rocket Pad", new Color(0.45f, 0.32f, 0.20f, 0.92f), () =>
+            {
+                MarsVisualRealismPolish.Instance?.EnterExploreMode();
+                MarsAstronautController.Instance?.TeleportToFacility("Rocket");
+            });
+
+            AddNavButton(navBar.transform, font, "Orbit [5]", new Color(0.18f, 0.25f, 0.42f, 0.92f), () =>
+            {
+                MarsAudioManager.Instance?.PlayUiClick();
+                MarsVisualRealismPolish.Instance?.TriggerViewMode(5);
+            });
+
+            AddNavButton(navBar.transform, font, "Scan Next", new Color(0.16f, 0.44f, 0.52f, 0.92f), () =>
+            {
+                MarsInteractionSystem.Instance?.InspectNextTarget();
+            });
+
+            txtMuteBtnLabel = AddNavButton(navBar.transform, font, "Audio: ON", new Color(0.20f, 0.24f, 0.30f, 0.92f), () =>
+            {
+                MarsAudioManager.Instance?.ToggleMute();
+            });
+        }
+
+        private Text AddNavButton(Transform parent, Font font, string label, Color bgCol, Action onClick)
+        {
+            GameObject btnGo = new GameObject("NavBtn_" + label.Replace(" ", ""));
+            btnGo.transform.SetParent(parent, false);
+            Image bg = btnGo.AddComponent<Image>();
+            bg.color = bgCol;
+            Button btn = btnGo.AddComponent<Button>();
+            btn.onClick.AddListener(() => onClick?.Invoke());
+
+            Text txt = CreateText("Label", btnGo.transform, label, 11, FontStyle.Bold, Color.white, TextAnchor.MiddleCenter, font);
+            txt.rectTransform.sizeDelta = new Vector2(-4f, -2f);
+            txt.horizontalOverflow = HorizontalWrapMode.Overflow;
+            return txt;
         }
 
         private GameObject CreatePanel(string name, Transform parent,

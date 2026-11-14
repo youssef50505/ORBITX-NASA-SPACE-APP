@@ -52,6 +52,8 @@ namespace MarsSentinel.NASA
         public string sample_location;
         public string sample_type;
         public string rock_type;
+        public string date;
+        public double sample_ht_cm;
         public double lon;
         public double lat;
         public double elev;
@@ -131,6 +133,68 @@ namespace MarsSentinel.NASA
         public string dimension;
     }
 
+    [Serializable]
+    public class JezeroOutcropData
+    {
+        public string id;
+        public string name;
+        public string formation;
+        public string rock_type;
+        public int sol;
+        public string date;
+        public double lat;
+        public double lon;
+        public double elev_m;
+        public string usgs_unit;
+        public string crism_mineralogy;
+        public string geochemistry_wt_pct;
+        public float thermal_inertia_tiu;
+        public string discovery_summary;
+        public string source;
+        public string source_url;
+        public Vector2 unityPosXZ;
+        public Vector3 scale = new Vector3(2.0f, 1.0f, 1.8f);
+        public string style = "basalt";
+        public string image_file = "";
+    }
+
+    [Serializable]
+    public class MarsEnvironmentData
+    {
+        public string siteName = "Jezero Crater Field Site";
+        public double gravityMs2 = 3.72076;
+        public float solarConstantWm2 = 589f;
+        public float pressureMinPa = 610f;
+        public float pressureMeanPa = 715f;
+        public float pressureMaxPa = 785f;
+        public float airTempMinC = -83f;
+        public float airTempMeanC = -56f;
+        public float airTempMaxC = -14f;
+        public float windTypicalMs = 4.8f;
+        public float windGustMaxMs = 22.4f;
+        public float dustTauNominal = 0.45f;
+        public float dustTauStorm = 1.8f;
+        public float radGcrMsvPerDay = 0.67f;
+        public float radCareerLimitMsv = 600f;
+        public int donkiSepEventCount = 6;
+        public string insightSummary = "InSight Elysium Planitia (Sols 675-681) LIVE snapshot cached";
+        public string moxieNote = "MOXIE demonstrated 12 g/hr O2 production (>98% purity) from CO2";
+        public int marsTrekServiceCount = 49;
+    }
+
+    [Serializable]
+    public class CuriosityMountSharpStop
+    {
+        public int stop;
+        public string name;
+        public int sol;
+        public double lat;
+        public double lon;
+        public double elev_m;
+        public string unit;
+        public string finding;
+    }
+
     /// <summary>
     /// Loads and manages NASA planetary science datasets from StreamingAssets/NASA_Data/.
     /// Converts IAU2000 Mars planetocentric coordinates to Unity Left-Handed Cartesian space.
@@ -159,6 +223,19 @@ namespace MarsSentinel.NASA
         public int OfficialResourcesCount { get; private set; }
         public List<GeologyUnit> GeologyUnits { get; private set; } = new List<GeologyUnit>();
         public GeologyStratigraphy Stratigraphy { get; private set; } = new GeologyStratigraphy();
+        public List<JezeroOutcropData> Outcrops { get; private set; } = new List<JezeroOutcropData>();
+        public MarsEnvironmentData EnvironmentData { get; private set; } = new MarsEnvironmentData();
+        public List<CuriosityMountSharpStop> MountSharpStops { get; private set; } = new List<CuriosityMountSharpStop>();
+
+        public string GetOutcropImagePath(string imageFile)
+        {
+            if (string.IsNullOrEmpty(imageFile)) return null;
+            string basePath = Path.Combine(Application.streamingAssetsPath, "NASA_Data", "imagery");
+            string sub = Path.Combine(basePath, "outcrops", imageFile);
+            if (File.Exists(sub)) return sub;
+            string direct = Path.Combine(basePath, imageFile);
+            return direct;
+        }
 
         public event Action OnDataLoaded;
 
@@ -198,13 +275,16 @@ namespace MarsSentinel.NASA
             yield return StartCoroutine(LoadGeologyStratigraphy(Path.Combine(basePath, "geology", "usgs_sim3292_stratigraphy.json")));
             yield return StartCoroutine(LoadSampleImageryMetadata(Path.Combine(basePath, "imagery", "perseverance_sample_metadata.json")));
             yield return StartCoroutine(LoadApiManifest(Path.Combine(basePath, "apis", "nasa_endpoints_manifest.json")));
+            yield return StartCoroutine(LoadJezeroOutcrops(Path.Combine(basePath, "geology", "jezero_outcrops_and_rocks.json")));
+            yield return StartCoroutine(LoadEnvironmentData(Path.Combine(basePath, "environment", "mars_environmental_science.json")));
+            yield return StartCoroutine(LoadCuriosityMountSharpStops(Path.Combine(basePath, "missions", "curiosity_mount_sharp_waypoints.json")));
 
             isLoaded = true;
             Debug.Log($"[MarsDatasetLoader] All datasets loaded successfully! " +
                       $"Routes: Safest({RoutesData.safest.unityPositions.Count}pts), " +
                       $"Shortest({RoutesData.shortest.unityPositions.Count}pts), " +
                       $"Science({RoutesData.science.unityPositions.Count}pts). " +
-                      $"Sample Tubes: {SampleTubes.Count}, Ingenuity Flights: {IngenuityFlights.Count}, " +
+                      $"Sample Tubes: {SampleTubes.Count}, Outcrops: {Outcrops.Count}, Mount Sharp: {MountSharpStops.Count}, Ingenuity Flights: {IngenuityFlights.Count}, " +
                       $"Persev Dropouts Filtered: {PerseveranceDropoutsFiltered}, Curiosity Features: {CuriosityStats.featureCount}, " +
                       $"Geology Units: {GeologyUnits.Count}, Stratigraphy Epochs: {Stratigraphy.epochs.Count}, NASA Resources: {OfficialResourcesCount}.");
 
@@ -347,6 +427,8 @@ namespace MarsSentinel.NASA
                         sample_location = ExtractString(props, "sample_location", ""),
                         sample_type = ExtractString(props, "sample_type", "Rock Core"),
                         rock_type = ExtractString(props, "rock_type", "Igneous"),
+                        date = ExtractString(props, "date", ""),
+                        sample_ht_cm = ExtractDouble(props, "sample_ht_cm", 0.0),
                         lon = lon,
                         lat = lat,
                         elev = elev,
@@ -568,6 +650,177 @@ namespace MarsSentinel.NASA
                     Stratigraphy.epochs.Add(ep);
                 }
             }));
+        }
+
+        private IEnumerator LoadJezeroOutcrops(string path)
+        {
+            yield return StartCoroutine(ReadTextFile(path, (json) =>
+            {
+                if (string.IsNullOrEmpty(json)) return;
+
+                Outcrops.Clear();
+                List<string> objs = ExtractTopLevelJsonObjects(json);
+                foreach (string body in objs)
+                {
+                    JezeroOutcropData item = new JezeroOutcropData
+                    {
+                        id = ExtractString(body, "id", "jezero_outcrop"),
+                        name = ExtractString(body, "name", "Jezero Outcrop"),
+                        formation = ExtractString(body, "formation", "Jezero Fm."),
+                        rock_type = ExtractString(body, "rock_type", "Basalt"),
+                        sol = (int)ExtractDouble(body, "sol", 0),
+                        date = ExtractString(body, "date", ""),
+                        lat = ExtractDouble(body, "lat", DEFAULT_ORIGIN_LAT),
+                        lon = ExtractDouble(body, "lon", DEFAULT_ORIGIN_LON),
+                        elev_m = ExtractDouble(body, "elev_m", DEFAULT_ORIGIN_ELEV),
+                        usgs_unit = ExtractString(body, "usgs_unit", "HNhu"),
+                        crism_mineralogy = ExtractString(body, "crism_mineralogy", ""),
+                        geochemistry_wt_pct = ExtractString(body, "geochemistry_wt_pct", ""),
+                        thermal_inertia_tiu = (float)ExtractDouble(body, "thermal_inertia_tiu", 320.0),
+                        discovery_summary = ExtractString(body, "discovery_summary", ""),
+                        source = ExtractString(body, "source", "NASA/JPL-Caltech"),
+                        source_url = ExtractString(body, "source_url", "https://mars.nasa.gov/mars2020/"),
+                        style = ExtractString(body, "style", "basalt"),
+                        image_file = ExtractString(body, "image_file", "perseverance_sample_raw.jpg")
+                    };
+
+                    Match posMatch = Regex.Match(body, @"""unity_pos""\s*:\s*\[\s*(-?[\d\.]+)\s*,\s*(-?[\d\.]+)\s*\]");
+                    if (posMatch.Success)
+                    {
+                        float ux = float.Parse(posMatch.Groups[1].Value, CultureInfo.InvariantCulture);
+                        float uz = float.Parse(posMatch.Groups[2].Value, CultureInfo.InvariantCulture);
+                        item.unityPosXZ = new Vector2(ux, uz);
+                    }
+                    else
+                    {
+                        Vector3 p = PlanetocentricToUnity(item.lat, item.lon, item.elev_m);
+                        item.unityPosXZ = new Vector2(p.x, p.z);
+                    }
+
+                    Match scMatch = Regex.Match(body, @"""scale""\s*:\s*\[\s*(-?[\d\.]+)\s*,\s*(-?[\d\.]+)\s*,\s*(-?[\d\.]+)\s*\]");
+                    if (scMatch.Success)
+                    {
+                        item.scale = new Vector3(
+                            float.Parse(scMatch.Groups[1].Value, CultureInfo.InvariantCulture),
+                            float.Parse(scMatch.Groups[2].Value, CultureInfo.InvariantCulture),
+                            float.Parse(scMatch.Groups[3].Value, CultureInfo.InvariantCulture)
+                        );
+                    }
+
+                    Outcrops.Add(item);
+                }
+            }));
+        }
+
+        private IEnumerator LoadEnvironmentData(string path)
+        {
+            yield return StartCoroutine(ReadTextFile(path, (json) =>
+            {
+                if (string.IsNullOrEmpty(json)) return;
+
+                EnvironmentData.siteName = ExtractString(json, "name", EnvironmentData.siteName);
+                EnvironmentData.gravityMs2 = ExtractDouble(json, "gravity_ms2", 3.72076);
+                EnvironmentData.solarConstantWm2 = (float)ExtractDouble(json, "solar_constant_mars_wm2", 589.0);
+                EnvironmentData.pressureMinPa = (float)ExtractDouble(json, "min", 610.0);
+                EnvironmentData.pressureMeanPa = (float)ExtractDouble(json, "annual_mean", 715.0);
+                EnvironmentData.pressureMaxPa = (float)ExtractDouble(json, "max", 785.0);
+                EnvironmentData.airTempMinC = (float)ExtractDouble(json, "night_min", -83.0);
+                EnvironmentData.airTempMeanC = (float)ExtractDouble(json, "diurnal_mean", -56.0);
+                EnvironmentData.airTempMaxC = (float)ExtractDouble(json, "day_max", -14.0);
+                EnvironmentData.windTypicalMs = (float)ExtractDouble(json, "typical_day", 4.8);
+                EnvironmentData.windGustMaxMs = (float)ExtractDouble(json, "dust_devil_gust_max", 22.4);
+                EnvironmentData.dustTauNominal = (float)ExtractDouble(json, "nominal", 0.45);
+                EnvironmentData.dustTauStorm = (float)ExtractDouble(json, "regional_storm", 1.8);
+                EnvironmentData.radGcrMsvPerDay = (float)ExtractDouble(json, "gcr_surface_dose_msv_per_day", 0.67);
+                EnvironmentData.radCareerLimitMsv = (float)ExtractDouble(json, "nasa_career_limit_msv", 600.0);
+                EnvironmentData.moxieNote = ExtractString(json, "moxie_isru_benchmark", EnvironmentData.moxieNote);
+
+                MatchCollection sepMatches = Regex.Matches(json, @"""sepID""");
+                if (sepMatches.Count > 0) EnvironmentData.donkiSepEventCount = sepMatches.Count;
+            }));
+        }
+
+        private IEnumerator LoadCuriosityMountSharpStops(string path)
+        {
+            yield return StartCoroutine(ReadTextFile(path, (json) =>
+            {
+                if (string.IsNullOrEmpty(json)) return;
+
+                MountSharpStops.Clear();
+                Match mArr = Regex.Match(json, @"""waypoints""\s*:\s*(\[.*\])", RegexOptions.Singleline);
+                string arrSlice = mArr.Success ? mArr.Groups[1].Value : json;
+                List<string> objs = ExtractTopLevelJsonObjects(arrSlice);
+                foreach (string body in objs)
+                {
+                    MountSharpStops.Add(new CuriosityMountSharpStop
+                    {
+                        stop = (int)ExtractDouble(body, "stop", MountSharpStops.Count + 1),
+                        name = ExtractString(body, "name", "Mount Sharp Waypoint"),
+                        sol = (int)ExtractDouble(body, "sol", 0),
+                        lat = ExtractDouble(body, "lat", -4.6),
+                        lon = ExtractDouble(body, "lon", 137.4),
+                        elev_m = ExtractDouble(body, "elev_m", -4400.0),
+                        unit = ExtractString(body, "unit", "Mount Sharp"),
+                        finding = ExtractString(body, "finding", "")
+                    });
+                }
+            }));
+        }
+
+        private static List<string> ExtractTopLevelJsonObjects(string json)
+        {
+            List<string> result = new List<string>();
+            if (string.IsNullOrEmpty(json)) return result;
+
+            bool inString = false;
+            bool escaped = false;
+            int depth = 0;
+            int objStart = -1;
+            const int QUOTE = 34;
+            const int BACKSLASH = 92;
+            const int LBRACE = 123;
+            const int RBRACE = 125;
+
+            for (int i = 0; i < json.Length; i++)
+            {
+                int ch = json[i];
+                if (inString)
+                {
+                    if (escaped)
+                    {
+                        escaped = false;
+                    }
+                    else if (ch == BACKSLASH)
+                    {
+                        escaped = true;
+                    }
+                    else if (ch == QUOTE)
+                    {
+                        inString = false;
+                    }
+                    continue;
+                }
+
+                if (ch == QUOTE)
+                {
+                    inString = true;
+                }
+                else if (ch == LBRACE)
+                {
+                    if (depth == 0) objStart = i;
+                    depth++;
+                }
+                else if (ch == RBRACE)
+                {
+                    depth--;
+                    if (depth == 0 && objStart >= 0)
+                    {
+                        result.Add(json.Substring(objStart, i - objStart + 1));
+                        objStart = -1;
+                    }
+                }
+            }
+            return result;
         }
 
         /// <summary>

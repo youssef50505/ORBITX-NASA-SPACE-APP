@@ -119,6 +119,134 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
+--- !u!1001 &78985395
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 1441823024}
+    m_Modifications:
+    - target: {fileID: -3910990755373119420, guid: b2d71034d0016a94681dc96a10be61d6, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 296
+      objectReference: {fileID: 0}
+    - target: {fileID: -3910990755373119420, guid: b2d71034d0016a94681dc96a10be61d6, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 296
+      objectReference: {fileID: 0}
+    - target: {fileID: -3910990755373119420, guid: b2d71034d0016a94681dc96a10be61d6, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 296
+      objectReference: {fileID: 0}
+    - target: {fileID: -3910990755373119420, guid: b2d71034d0016a94681dc96a10be61d6, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 33.158787
+      objectReference: {fileID: 0}
+    - target: {fileID: -3910990755373119420, guid: b2d71034d0016a94681dc96a10be61d6, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0.29999387
+      objectReference: {fileID: 0}
+    - target: {fileID: -3910990755373119420, guid: b2d71034d0016a94681dc96a10be61d6, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 23.999989
+      objectReference: {fileID: 0}
+    - target: {fileID: -3910990755373119420, guid: b2d71034d0016a94681dc96a10be61d6, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: -3910990755373119420, guid: b2d71034d0016a94681dc96a10be61d6, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: -3910990755373119420, guid: b2d71034d0016a94681dc96a10be61d6, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: -3910990755373119420, guid: b2d71034d0016a94681dc96a10be61d6, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: -3910990755373119420, guid: b2d71034d0016a94681dc96a10be61d6, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -3910990755373119420, guid: b2d71034d0016a94681dc96a10be61d6, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -3910990755373119420, guid: b2d71034d0016a94681dc96a10be61d6, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8771091787928289351, guid: b2d71034d0016a94681dc96a10be61d6, type: 3}
+      propertyPath: m_Name
+      value: MS_NASA_MobileLauncher
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: -4161369568681901532, guid: b2d71034d0016a94681dc96a10be61d6, type: 3}
+--- !u!4 &78985396 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -3910990755373119420, guid: b2d71034d0016a94681dc96a10be61d6, type: 3}
+  m_PrefabInstance: {fileID: 78985395}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &88299614
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 88299616}
+  - component: {fileID: 88299615}
+  m_Layer: 0
+  m_Name: MS_Astronaut_Player
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &88299615
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 88299614}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0ee9f481b9dd5ed4cb21d92990671f8b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MarsSentinel.NASA.MarsAstronautController
+  spawnXZ: {x: -3.5, y: -16}
+  walkSpeed: 4.2
+  sprintSpeed: 7.8
+  jumpSpeed: 4.4
+  marsGravity: 3.72076
+  camDistance: 4.6
+  camYaw: 15
+  camPitch: 16
+  firstPersonVisor: 0
+  cursorLocked: 0
+--- !u!4 &88299616
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 88299614}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!21 &92865262
 Material:
   serializedVersion: 8
@@ -361,6 +489,85 @@ Transform:
   - {fileID: 853077330}
   m_Father: {fileID: 1975535788}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &191792260
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 191792263}
+  - component: {fileID: 191792262}
+  - component: {fileID: 191792261}
+  m_Layer: 0
+  m_Name: EventSystem
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &191792261
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 191792260}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 01614664b831546d2ae94a42149d80ac, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.InputSystem::UnityEngine.InputSystem.UI.InputSystemUIInputModule
+  m_SendPointerHoverToParent: 1
+  m_MoveRepeatDelay: 0.5
+  m_MoveRepeatRate: 0.1
+  m_XRTrackingOrigin: {fileID: 0}
+  m_ActionsAsset: {fileID: -944628639613478452, guid: ca9f5fa95ffab41fb9a615ab714db018, type: 3}
+  m_PointAction: {fileID: -1654692200621890270, guid: ca9f5fa95ffab41fb9a615ab714db018, type: 3}
+  m_MoveAction: {fileID: -8784545083839296357, guid: ca9f5fa95ffab41fb9a615ab714db018, type: 3}
+  m_SubmitAction: {fileID: 392368643174621059, guid: ca9f5fa95ffab41fb9a615ab714db018, type: 3}
+  m_CancelAction: {fileID: 7727032971491509709, guid: ca9f5fa95ffab41fb9a615ab714db018, type: 3}
+  m_LeftClickAction: {fileID: 3001919216989983466, guid: ca9f5fa95ffab41fb9a615ab714db018, type: 3}
+  m_MiddleClickAction: {fileID: -2185481485913320682, guid: ca9f5fa95ffab41fb9a615ab714db018, type: 3}
+  m_RightClickAction: {fileID: -4090225696740746782, guid: ca9f5fa95ffab41fb9a615ab714db018, type: 3}
+  m_ScrollWheelAction: {fileID: 6240969308177333660, guid: ca9f5fa95ffab41fb9a615ab714db018, type: 3}
+  m_TrackedDevicePositionAction: {fileID: 6564999863303420839, guid: ca9f5fa95ffab41fb9a615ab714db018, type: 3}
+  m_TrackedDeviceOrientationAction: {fileID: 7970375526676320489, guid: ca9f5fa95ffab41fb9a615ab714db018, type: 3}
+  m_DeselectOnBackgroundClick: 1
+  m_PointerBehavior: 0
+  m_CursorLockBehavior: 0
+  m_ScrollDeltaPerTick: 6
+--- !u!114 &191792262
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 191792260}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 76c392e42b5098c458856cdf6ecaaaa1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.EventSystems.EventSystem
+  m_FirstSelected: {fileID: 0}
+  m_sendNavigationEvents: 1
+  m_DragThreshold: 10
+--- !u!4 &191792263
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 191792260}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &227096634
 GameObject:
   m_ObjectHideFlags: 0
@@ -391,6 +598,133 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 370207176}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1001 &247763020
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 1441823024}
+    m_Modifications:
+    - target: {fileID: -3910990755373119420, guid: 6982e99f2087b2842959ddef7b6a58b5, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 1.2628757
+      objectReference: {fileID: 0}
+    - target: {fileID: -3910990755373119420, guid: 6982e99f2087b2842959ddef7b6a58b5, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 1.2628757
+      objectReference: {fileID: 0}
+    - target: {fileID: -3910990755373119420, guid: 6982e99f2087b2842959ddef7b6a58b5, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 1.2628757
+      objectReference: {fileID: 0}
+    - target: {fileID: -3910990755373119420, guid: 6982e99f2087b2842959ddef7b6a58b5, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 39.49089
+      objectReference: {fileID: 0}
+    - target: {fileID: -3910990755373119420, guid: 6982e99f2087b2842959ddef7b6a58b5, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0.82501864
+      objectReference: {fileID: 0}
+    - target: {fileID: -3910990755373119420, guid: 6982e99f2087b2842959ddef7b6a58b5, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 23.99911
+      objectReference: {fileID: 0}
+    - target: {fileID: -3910990755373119420, guid: 6982e99f2087b2842959ddef7b6a58b5, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: -3910990755373119420, guid: 6982e99f2087b2842959ddef7b6a58b5, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: -3910990755373119420, guid: 6982e99f2087b2842959ddef7b6a58b5, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: -3910990755373119420, guid: 6982e99f2087b2842959ddef7b6a58b5, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: -3910990755373119420, guid: 6982e99f2087b2842959ddef7b6a58b5, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -3910990755373119420, guid: 6982e99f2087b2842959ddef7b6a58b5, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -3910990755373119420, guid: 6982e99f2087b2842959ddef7b6a58b5, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8771091787928289351, guid: 6982e99f2087b2842959ddef7b6a58b5, type: 3}
+      propertyPath: m_Name
+      value: MS_NASA_Rocket_Ares1
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: -4161369568681901532, guid: 6982e99f2087b2842959ddef7b6a58b5, type: 3}
+--- !u!4 &247763021 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -3910990755373119420, guid: 6982e99f2087b2842959ddef7b6a58b5, type: 3}
+  m_PrefabInstance: {fileID: 247763020}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &257807517
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 257807519}
+  - component: {fileID: 257807518}
+  m_Layer: 0
+  m_Name: MS_Pressurized_Rover
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &257807518
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 257807517}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e2fa86674b441f9438784eab236159fc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MarsSentinel.NASA.MarsRoverVehicleController
+  spawnXZ: {x: 8.5, y: -15}
+  maxForwardSpeed: 12.5
+  maxReverseSpeed: 5.5
+  acceleration: 11
+  dragDecel: 7.5
+  turnRateDegPerSec: 58
+  chaseDistance: 8.5
+  chaseYawOffset: 0
+  chasePitch: 18
+--- !u!4 &257807519
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 257807517}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &319336720
 GameObject:
@@ -902,6 +1236,52 @@ Transform:
   m_CorrespondingSourceObject: {fileID: -3910990755373119420, guid: 21809eda65b1e1542919748ef3a0a58d, type: 3}
   m_PrefabInstance: {fileID: 459564307}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &494167442
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 494167444}
+  - component: {fileID: 494167443}
+  m_Layer: 0
+  m_Name: MS_AudioManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &494167443
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 494167442}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 61e5483760e0ba54d901482c4a71587d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MarsSentinel.NASA.MarsAudioManager
+  isMuted: 0
+  masterVolume: 0.72
+--- !u!4 &494167444
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 494167442}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &529102905
 GameObject:
   m_ObjectHideFlags: 0
@@ -1515,6 +1895,138 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1001 &833151690
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 1441823024}
+    m_Modifications:
+    - target: {fileID: 2658364661879231317, guid: d72b2c77daf1e514d871e31151f0dbb5, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 0.96497184
+      objectReference: {fileID: 0}
+    - target: {fileID: 2658364661879231317, guid: d72b2c77daf1e514d871e31151f0dbb5, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0.96497184
+      objectReference: {fileID: 0}
+    - target: {fileID: 2658364661879231317, guid: d72b2c77daf1e514d871e31151f0dbb5, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 0.96497184
+      objectReference: {fileID: 0}
+    - target: {fileID: 2658364661879231317, guid: d72b2c77daf1e514d871e31151f0dbb5, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -20.203724
+      objectReference: {fileID: 0}
+    - target: {fileID: 2658364661879231317, guid: d72b2c77daf1e514d871e31151f0dbb5, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 1.2185217
+      objectReference: {fileID: 0}
+    - target: {fileID: 2658364661879231317, guid: d72b2c77daf1e514d871e31151f0dbb5, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 11.306984
+      objectReference: {fileID: 0}
+    - target: {fileID: 2658364661879231317, guid: d72b2c77daf1e514d871e31151f0dbb5, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0.32556814
+      objectReference: {fileID: 0}
+    - target: {fileID: 2658364661879231317, guid: d72b2c77daf1e514d871e31151f0dbb5, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2658364661879231317, guid: d72b2c77daf1e514d871e31151f0dbb5, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0.94551855
+      objectReference: {fileID: 0}
+    - target: {fileID: 2658364661879231317, guid: d72b2c77daf1e514d871e31151f0dbb5, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2658364661879231317, guid: d72b2c77daf1e514d871e31151f0dbb5, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2658364661879231317, guid: d72b2c77daf1e514d871e31151f0dbb5, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2658364661879231317, guid: d72b2c77daf1e514d871e31151f0dbb5, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8990411826105350722, guid: d72b2c77daf1e514d871e31151f0dbb5, type: 3}
+      propertyPath: m_Name
+      value: MS_NASA_MarkIII_Spacesuit
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 8990411826105350722, guid: d72b2c77daf1e514d871e31151f0dbb5, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 833151694}
+    - targetCorrespondingSourceObject: {fileID: 8990411826105350722, guid: d72b2c77daf1e514d871e31151f0dbb5, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 833151693}
+  m_SourcePrefab: {fileID: -4161369568681901532, guid: d72b2c77daf1e514d871e31151f0dbb5, type: 3}
+--- !u!4 &833151691 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 2658364661879231317, guid: d72b2c77daf1e514d871e31151f0dbb5, type: 3}
+  m_PrefabInstance: {fileID: 833151690}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &833151692 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 8990411826105350722, guid: d72b2c77daf1e514d871e31151f0dbb5, type: 3}
+  m_PrefabInstance: {fileID: 833151690}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &833151693
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 833151692}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a5a9fef8aa9295f4dbad321f94a424ea, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MarsSentinel.NASA.MarsInspectableTarget
+  targetId: nasa_mark3_spacesuit_exhibit
+  title: NASA Mark III H-1 Planetary EVA Suit
+  category: "Official NASA 3D Hardware \xB7 Life Support Exhibit"
+  subtitle: "Rear-Entry Hard Upper Torso \xB7 57 kPa Exploration Suit"
+  coordinatesText: "HDU Suitport Pad \xB7 18.4448\xB0N, 77.4505\xB0E"
+  geologyText: Engineered for high hip/knee mobility across crater slopes and rocky Jezero regolith.
+  mineralogyText: Official NASA-3D-Resources Mark III Spacesuit GLB asset integrated at HDU EVA Suitport.
+  environmentText: "8.3 psi (57 kPa) O2 loop \xB7 Reduces pre-breathe overhead for rapid EVA sorties."
+  summaryText: Official NASA Mark III prototype suit designed for planetary surface walking, kneeling, and rock coring.
+  sourceUrl: https://github.com/nasa/NASA-3D-Resources
+  imageFile: perseverance_sample_raw.jpg
+  actionType: 0
+  actionHint: Inspect NASA Mark III Suit
+  interactionRadius: 6.5
+--- !u!65 &833151694
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 833151692}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 0.9, y: 1.92, z: 0.8}
+  m_Center: {x: 0, y: 0.96, z: 0}
 --- !u!1 &850763035
 GameObject:
   m_ObjectHideFlags: 0
@@ -1854,6 +2366,51 @@ Material:
     - _SpecColor: {r: 0.19999996, g: 0.19999996, b: 0.19999996, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1
+--- !u!1 &981135720
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 981135722}
+  - component: {fileID: 981135721}
+  m_Layer: 0
+  m_Name: MS_InteractionSystem
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &981135721
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 981135720}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 122da9b0b9b2c18408491a48f6be55b8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MarsSentinel.NASA.MarsInteractionSystem
+  raycastMaxDistance: 85
+--- !u!4 &981135722
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 981135720}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &1083472571
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -2468,6 +3025,42 @@ Mesh:
       - serializedVersion: 1
         m_IndexStart: 0
         m_IndexCount: 0
+--- !u!1 &1441823023
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1441823024}
+  m_Layer: 0
+  m_Name: MS_NASA_Hardware_Imports
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1441823024
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1441823023}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 2016260995}
+  - {fileID: 78985396}
+  - {fileID: 1841043986}
+  - {fileID: 247763021}
+  - {fileID: 833151691}
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1474623561
 GameObject:
   m_ObjectHideFlags: 0
@@ -2501,6 +3094,68 @@ Transform:
   - {fileID: 1783315741}
   m_Father: {fileID: 1975535788}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1001 &1485937854
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 2016260995}
+    m_Modifications:
+    - target: {fileID: -1652604190129292474, guid: 2e6c10f7a701d6b4cb457f48fbfbcdca, type: 3}
+      propertyPath: m_Name
+      value: MS_NASA_HDU_Part1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6937303693606134351, guid: 2e6c10f7a701d6b4cb457f48fbfbcdca, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6937303693606134351, guid: 2e6c10f7a701d6b4cb457f48fbfbcdca, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6937303693606134351, guid: 2e6c10f7a701d6b4cb457f48fbfbcdca, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6937303693606134351, guid: 2e6c10f7a701d6b4cb457f48fbfbcdca, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6937303693606134351, guid: 2e6c10f7a701d6b4cb457f48fbfbcdca, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6937303693606134351, guid: 2e6c10f7a701d6b4cb457f48fbfbcdca, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6937303693606134351, guid: 2e6c10f7a701d6b4cb457f48fbfbcdca, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6937303693606134351, guid: 2e6c10f7a701d6b4cb457f48fbfbcdca, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6937303693606134351, guid: 2e6c10f7a701d6b4cb457f48fbfbcdca, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6937303693606134351, guid: 2e6c10f7a701d6b4cb457f48fbfbcdca, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: -4161369568681901532, guid: 2e6c10f7a701d6b4cb457f48fbfbcdca, type: 3}
+--- !u!4 &1485937855 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 6937303693606134351, guid: 2e6c10f7a701d6b4cb457f48fbfbcdca, type: 3}
+  m_PrefabInstance: {fileID: 1485937854}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &1487060033
 GameObject:
   m_ObjectHideFlags: 0
@@ -3504,6 +4159,80 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1783315740}
   m_Mesh: {fileID: 1868559147}
+--- !u!1001 &1841043985
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 1441823024}
+    m_Modifications:
+    - target: {fileID: -3910990755373119420, guid: 6767e5012d111014586080862961be88, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 1.2705194
+      objectReference: {fileID: 0}
+    - target: {fileID: -3910990755373119420, guid: 6767e5012d111014586080862961be88, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 1.2705194
+      objectReference: {fileID: 0}
+    - target: {fileID: -3910990755373119420, guid: 6767e5012d111014586080862961be88, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 1.2705194
+      objectReference: {fileID: 0}
+    - target: {fileID: -3910990755373119420, guid: 6767e5012d111014586080862961be88, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 35.98443
+      objectReference: {fileID: 0}
+    - target: {fileID: -3910990755373119420, guid: 6767e5012d111014586080862961be88, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 1.2590039
+      objectReference: {fileID: 0}
+    - target: {fileID: -3910990755373119420, guid: 6767e5012d111014586080862961be88, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 23.055937
+      objectReference: {fileID: 0}
+    - target: {fileID: -3910990755373119420, guid: 6767e5012d111014586080862961be88, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: -3910990755373119420, guid: 6767e5012d111014586080862961be88, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: -3910990755373119420, guid: 6767e5012d111014586080862961be88, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: -3910990755373119420, guid: 6767e5012d111014586080862961be88, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: -3910990755373119420, guid: 6767e5012d111014586080862961be88, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -3910990755373119420, guid: 6767e5012d111014586080862961be88, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -3910990755373119420, guid: 6767e5012d111014586080862961be88, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8771091787928289351, guid: 6767e5012d111014586080862961be88, type: 3}
+      propertyPath: m_Name
+      value: MS_NASA_Rocket_SaturnV
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: -4161369568681901532, guid: 6767e5012d111014586080862961be88, type: 3}
+--- !u!4 &1841043986 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -3910990755373119420, guid: 6767e5012d111014586080862961be88, type: 3}
+  m_PrefabInstance: {fileID: 1841043985}
+  m_PrefabAsset: {fileID: 0}
 --- !u!43 &1846647003
 Mesh:
   m_ObjectHideFlags: 0
@@ -4101,6 +4830,50 @@ Mesh:
       - serializedVersion: 1
         m_IndexStart: 0
         m_IndexCount: 0
+--- !u!1 &1894263638
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1894263640}
+  - component: {fileID: 1894263639}
+  m_Layer: 0
+  m_Name: MS_BaseFacilitiesBuilder
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1894263639
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1894263638}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3b04a05ac2bfc1b4a81febc004065a7b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MarsSentinel.NASA.MarsBaseFacilitiesBuilder
+--- !u!4 &1894263640
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1894263638}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!21 &1914533464
 Material:
   serializedVersion: 8
@@ -4155,6 +4928,68 @@ Material:
     - _Color: {r: 0.5, g: 0.5, b: 0.5, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1
+--- !u!1001 &1929196637
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 2016260995}
+    m_Modifications:
+    - target: {fileID: -3680183907687728223, guid: bbe15b0ace8260f4aa5d97cff4419ff6, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -3680183907687728223, guid: bbe15b0ace8260f4aa5d97cff4419ff6, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -3680183907687728223, guid: bbe15b0ace8260f4aa5d97cff4419ff6, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -3680183907687728223, guid: bbe15b0ace8260f4aa5d97cff4419ff6, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: -3680183907687728223, guid: bbe15b0ace8260f4aa5d97cff4419ff6, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -3680183907687728223, guid: bbe15b0ace8260f4aa5d97cff4419ff6, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -3680183907687728223, guid: bbe15b0ace8260f4aa5d97cff4419ff6, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -3680183907687728223, guid: bbe15b0ace8260f4aa5d97cff4419ff6, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -3680183907687728223, guid: bbe15b0ace8260f4aa5d97cff4419ff6, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -3680183907687728223, guid: bbe15b0ace8260f4aa5d97cff4419ff6, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4371643537323875306, guid: bbe15b0ace8260f4aa5d97cff4419ff6, type: 3}
+      propertyPath: m_Name
+      value: MS_NASA_HDU_Part2
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: -4161369568681901532, guid: bbe15b0ace8260f4aa5d97cff4419ff6, type: 3}
+--- !u!4 &1929196638 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -3680183907687728223, guid: bbe15b0ace8260f4aa5d97cff4419ff6, type: 3}
+  m_PrefabInstance: {fileID: 1929196637}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &1975535783
 GameObject:
   m_ObjectHideFlags: 0
@@ -4429,6 +5264,39 @@ MonoBehaviour:
   suspensionRockingAmp: 0.5
   loopTraverse: 1
   isSimulating: 1
+--- !u!1 &2016260994
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2016260995}
+  m_Layer: 0
+  m_Name: MS_NASA_HDU_Combined
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2016260995
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2016260994}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -23.413242, y: 0.17437902, z: 17.476204}
+  m_LocalScale: {x: 0.020902457, y: 0.020902457, z: 0.020902457}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 1485937855}
+  - {fileID: 1929196638}
+  m_Father: {fileID: 1441823024}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &2026939984
 GameObject:
   m_ObjectHideFlags: 0
@@ -4639,3 +5507,10 @@ SceneRoots:
   - {fileID: 410087041}
   - {fileID: 832575519}
   - {fileID: 1975535788}
+  - {fileID: 494167444}
+  - {fileID: 1894263640}
+  - {fileID: 257807519}
+  - {fileID: 88299616}
+  - {fileID: 981135722}
+  - {fileID: 191792263}
+  - {fileID: 1441823024}

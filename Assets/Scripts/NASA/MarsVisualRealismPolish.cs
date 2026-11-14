@@ -20,6 +20,15 @@ namespace MarsSentinel.NASA
     [DefaultExecutionOrder(200)]
     public class MarsVisualRealismPolish : MonoBehaviour
     {
+        public static MarsVisualRealismPolish Instance { get; private set; }
+        public bool IsExploreModeActive { get; private set; } = true;
+
+        public static float SampleTerrainElevation(float x, float z)
+        {
+            if (Instance != null) return Instance.SampleHorizonHeight(x, z);
+            return 0f;
+        }
+
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void EnsurePolishAttached()
         {
@@ -120,7 +129,9 @@ namespace MarsSentinel.NASA
 
         private void Awake()
         {
+            if (Instance == null) Instance = this;
             ParseCliArgs();
+            IsExploreModeActive = string.IsNullOrEmpty(captureOutDir);
         }
 
         private void Start()
@@ -191,6 +202,15 @@ namespace MarsSentinel.NASA
             SanitizeBeaconsAndRoutes();
             UpgradeMoonsSunAndOrbits();
             FrameSurfaceOverviewCamera();
+
+            if (!IsExploreModeActive)
+            {
+                if (cinemachineBrain != null) cinemachineBrain.enabled = true;
+            }
+            else
+            {
+                EnterExploreMode();
+            }
 
             if (!string.IsNullOrEmpty(captureOutDir) && !captureStarted)
             {
@@ -368,27 +388,30 @@ namespace MarsSentinel.NASA
                 bool assignedControls = false;
                 foreach (Text t in rightGo.GetComponentsInChildren<Text>(true))
                 {
-                    if (!assignedControls && (t.name.Contains("Legend") || t.text.Contains("CAMERAS:") || t.text.Contains("[1]")))
+                    bool isActiveCamField = t.name.IndexOf("ActiveCam", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                                            t.text.StartsWith("ACTIVE VIEW", StringComparison.OrdinalIgnoreCase);
+                    if (isActiveCamField)
+                    {
+                        txtActiveCamera = t;
+                    }
+                    else if (!assignedControls && (t.name.Contains("Legend") || t.text.Contains("CAMERAS:") || t.text.Contains("[1]")))
                     {
                         assignedControls = true;
                         txtControlsLegend = t;
+                        t.gameObject.SetActive(true);
                         t.fontSize = 13;
                         t.lineSpacing = 1.05f;
                         t.verticalOverflow = VerticalWrapMode.Overflow;
                         t.horizontalOverflow = HorizontalWrapMode.Overflow;
                         t.text =
-                            "CONTROLS:\n" +
-                            "[1-4] Surface Views | [5 / O] Orbit Fleet\n" +
-                            "[6] Sun  [7] Phobos  [8] Deimos\n" +
-                            "[L] Sol Cycle  [T] Routes  [D] Dust  [H] HUD";
+                            "EXPLORE & CAMERAS:\n" +
+                            "[F] Explore/Showcase | [WASD] Move/Drive | [E] Inspect/Rover\n" +
+                            "[1-4] Cams  [5/O] Orbit  [6] Sun  [7] Phobos  [8] Deimos\n" +
+                            "[V] Visor  [B] Lamp  [K] Mute  [L] Sol  [C/D] Dust  [G] Geo";
                     }
-                    else if (assignedControls && (t.text.Contains("CONTROLS:") || t.text.Contains("[1]")))
+                    else if (assignedControls && (t.text.Contains("CONTROLS:") || t.text.Contains("CAMERAS:")))
                     {
                         t.gameObject.SetActive(false);
-                    }
-                    else if (t.name.Contains("ActiveCam") || t.text.Contains("ACTIVE VIEW"))
-                    {
-                        txtActiveCamera = t;
                     }
                 }
             }
@@ -441,6 +464,8 @@ namespace MarsSentinel.NASA
             var mf = horizonGo.GetComponent<MeshFilter>() ?? horizonGo.AddComponent<MeshFilter>();
             var mr = horizonGo.GetComponent<MeshRenderer>() ?? horizonGo.AddComponent<MeshRenderer>();
             mf.sharedMesh = BuildTerrainWithSkirtMesh(192, 1280f);
+            var mc = horizonGo.GetComponent<MeshCollider>() ?? horizonGo.AddComponent<MeshCollider>();
+            mc.sharedMesh = mf.sharedMesh;
 
             Material terrainMat = CreateLitMaterial(
                 "MS_Polished_Regolith_Mat",
@@ -1578,7 +1603,12 @@ namespace MarsSentinel.NASA
             var kb = Keyboard.current;
             if (kb != null)
             {
-                if (kb.digit1Key.wasPressedThisFrame) SetSurfaceMode(1);
+                if (kb.fKey.wasPressedThisFrame && string.IsNullOrEmpty(captureOutDir))
+                {
+                    if (IsExploreModeActive) SetSurfaceMode(1);
+                    else EnterExploreMode();
+                }
+                else if (kb.digit1Key.wasPressedThisFrame) SetSurfaceMode(1);
                 else if (kb.digit2Key.wasPressedThisFrame) SetSurfaceMode(2);
                 else if (kb.digit3Key.wasPressedThisFrame) SetSurfaceMode(3);
                 else if (kb.digit4Key.wasPressedThisFrame) SetSurfaceMode(4);
@@ -1586,6 +1616,11 @@ namespace MarsSentinel.NASA
                 else if (kb.digit6Key.wasPressedThisFrame || kb.uKey.wasPressedThisFrame) SetFocusMode(focusMode == 1 ? 0 : 1);
                 else if (kb.digit7Key.wasPressedThisFrame || kb.pKey.wasPressedThisFrame) SetFocusMode(focusMode == 2 ? 0 : 2);
                 else if (kb.digit8Key.wasPressedThisFrame || kb.mKey.wasPressedThisFrame) SetFocusMode(focusMode == 3 ? 0 : 3);
+            }
+            if (cinemachineBrain != null)
+            {
+                bool allowBrain = !IsExploreModeActive && !forceOrbital && focusMode == 0;
+                if (cinemachineBrain.enabled != allowBrain) cinemachineBrain.enabled = allowBrain;
             }
 
             // Mouse orbit drag & scroll zoom inside Orbit / Celestial Focus mode
@@ -2046,8 +2081,31 @@ namespace MarsSentinel.NASA
             for (int i = 0; i < n; i++) yield return null;
         }
 
+        public void EnterExploreMode()
+        {
+            IsExploreModeActive = true;
+            forceOrbital = false;
+            focusMode = 0;
+            spaceBlend = 0f;
+            if (fiEnhancerOrbitOverride != null && enhancer != null) fiEnhancerOrbitOverride.SetValue(enhancer, false);
+            if (fiEnhancerFocusMode != null && enhancer != null) fiEnhancerFocusMode.SetValue(enhancer, 0);
+            if (fiEnhancerSpaceBlend != null && enhancer != null) fiEnhancerSpaceBlend.SetValue(enhancer, 0f);
+            if (cinemachineBrain != null) cinemachineBrain.enabled = false;
+            MarsAudioManager.Instance?.PlayUiClick();
+        }
+
+        public void TriggerViewMode(int modeKey)
+        {
+            if (modeKey >= 1 && modeKey <= 4) SetSurfaceMode(modeKey);
+            else if (modeKey == 5) SetOrbitMode(!forceOrbital || focusMode > 0);
+            else if (modeKey == 6) SetFocusMode(focusMode == 1 ? 0 : 1);
+            else if (modeKey == 7) SetFocusMode(focusMode == 2 ? 0 : 2);
+            else if (modeKey == 8) SetFocusMode(focusMode == 3 ? 0 : 3);
+        }
+
         private void SetSurfaceMode(int camView)
         {
+            IsExploreModeActive = false;
             activeSurfaceKey = Mathf.Clamp(camView, 1, 4);
             forceOrbital = false;
             focusMode = 0;
@@ -2074,6 +2132,8 @@ namespace MarsSentinel.NASA
 
         private void SetOrbitMode(bool active)
         {
+            if (active) IsExploreModeActive = false;
+            else if (string.IsNullOrEmpty(captureOutDir)) IsExploreModeActive = true;
             forceOrbital = active;
             focusMode = 0;
             spaceBlend = active ? 1f : 0f;
@@ -2085,6 +2145,8 @@ namespace MarsSentinel.NASA
 
         private void SetFocusMode(int mode)
         {
+            if (mode > 0) IsExploreModeActive = false;
+            else if (string.IsNullOrEmpty(captureOutDir)) IsExploreModeActive = true;
             forceOrbital = false;
             focusMode = mode;
             spaceBlend = mode > 0 ? 1f : 0f;

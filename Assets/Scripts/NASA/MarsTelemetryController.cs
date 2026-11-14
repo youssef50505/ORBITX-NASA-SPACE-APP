@@ -291,21 +291,59 @@ namespace MarsSentinel.NASA
             GameObject marker = GameObject.CreatePrimitive(PrimitiveType.Sphere);
             marker.name = name;
             marker.transform.SetParent(waypointContainer, false);
-            marker.transform.position = pos + new Vector3(0, 0.5f, 0);
-            marker.transform.localScale = new Vector3(0.5f, 0.5f, 0.5f);
+            float groundY = MarsVisualRealismPolish.SampleTerrainElevation(pos.x, pos.z);
+            marker.transform.position = new Vector3(pos.x, groundY + 0.55f, pos.z);
+            marker.transform.localScale = new Vector3(0.55f, 0.55f, 0.55f);
 
-            Collider col = marker.GetComponent<Collider>();
-            if (col != null) Destroy(col);
+            SphereCollider col = marker.GetComponent<SphereCollider>();
+            if (col != null)
+            {
+                col.isTrigger = false;
+                col.radius = 0.9f;
+            }
 
             Renderer r = marker.GetComponent<Renderer>();
             if (r != null)
             {
-                Shader s = Shader.Find("Universal Render Pipeline/Unlit");
-                if (s == null) s = Shader.Find("Sprites/Default");
+                Shader s = Shader.Find("Universal Render Pipeline/Lit");
+                if (s == null) s = Shader.Find("Standard");
                 Material mat = new Material(s);
-                mat.color = tube.rock_type.Contains("Sedimentary") ? Color.cyan : new Color(1f, 0.5f, 0f);
+                Color c = tube.rock_type.Contains("Sedimentary") ? Color.cyan : new Color(1f, 0.5f, 0f);
+                mat.color = c;
+                mat.EnableKeyword("_EMISSION");
+                mat.SetColor("_EmissionColor", c * 0.65f);
                 r.material = mat;
             }
+
+            var target = marker.GetComponent<MarsInspectableTarget>() ?? marker.AddComponent<MarsInspectableTarget>();
+            string locLower = (tube.sample_location + " " + tube.outcrop_name + " " + tube.sample_name).ToLowerInvariant();
+            string imgFile = "perseverance_sample_raw.jpg";
+            if (locLower.Contains("witch") || locLower.Contains("silver") || locLower.Contains("bell") || locLower.Contains("mainz"))
+                imgFile = "witch_hazel_hill_sol1401.jpg";
+            else if (locLower.Contains("cheyava") || locLower.Contains("neretva") || locLower.Contains("bright"))
+                imgFile = "cheyava_falls_sol1215.jpg";
+            else if (locLower.Contains("berea") || locLower.Contains("fan") || locLower.Contains("margin"))
+                imgFile = "berea_sol749.jpg";
+            else if (locLower.Contains("wildcat") || locLower.Contains("skinner") || locLower.Contains("hazelwood"))
+                imgFile = "wildcat_ridge_sol509.jpg";
+            else if (locLower.Contains("rochette") || locLower.Contains("maaz") || locLower.Contains("artuby") || locLower.Contains("brac") || locLower.Contains("montdenier"))
+                imgFile = "rochette_sol194.jpg";
+
+            target.Configure(
+                id: "sample_tube_" + tube.sample_num,
+                title: $"Sample Tube #{tube.sample_num} · {tube.sample_name}",
+                category: "NASA Perseverance Sample Core",
+                subtitle: $"{tube.sample_type} · {tube.rock_type}",
+                coords: $"{tube.lat:F5}°N, {tube.lon:F5}°E · Elev {tube.elev:F1} m MOLA",
+                geology: $"Outcrop: {tube.outcrop_name} ({tube.sample_location})\nCore Length: {(tube.sample_ht_cm > 0 ? tube.sample_ht_cm.ToString("F1") + " cm" : "Sealed Tube")} · Date: {tube.date}",
+                mineralogy: tube.rock_type.Contains("Sedimentary")
+                    ? "Deltaic mudstone/sandstone: smectite phyllosilicates, Fe/Mg-carbonate, sulfate veins (high biosignature preservation potential)."
+                    : "Igneous/volcanic cumulate & basalt: olivine, pyroxene, plagioclase with aqueous alteration salts in voids.",
+                environment: "Jezero Crater Surface · MEDA P ~715 Pa · RAD ~0.67 mSv/day · M2020 Cached Core",
+                summary: $"Real NASA Mars 2020 sample tube archived for Mars Sample Return / Sentinel field reference at Jezero Crater ({tube.sample_location}).",
+                sourceUrl: "https://science.nasa.gov/mission/mars-2020-perseverance/mars-rock-samples/",
+                imageFile: imgFile
+            );
         }
 
         public void SetRouteVisibility(bool safest, bool shortest, bool science)
