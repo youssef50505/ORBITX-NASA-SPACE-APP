@@ -451,3 +451,18 @@ if __name__ == "__main__":
 ## 8. الخاتمة وخارطة طريق المشاركين في الهاكاثون
 
 يمثل هذا الدليل التوليفة الأكثر عمقاً وشمولية للبيانات المريخية المتاحة حتى اليوم. من خلال استثمار ملفات الـ GeoJSON لمسارات الروبوتات، وخرائط الارتفاع الرقمية (MOLA 16-bit Signed Integer DTM و HiRISE 32-bit Float)، وقواعد البيانات الجيولوجية لـ USGS SIM 3292، والصور الميدانية المباشرة لبيرسيفيرانس، يمتلك فريق المشروع الأساس العلمي المتين والتقنيات البرمجية المتطورة للفوز بالمركز الأول في **NASA Space Apps Challenge**.
+
+
+---
+
+## تحديثات المرحلة الحادية عشرة (Milestone 11) — تدقيق موارد تحدي ناسا، دمج Curiosity (10/10)، وبوابة البيانات الواقعية
+
+1. **مراجعة وتحديث بيان الموارد الرسمية (`data/apis/nasa_endpoints_manifest.json`)**:
+   - تأكيد تغطية الموارد الخمسة الرسمية لتحدي *Interplanetary Survival Guide: Martian Map* (`mars_trek`, `usgs_sim3292`, `curiosity_msl`, `nasa_worldview_gibs`, `perseverance_m20`) وإضافة ثوابت الطقس الفضائي ونماذج البقاء خارج المركبة (`space_weather_and_eva_constants`) ورابط التحدي (`spaceapps_2026_challenge_url`) مع مزامنة الملف إلى `unity_project/Assets/StreamingAssets/NASA_Data/apis/nasa_endpoints_manifest.json`.
+2. **إكمال أسطول مهام المريخ في Unity 6 (10/10) وإصلاح العيوب الهندسية**:
+   - تصدير المجسم ثلاثي الأبعاد `Curiosity Rover (MSL).glb` وربطه عبر `MS_Curiosity_Root` داخل `MarsSceneBuilder.cs` و`MarsSceneManager.cs`.
+   - إصلاح ترتيب التفاف المثلثات اليساري (Left-Handed Winding) في `MarsTerrainManager.cs` بعد تبديل المحاور `Y<->Z` وإضافة دعم تحميل WebGL عبر `LoadSTLWebGLCoroutine()`.
+   - تصفية نقاط الشذوذ الارتفاعي الـ 15 في مسار بيرسيفيرانس داخل جيزيرو (`FilterJezeroAltitudeDropout` في `MarsDatasetLoader.cs`) وإلغاء حد الـ 15 عينة في `MarsTelemetryController.cs` لعرض جميع أنابيب العينات الـ 22 ورحلات إنجينويتي الـ 72.
+   - إضافة حساب النفاذية الغبارية عبر قانون Beer-Lambert (`ComputeBeerLambertTransmission`) ونصف قطر السير الآمن (`ComputeEvaSafeRadiusMeters`) مع اختصارات لوحة المفاتيح `[G]` و`[D]` و`[H]`.
+3. **حزمة الويب المحلية بدون قيود CORS (`web/nasa_data_bundle.js`)**:
+   - إضافة الخيار `--export-web-bundle` في `scripts/fetch_nasa_datasets.py` لتوليد الحزمة الشاملة التي تشغّل منزلق العاصفة الغبارية ($\tau$) وقائمة الوحدات الجيولوجية الـ 44 وطبقات العينات والطيران المروحي وعرض صورة `Mastcam-Z Sol 100` الأصلية، والتحقق من ذلك عبر `tests/test_milestone11_resources_and_integration.py`.

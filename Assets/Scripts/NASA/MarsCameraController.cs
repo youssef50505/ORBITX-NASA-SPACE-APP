@@ -76,11 +76,16 @@ namespace MarsSentinel.NASA
 
         public void InitializeCameraRig()
         {
-            Transform rigsRoot = transform.Find("MarsCameraRigs");
+            GameObject existingGlobal = GameObject.Find("MarsCameraRigs");
+            Transform rigsRoot = existingGlobal != null ? existingGlobal.transform : null;
             if (rigsRoot == null)
             {
                 GameObject go = new GameObject("MarsCameraRigs");
                 rigsRoot = go.transform;
+            }
+            if (rigsRoot.parent != null)
+            {
+                rigsRoot.SetParent(null, false);
             }
 
             // 1. SurfaceFleetOverview: elevated perspective looking down across rover fleet and landing site

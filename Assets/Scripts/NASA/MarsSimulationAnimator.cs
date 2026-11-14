@@ -94,6 +94,18 @@ namespace MarsSentinel.NASA
             }
 
             InitializeTraverseWaypoints();
+            if (datasetLoader != null && !datasetLoader.IsLoaded)
+            {
+                datasetLoader.OnDataLoaded += InitializeTraverseWaypoints;
+            }
+        }
+
+        private void OnDestroy()
+        {
+            if (datasetLoader != null)
+            {
+                datasetLoader.OnDataLoaded -= InitializeTraverseWaypoints;
+            }
         }
 
         public void LocateSceneTargets()

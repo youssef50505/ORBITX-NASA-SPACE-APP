@@ -66,6 +66,11 @@ namespace MarsSentinel.Bootstrap
             {
                 Debug.Log("[MarsServicesBootstrap] Initializing Unity Gaming Services Core...");
 
+                while (UnityServices.State == ServicesInitializationState.Initializing)
+                {
+                    await Task.Yield();
+                }
+
                 if (UnityServices.State == ServicesInitializationState.Uninitialized)
                 {
                     await UnityServices.InitializeAsync();
@@ -78,6 +83,12 @@ namespace MarsSentinel.Bootstrap
                 {
                     Debug.LogWarning("[MarsServicesBootstrap] UGS Core state is not Initialized.");
                     return false;
+                }
+
+                // Wait for BeforeSceneLoad PlayerAuthentication to finish if in progress so we don't trigger Error 10000
+                if (!AuthenticationService.Instance.IsSignedIn)
+                {
+                    await Task.WhenAny(PlayerAuthentication.SignedIn, Task.Delay(5000));
                 }
 
                 if (AuthenticationService.Instance.IsSignedIn)

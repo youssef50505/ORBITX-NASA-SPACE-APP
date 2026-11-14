@@ -130,12 +130,33 @@ namespace MarsSentinel.Editor
             if (orchestrator.GetComponent<MarsSimulationAnimator>() == null)
                 orchestrator.AddComponent<MarsSimulationAnimator>();
 
-            var celCtrl = orchestrator.GetComponent<MarsCelestialOrbitController>();
-            celCtrl.EnsureMoonsHierarchy();
-
-            var constCtrl = orchestrator.GetComponent<MarsSatelliteConstellation>();
-            constCtrl.EnsureDefaultConstellation();
-            constCtrl.InitializeOrbitTrails();
+            // Remove duplicate stray MarsCameraRigs or *_OrbitTrail GameObjects if re-running on existing scene
+            var allTransforms = Object.FindObjectsByType<Transform>(FindObjectsSortMode.None);
+            bool keptCameraRigs = false;
+            var seenTrails = new System.Collections.Generic.HashSet<string>();
+            foreach (var tr in allTransforms)
+            {
+                if (tr == null) continue;
+                if (tr.name == "MarsCameraRigs")
+                {
+                    if (!keptCameraRigs && tr.childCount > 0)
+                    {
+                        keptCameraRigs = true;
+                        tr.SetParent(mainCam.transform, false);
+                    }
+                    else if (tr.childCount == 0)
+                    {
+                        Object.DestroyImmediate(tr.gameObject);
+                    }
+                }
+                else if (tr.name.EndsWith("_OrbitTrail"))
+                {
+                    if (!seenTrails.Add(tr.name))
+                    {
+                        Object.DestroyImmediate(tr.gameObject);
+                    }
+                }
+            }
 
             // 5. Integrate 3D Fleet Models Hierarchy
             Transform surfaceRoot = orchestrator.transform.Find("MS_Mars_Fleet_Surface");
@@ -174,9 +195,9 @@ namespace MarsSentinel.Editor
 
             // Wire Ingenuity Rotor Animator
             Transform ingNode = surfaceRoot.Find("MS_Ingenuity_Root");
-            if (ingNode != null && ingNode.GetComponent<IngenuityRotorAnimator>() == null)
+            if (ingNode != null)
             {
-                var ingAnim = ingNode.gameObject.AddComponent<IngenuityRotorAnimator>();
+                var ingAnim = ingNode.GetComponent<IngenuityRotorAnimator>() ?? ingNode.gameObject.AddComponent<IngenuityRotorAnimator>();
                 ingAnim.LocateOrCreateRotors();
             }
 
@@ -199,6 +220,14 @@ namespace MarsSentinel.Editor
             InstantiateFleetModel("Mars Atmosphere and Volatile EvolutioN (MAVEN) (A).glb", "MS_MAVEN_Root", orbitRoot, new Vector3(60, 300, -100));
             InstantiateFleetModel("Mars Odyssey.glb", "MS_Odyssey_Root", orbitRoot, new Vector3(0, 280, 200));
             InstantiateFleetModel("Mars Global Surveyor.glb", "MS_GlobalSurveyor_Root", orbitRoot, new Vector3(100, 260, 50));
+
+            // Bind Moons & Keplerian Constellation AFTER orbitRoot fleet anchors exist
+            var celCtrl = orchestrator.GetComponent<MarsCelestialOrbitController>();
+            celCtrl.EnsureMoonsHierarchy();
+
+            var constCtrl = orchestrator.GetComponent<MarsSatelliteConstellation>();
+            constCtrl.EnsureDefaultConstellation();
+            constCtrl.InitializeOrbitTrails();
 
             // 6. Initialize camera rig
             camController.InitializeCameraRig();
@@ -298,20 +327,27 @@ namespace MarsSentinel.Editor
         private static void InstantiateFleetModel(string modelFile, string nodeName, Transform parent, Vector3 localPos)
         {
             Transform existing = parent.Find(nodeName);
-            if (existing != null && existing.childCount > 0) return;
+            string instName = Path.GetFileNameWithoutExtension(modelFile);
 
             GameObject node = existing != null ? existing.gameObject : new GameObject(nodeName);
             node.transform.SetParent(parent, false);
             node.transform.localPosition = localPos;
+
+            if (node.transform.Find(instName) != null) return;
 
             string path = $"Assets/Models/Fleet/{modelFile}";
             GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(path);
             if (prefab != null)
             {
                 GameObject inst = (GameObject)PrefabUtility.InstantiatePrefab(prefab, node.transform);
-                inst.name = Path.GetFileNameWithoutExtension(modelFile);
+                inst.name = instName;
                 inst.transform.localPosition = Vector3.zero;
                 EnsureUrpMaterials(inst);
+                Debug.Log($"[MarsSceneBuilder] Instantiated 3D model '{instName}' under '{nodeName}'.");
+            }
+            else
+            {
+                Debug.LogWarning($"[MarsSceneBuilder] Failed to load GameObject prefab at '{path}'.");
             }
         }
 

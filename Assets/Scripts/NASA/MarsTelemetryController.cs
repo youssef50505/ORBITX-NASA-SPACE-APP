@@ -68,6 +68,8 @@ namespace MarsSentinel.NASA
             trafficabilityStatus = "Safe (USGS AHi Regolith)"
         };
 
+        private readonly List<LineRenderer> persevExtraRenderers = new List<LineRenderer>();
+
         public RoverTelemetry CurrentTelemetry => telemetry;
         public event Action<RoverTelemetry> OnTelemetryUpdated;
 
@@ -163,15 +165,51 @@ namespace MarsSentinel.NASA
                 SetLinePoints(lineIngenuity, ingPts);
                 if (lineIngenuity != null) lineIngenuity.enabled = showHistoricalOverlays;
 
-                var persevPts = new List<Vector3>();
+                foreach (var oldExtra in persevExtraRenderers)
+                {
+                    if (oldExtra != null) Destroy(oldExtra.gameObject);
+                }
+                persevExtraRenderers.Clear();
+
+                var persevSegments = new List<List<Vector3>>();
+                var activeSeg = new List<Vector3>();
+                Vector3? prevPt = null;
                 foreach (var leg in MarsDatasetLoader.Instance.PerseveranceTraverses)
                 {
+                    if (leg.points == null || leg.points.Count == 0) continue;
+                    if (prevPt.HasValue && Vector3.Distance(prevPt.Value, leg.points[0]) > 25.0f && activeSeg.Count >= 2)
+                    {
+                        persevSegments.Add(activeSeg);
+                        activeSeg = new List<Vector3>();
+                    }
                     foreach (var p in leg.points)
                     {
-                        persevPts.Add(p);
+                        if (prevPt.HasValue && Vector3.Distance(prevPt.Value, p) > 25.0f && activeSeg.Count >= 2)
+                        {
+                            persevSegments.Add(activeSeg);
+                            activeSeg = new List<Vector3>();
+                        }
+                        activeSeg.Add(p);
+                        prevPt = p;
                     }
                 }
-                SetLinePoints(linePerseveranceHistory, persevPts);
+                if (activeSeg.Count >= 2) persevSegments.Add(activeSeg);
+
+                if (persevSegments.Count > 0)
+                {
+                    SetLinePoints(linePerseveranceHistory, persevSegments[0]);
+                    for (int sIdx = 1; sIdx < persevSegments.Count; sIdx++)
+                    {
+                        LineRenderer extraLr = CreateRouteRenderer($"PersevSegment_{sIdx}", colorPerseveranceHistory, 0.45f);
+                        if (linePerseveranceHistory != null)
+                        {
+                            extraLr.transform.SetParent(linePerseveranceHistory.transform, false);
+                        }
+                        SetLinePoints(extraLr, persevSegments[sIdx]);
+                        extraLr.enabled = showHistoricalOverlays;
+                        persevExtraRenderers.Add(extraLr);
+                    }
+                }
                 if (linePerseveranceHistory != null) linePerseveranceHistory.enabled = showHistoricalOverlays;
             }
         }
@@ -282,6 +320,10 @@ namespace MarsSentinel.NASA
             showHistoricalOverlays = ingenuityVisible || perseveranceHistoryVisible;
             if (lineIngenuity != null) lineIngenuity.enabled = ingenuityVisible;
             if (linePerseveranceHistory != null) linePerseveranceHistory.enabled = perseveranceHistoryVisible;
+            foreach (var extra in persevExtraRenderers)
+            {
+                if (extra != null) extra.enabled = perseveranceHistoryVisible;
+            }
         }
 
         public void UpdateRoverMotionTelemetry(float speedMps, float headingDeg, float distanceTraveled)

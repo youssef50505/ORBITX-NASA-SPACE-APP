@@ -88,14 +88,17 @@ namespace MarsSentinel.NASA
             {
                 if (orb.orbiterTransform == null) continue;
 
-                Transform trailChild = orb.orbiterTransform.parent != null
-                    ? orb.orbiterTransform.parent.Find($"{orb.missionName}_OrbitTrail")
-                    : transform.Find($"{orb.missionName}_OrbitTrail");
+                string trailName = $"{orb.missionName}_OrbitTrail";
+                Transform trailChild = transform.Find(trailName);
+                if (trailChild == null && orb.orbiterTransform.parent != null)
+                {
+                    trailChild = orb.orbiterTransform.parent.Find(trailName);
+                }
 
                 GameObject trailGo;
                 if (trailChild == null)
                 {
-                    trailGo = new GameObject($"{orb.missionName}_OrbitTrail");
+                    trailGo = new GameObject(trailName);
                     trailGo.transform.SetParent(transform, false);
                 }
                 else
@@ -212,7 +215,15 @@ namespace MarsSentinel.NASA
 
         public void EnsureDefaultConstellation()
         {
-            if (orbiters != null && orbiters.Count >= 4) return;
+            if (orbiters != null && orbiters.Count >= 4)
+            {
+                bool allBound = true;
+                foreach (var o in orbiters)
+                {
+                    if (o == null || o.orbiterTransform == null) { allBound = false; break; }
+                }
+                if (allBound) return;
+            }
 
             Transform orbitFleet = transform.Find("MS_Mars_Fleet_Orbit");
             if (orbitFleet == null)

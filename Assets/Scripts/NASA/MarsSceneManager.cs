@@ -1,6 +1,9 @@
 using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
+#if ENABLE_INPUT_SYSTEM
+using UnityEngine.InputSystem;
+#endif
 using MarsSentinel.Bootstrap;
 
 namespace MarsSentinel.NASA
@@ -77,7 +80,32 @@ namespace MarsSentinel.NASA
 
         private void HandleInputHotkeys()
         {
-            if (UnityEngine.Input.GetKeyDown(KeyCode.L))
+            bool pressedL = false;
+            bool pressedT = false;
+            bool pressedG = false;
+            bool pressedD = false;
+            bool pressedH = false;
+
+#if ENABLE_INPUT_SYSTEM
+            var kb = Keyboard.current;
+            if (kb != null)
+            {
+                if (kb.lKey.wasPressedThisFrame) pressedL = true;
+                if (kb.tKey.wasPressedThisFrame) pressedT = true;
+                if (kb.gKey.wasPressedThisFrame) pressedG = true;
+                if (kb.dKey.wasPressedThisFrame) pressedD = true;
+                if (kb.hKey.wasPressedThisFrame) pressedH = true;
+            }
+#endif
+#if ENABLE_LEGACY_INPUT_MANAGER
+            if (Input.GetKeyDown(KeyCode.L)) pressedL = true;
+            if (Input.GetKeyDown(KeyCode.T)) pressedT = true;
+            if (Input.GetKeyDown(KeyCode.G)) pressedG = true;
+            if (Input.GetKeyDown(KeyCode.D)) pressedD = true;
+            if (Input.GetKeyDown(KeyCode.H)) pressedH = true;
+#endif
+
+            if (pressedL)
             {
                 if (celestialController != null)
                 {
@@ -89,22 +117,22 @@ namespace MarsSentinel.NASA
                     else celestialController.ApplyPreset(SolarLightingPreset.Sunrise);
                 }
             }
-            else if (UnityEngine.Input.GetKeyDown(KeyCode.T))
+            else if (pressedT)
             {
                 if (celestialController != null)
                 {
                     celestialController.SetSolHour(celestialController.SolHour + 1.0f);
                 }
             }
-            else if (UnityEngine.Input.GetKeyDown(KeyCode.G))
+            else if (pressedG)
             {
                 CycleGeologyUnit();
             }
-            else if (UnityEngine.Input.GetKeyDown(KeyCode.D))
+            else if (pressedD)
             {
                 CycleDustStormOpticalDepth();
             }
-            else if (UnityEngine.Input.GetKeyDown(KeyCode.H))
+            else if (pressedH)
             {
                 showHistoricalOverlays = !showHistoricalOverlays;
                 if (telemetryController != null)
@@ -304,11 +332,19 @@ namespace MarsSentinel.NASA
             {
                 servicesBootstrap.OnSignedIn += HandleUgsSignedIn;
                 servicesBootstrap.OnSignInFailed += HandleUgsFailed;
+                if (servicesBootstrap.IsSignedIn && !string.IsNullOrEmpty(servicesBootstrap.PlayerId))
+                {
+                    HandleUgsSignedIn(servicesBootstrap.PlayerId);
+                }
             }
 
             if (datasetLoader != null)
             {
                 datasetLoader.OnDataLoaded += HandleDataLoaded;
+                if (datasetLoader.IsLoaded)
+                {
+                    HandleDataLoaded();
+                }
             }
 
             if (telemetryController != null)
@@ -491,21 +527,21 @@ namespace MarsSentinel.NASA
             // UGS Identity Status & Camera Legend Panel (Top-Right)
             GameObject statusPanel = CreatePanel("StatusAndControlsPanel", canvasGo.transform,
                 new Vector2(1.0f, 1.0f), new Vector2(1.0f, 1.0f), new Vector2(1.0f, 1.0f),
-                new Vector2(-25, -25), new Vector2(400, 220));
+                new Vector2(-25, -25), new Vector2(420, 225));
             txtUgsStatus = CreateText("TxtUgsStatus", statusPanel.transform,
                 "UGS IDENTITY: CONNECTING...",
                 13, FontStyle.Bold, new Color(0.4f, 0.8f, 1.0f), TextAnchor.UpperLeft, defaultFont);
-            txtUgsStatus.rectTransform.anchoredPosition = new Vector2(0, 0);
+            SetTopTextSlot(txtUgsStatus.rectTransform, 10f, 44f);
 
             txtActiveCamera = CreateText("TxtActiveCamera", statusPanel.transform,
                 "ACTIVE VIEW: [1] SURFACEFLEETOVERVIEW",
                 13, FontStyle.Bold, new Color(1.0f, 0.95f, 0.2f), TextAnchor.UpperLeft, defaultFont);
-            txtActiveCamera.rectTransform.anchoredPosition = new Vector2(0, -50);
+            SetTopTextSlot(txtActiveCamera.rectTransform, 58f, 42f);
 
             txtControlsLegend = CreateText("TxtControlsLegend", statusPanel.transform,
                 "CAMERAS: [1]-[5] | [L] Solar | [T] +1h | [D] Dust τ | [G] Geo | [H] History\n[1] Surface Fleet | [2] Rover Close-Up | [3] Ingenuity\n[4] Route Orbit | [5] Orbital Fleet Skyward",
                 12, FontStyle.Normal, new Color(0.85f, 0.85f, 0.9f), TextAnchor.UpperLeft, defaultFont);
-            txtControlsLegend.rectTransform.anchoredPosition = new Vector2(0, -95);
+            SetTopTextSlot(txtControlsLegend.rectTransform, 106f, 110f);
         }
 
         private GameObject CreatePanel(string name, Transform parent,
@@ -548,6 +584,15 @@ namespace MarsSentinel.NASA
             txt.raycastTarget = false;
 
             return txt;
+        }
+
+        private void SetTopTextSlot(RectTransform rt, float topOffset, float height)
+        {
+            rt.anchorMin = new Vector2(0f, 1f);
+            rt.anchorMax = new Vector2(1f, 1f);
+            rt.pivot = new Vector2(0.5f, 1f);
+            rt.sizeDelta = new Vector2(-20f, height);
+            rt.anchoredPosition = new Vector2(0f, -topOffset);
         }
         #endregion
     }
