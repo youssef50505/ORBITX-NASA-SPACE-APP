@@ -103,6 +103,7 @@ namespace MarsSentinel.NASA
 
                 // Shot 6: Inspect Cheyava Falls Outcrop with Science Drawer & NASA Photo Open
                 MarsAstronautController.Instance.SnapToSurfaceAt(-10.0f, -20.5f);
+                MarsAstronautController.Instance.SetCameraAngles(28.0f, 16.0f);
                 yield return WaitFrames(6);
                 foreach (var t in MarsInspectableTarget.AllTargets)
                 {

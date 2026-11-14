@@ -86,9 +86,9 @@ namespace MarsSentinel.Bootstrap
                 }
 
                 // Wait for BeforeSceneLoad PlayerAuthentication to finish if in progress so we don't trigger Error 10000
-                if (!AuthenticationService.Instance.IsSignedIn)
+                if (!AuthenticationService.Instance.IsSignedIn && PlayerAuthentication.SignedIn != null && !PlayerAuthentication.SignedIn.IsCompleted)
                 {
-                    await Task.WhenAny(PlayerAuthentication.SignedIn, Task.Delay(5000));
+                    await Task.WhenAny(PlayerAuthentication.SignedIn, Task.Delay(12000));
                 }
 
                 if (AuthenticationService.Instance.IsSignedIn)
@@ -104,8 +104,38 @@ namespace MarsSentinel.Bootstrap
                 AuthenticationService.Instance.SignInFailed += HandleSignInFailed;
                 AuthenticationService.Instance.SignedOut += HandleSignedOut;
 
+                if (PlayerAuthentication.SignedIn != null && !PlayerAuthentication.SignedIn.IsCompleted)
+                {
+                    // Initial sign-in is still in-flight after timeout; wait briefly instead of firing a duplicate request
+                    for (int waitIdx = 0; waitIdx < 20 && !AuthenticationService.Instance.IsSignedIn; waitIdx++)
+                    {
+                        await Task.Delay(250);
+                    }
+                    if (AuthenticationService.Instance.IsSignedIn)
+                    {
+                        HandleSignedIn();
+                        return true;
+                    }
+                }
+
                 Debug.Log("[MarsServicesBootstrap] Initiating anonymous sign-in...");
-                await AuthenticationService.Instance.SignInAnonymouslyAsync();
+                try
+                {
+                    await AuthenticationService.Instance.SignInAnonymouslyAsync();
+                }
+                catch (RequestFailedException inFlightEx) when (inFlightEx.ErrorCode == 10000)
+                {
+                    // Another subsystem is already signing in; await completion cleanly
+                    for (int waitIdx = 0; waitIdx < 20 && !AuthenticationService.Instance.IsSignedIn; waitIdx++)
+                    {
+                        await Task.Delay(200);
+                    }
+                    if (AuthenticationService.Instance.IsSignedIn && !isSignedIn)
+                    {
+                        HandleSignedIn();
+                    }
+                    return isSignedIn;
+                }
 
                 return isSignedIn;
             }
@@ -139,6 +169,11 @@ namespace MarsSentinel.Bootstrap
 
         private void HandleSignInFailed(RequestFailedException exception)
         {
+            if (exception != null && exception.ErrorCode == 10000)
+            {
+                Debug.Log("[MarsServicesBootstrap] Sign-in already in progress via BeforeSceneLoad bootstrap; awaiting completion.");
+                return;
+            }
             isSignedIn = false;
             Debug.LogWarning($"[MarsServicesBootstrap] Sign-in failed: {exception.ErrorCode} - {exception.Message}");
             OnSignInFailed?.Invoke(exception.Message);

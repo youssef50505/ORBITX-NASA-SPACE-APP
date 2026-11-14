@@ -193,13 +193,6 @@ namespace MarsSentinel.NASA
                 else if (kb.digit5Key.wasPressedThisFrame) SwitchToView(CameraViewpoint.OrbitalFleetView);
             }
 #endif
-#if ENABLE_LEGACY_INPUT_MANAGER
-            if (Input.GetKeyDown(KeyCode.Alpha1)) SwitchToView(CameraViewpoint.SurfaceFleetOverview);
-            else if (Input.GetKeyDown(KeyCode.Alpha2)) SwitchToView(CameraViewpoint.PerseveranceCloseUp);
-            else if (Input.GetKeyDown(KeyCode.Alpha3)) SwitchToView(CameraViewpoint.IngenuityVantage);
-            else if (Input.GetKeyDown(KeyCode.Alpha4)) SwitchToView(CameraViewpoint.TraverseRouteOrbit);
-            else if (Input.GetKeyDown(KeyCode.Alpha5)) SwitchToView(CameraViewpoint.OrbitalFleetView);
-#endif
         }
     }
 }

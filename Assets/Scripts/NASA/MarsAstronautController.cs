@@ -85,10 +85,107 @@ namespace MarsSentinel.NASA
             charCtrl.slopeLimit = 50f;
             charCtrl.skinWidth = 0.04f;
 
-            // Clear old child visual rig if rebuilding
+            // Use official NASA Astronaut GLB if mounted in scene (or via AssetDatabase in Editor); fallback cleanly otherwise
+            Transform glbSuit = transform.Find("EVA_NASA_Astronaut_GLB");
+#if UNITY_EDITOR
+            if (glbSuit == null)
+            {
+                GameObject astroAsset = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Models/Spacecraft/Astronaut.glb");
+                if (astroAsset != null)
+                {
+                    GameObject glbGo = Instantiate(astroAsset, transform);
+                    glbGo.name = "EVA_NASA_Astronaut_GLB";
+                    glbSuit = glbGo.transform;
+                }
+            }
+#endif
             Transform existingVis = transform.Find("EVA_Suit_Visual");
             if (existingVis != null) Destroy(existingVis.gameObject);
 
+            if (glbSuit != null && glbSuit.GetComponentsInChildren<Renderer>(true).Length > 0)
+            {
+                if (glbSuit.parent != transform) glbSuit.SetParent(transform, false);
+                foreach (Collider c in glbSuit.GetComponentsInChildren<Collider>(true)) Destroy(c);
+
+                // Normalize scale cleanly to 1.82m and ground feet at local Y = 0, facing +Z
+                glbSuit.localPosition = Vector3.zero;
+                glbSuit.localRotation = Quaternion.identity;
+                glbSuit.localScale = Vector3.one;
+                Renderer[] rends = glbSuit.GetComponentsInChildren<Renderer>(true);
+                Bounds gb = rends[0].bounds;
+                for (int i = 1; i < rends.Length; i++) gb.Encapsulate(rends[i].bounds);
+                float glbScale = 1.82f / Mathf.Max(0.05f, gb.size.y);
+                glbSuit.localScale = Vector3.one * glbScale;
+                Bounds sb = rends[0].bounds;
+                for (int i = 1; i < rends.Length; i++) sb.Encapsulate(rends[i].bounds);
+                glbSuit.position += new Vector3(
+                    transform.position.x - sb.center.x,
+                    transform.position.y - sb.min.y,
+                    transform.position.z - sb.center.z);
+
+                // Crisp white suit shading lift + slight ambient so helmet & suit never go muddy in dark shadows
+                foreach (Renderer r in rends)
+                {
+                    Material[] mats = r.materials;
+                    for (int i = 0; i < mats.Length; i++)
+                    {
+                        Material m = mats[i];
+                        if (m == null) continue;
+                        if (m.HasProperty("_Metallic")) m.SetFloat("_Metallic", Mathf.Min(m.GetFloat("_Metallic"), 0.22f));
+                        if (m.HasProperty("_Smoothness")) m.SetFloat("_Smoothness", Mathf.Clamp(m.GetFloat("_Smoothness"), 0.35f, 0.58f));
+                        if (m.HasProperty("_BaseColor") && m.GetTexture("_BaseMap") != null)
+                        {
+                            Color bc = m.GetColor("_BaseColor");
+                            m.SetColor("_BaseColor", new Color(Mathf.Max(bc.r, 0.94f), Mathf.Max(bc.g, 0.94f), Mathf.Max(bc.b, 0.96f), 1f));
+                        }
+                        if (m.HasProperty("_EmissionColor"))
+                        {
+                            m.EnableKeyword("_EMISSION");
+                            m.SetColor("_EmissionColor", new Color(0.11f, 0.10f, 0.095f, 1f));
+                        }
+                    }
+                }
+
+                // Crisp NASA Meatball & ORBITX emblem decal mounted flush onto the PLSS backpack rear
+                Material nasaDecalMat = MarsBaseFacilitiesBuilder.CreateNasaBadgeMaterial();
+                if (nasaDecalMat != null)
+                {
+                    GameObject badge = GameObject.CreatePrimitive(PrimitiveType.Quad);
+                    badge.name = "EVA_PLSS_NASABadge";
+                    badge.transform.SetParent(glbSuit, false);
+                    Collider bc = badge.GetComponent<Collider>();
+                    if (bc != null) Destroy(bc);
+                    // Astronaut.glb PLSS backpack back surface extends to z ~ -0.335m at 1.82m height
+                    float invS = 1f / Mathf.Max(0.001f, glbSuit.localScale.x);
+                    badge.transform.localPosition = new Vector3(0f, 1.24f * invS, -0.345f * invS);
+                    badge.transform.localRotation = Quaternion.identity;
+                    badge.transform.localScale = new Vector3(0.18f * invS, 0.18f * invS, 0.18f * invS);
+                    Renderer br = badge.GetComponent<Renderer>();
+                    if (br != null) br.sharedMaterial = nasaDecalMat;
+                }
+
+                // Helmet Headlamp SpotLight
+                GameObject glbLamp = new GameObject("Helmet_Headlamp");
+                glbLamp.transform.SetParent(transform, false);
+                glbLamp.transform.localPosition = new Vector3(0.14f, 1.72f, 0.20f);
+                headlamp = glbLamp.AddComponent<Light>();
+                headlamp.type = LightType.Spot;
+                headlamp.spotAngle = 52f;
+                headlamp.range = 28f;
+                headlamp.intensity = 18f;
+                headlamp.color = new Color(0.95f, 0.97f, 1.0f);
+                headlamp.enabled = headlampOn;
+
+                visualRoot = glbSuit;
+                headGroup = null;
+                leftArmPivot = null;
+                rightArmPivot = null;
+                leftLegPivot = null;
+                rightLegPivot = null;
+                return;
+            }
+
+            // Fallback procedural suit only if Astronaut.glb asset is unavailable
             GameObject visGo = new GameObject("EVA_Suit_Visual");
             visGo.transform.SetParent(transform, false);
             visualRoot = visGo.transform;
@@ -173,6 +270,15 @@ namespace MarsSentinel.NASA
             if (charCtrl != null) charCtrl.enabled = wasEnabled;
         }
 
+        public void SetCameraAngles(float yaw, float pitch)
+        {
+            camYaw = yaw;
+            smoothedCamYaw = yaw;
+            camPitch = pitch;
+            smoothedCamPitch = pitch;
+            transform.rotation = Quaternion.Euler(0f, yaw, 0f);
+        }
+
         public void TeleportToFacility(string key)
         {
             if (IsBoardedInRover && MarsRoverVehicleController.Instance != null)
@@ -182,6 +288,7 @@ namespace MarsSentinel.NASA
 
             Vector2 dest = spawnXZ;
             float facingYaw = 15f;
+            float targetPitch = 16.0f;
             switch (key)
             {
                 case "Agri":
@@ -201,8 +308,9 @@ namespace MarsSentinel.NASA
                     facingYaw = 90f;
                     break;
                 case "Rocket":
-                    dest = MarsBaseFacilitiesBuilder.POS_ROCKET_PAD + new Vector2(-9.5f, -7.5f);
-                    facingYaw = 50f;
+                    dest = MarsBaseFacilitiesBuilder.POS_ROCKET_PAD + new Vector2(-28.0f, -24.0f);
+                    facingYaw = 45f;
+                    targetPitch = -5.5f;
                     break;
                 case "Rover":
                     if (MarsRoverVehicleController.Instance != null)
@@ -221,6 +329,8 @@ namespace MarsSentinel.NASA
             SnapToSurfaceAt(dest.x, dest.y);
             camYaw = facingYaw;
             smoothedCamYaw = facingYaw;
+            camPitch = targetPitch;
+            smoothedCamPitch = targetPitch;
             transform.rotation = Quaternion.Euler(0f, facingYaw, 0f);
         }
 
@@ -263,6 +373,7 @@ namespace MarsSentinel.NASA
                 {
                     firstPersonVisor = !firstPersonVisor;
                     if (headGroup != null) headGroup.gameObject.SetActive(!firstPersonVisor);
+                    else if (visualRoot != null) visualRoot.gameObject.SetActive(!firstPersonVisor);
                     MarsAudioManager.Instance?.PlayUiClick();
                 }
                 if (kb.bKey.wasPressedThisFrame)
@@ -412,7 +523,34 @@ namespace MarsSentinel.NASA
 
         private void AnimateLimbsAndFootsteps(float speed, bool sprinting)
         {
-            if (leftArmPivot == null || rightArmPivot == null || leftLegPivot == null || rightLegPivot == null) return;
+            if (leftArmPivot == null || rightArmPivot == null || leftLegPivot == null || rightLegPivot == null)
+            {
+                if (visualRoot != null)
+                {
+                    if (speed > 0.25f && charCtrl.isGrounded)
+                    {
+                        float rate = sprinting ? 11.2f : 7.6f;
+                        walkCycle += Time.deltaTime * rate;
+                        float bob = Mathf.Abs(Mathf.Sin(walkCycle)) * 0.045f;
+                        float roll = Mathf.Cos(walkCycle) * 2.2f;
+                        float pitch = sprinting ? 6.5f : 3.2f;
+                        visualRoot.localPosition = new Vector3(0f, bob, 0f);
+                        visualRoot.localRotation = Quaternion.Euler(pitch, 0f, roll);
+                        if (walkCycle >= nextStepAt)
+                        {
+                            nextStepAt += Mathf.PI;
+                            bool deck = MarsAudioManager.Instance != null && MarsAudioManager.Instance.IsInsideFacility;
+                            MarsAudioManager.Instance?.PlayFootstep(deck);
+                        }
+                    }
+                    else
+                    {
+                        visualRoot.localPosition = Vector3.Lerp(visualRoot.localPosition, Vector3.zero, Time.deltaTime * 10f);
+                        visualRoot.localRotation = Quaternion.Slerp(visualRoot.localRotation, Quaternion.identity, Time.deltaTime * 10f);
+                    }
+                }
+                return;
+            }
 
             if (speed > 0.25f && charCtrl.isGrounded)
             {

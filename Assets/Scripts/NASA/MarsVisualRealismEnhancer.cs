@@ -778,6 +778,16 @@ namespace MarsSentinel.NASA
             }
         }
 
+        public void ClearCameraOverrides()
+        {
+            focusTargetMode = 0;
+            orbitOverrideActive = false;
+            if (orbitalCam != null)
+            {
+                orbitalCam.Priority.Value = 5;
+            }
+        }
+
         private void HandleCelestialFocusHotkeys()
         {
             Keyboard kb = Keyboard.current;

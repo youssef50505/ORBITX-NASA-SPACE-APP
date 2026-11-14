@@ -438,14 +438,16 @@ namespace MarsSentinel.NASA
             sRt.anchoredPosition = new Vector2(18f, 12f);
             sRt.sizeDelta = new Vector2(212f, 30f);
 
-            inspSourceUrlText = CreateText("SourceUrlLabel", inspectorPanel.transform, 11, TextAnchor.MiddleLeft, new Color(0.56f, 0.80f, 0.96f), FontStyle.Normal);
-            inspSourceUrlText.verticalOverflow = VerticalWrapMode.Truncate;
+            inspSourceUrlText = CreateText("SourceUrlLabel", inspectorPanel.transform, 10, TextAnchor.MiddleLeft, new Color(0.56f, 0.80f, 0.96f), FontStyle.Normal);
+            inspSourceUrlText.horizontalOverflow = HorizontalWrapMode.Wrap;
+            inspSourceUrlText.verticalOverflow = VerticalWrapMode.Overflow;
+            inspSourceUrlText.lineSpacing = 0.95f;
             RectTransform suRt = inspSourceUrlText.GetComponent<RectTransform>();
             suRt.anchorMin = new Vector2(0f, 0f);
             suRt.anchorMax = new Vector2(0f, 0f);
             suRt.pivot = new Vector2(0f, 0f);
-            suRt.anchoredPosition = new Vector2(238f, 12f);
-            suRt.sizeDelta = new Vector2(204f, 30f);
+            suRt.anchoredPosition = new Vector2(236f, 8f);
+            suRt.sizeDelta = new Vector2(208f, 38f);
 
             inspectorPanel.SetActive(false);
         }

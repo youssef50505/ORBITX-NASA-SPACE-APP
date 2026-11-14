@@ -92,22 +92,22 @@ Shader "MarsSentinel/MartianAtmosphereSkybox"
                 // Subtle anti-solar shadow darkening opposite the sun (Belt of Venus / dust belt)
                 skyDome *= lerp(1.0, 0.80, antiSun * saturate(1.0 - abs(d.y) * 2.2));
 
-                // Martian forward-scattering blue Mie halo around Sun + warm dust scatter
-                float warmScatter = pow(saturate(sunDot), 8.0) * (0.28 + 0.22 * dustFactor);
-                float blueMieAureole = pow(saturate(sunDot), 52.0) * (0.58 + 0.24 * (1.0 - saturate(sunElev)));
-                float innerCorona = pow(saturate(sunDot), 380.0) * 1.15;
+                // Martian forward-scattering blue Mie halo around Sun + subtle warm dust scatter (compact 1.52 AU disc, zero HUD blowout)
+                float warmScatter = pow(saturate(sunDot), 16.0) * (0.16 + 0.14 * dustFactor);
+                float blueMieAureole = pow(saturate(sunDot), 180.0) * (0.36 + 0.18 * (1.0 - saturate(sunElev)));
+                float innerCorona = pow(saturate(sunDot), 950.0) * 0.58;
 
-                // Crisp glowing HDR solar photosphere disc with slight limb darkening
-                float sunCoreEdge = smoothstep(0.99935, 0.99968, sunDot);
-                float sunLimb = pow(saturate((sunDot - 0.99935) / (1.0 - 0.99935)), 0.35);
+                // Crisp Martian 0.35-deg solar photosphere disc with slight limb darkening
+                float sunCoreEdge = smoothstep(0.99982, 0.99993, sunDot);
+                float sunLimb = pow(saturate((sunDot - 0.99982) / (1.0 - 0.99982)), 0.35);
 
                 float sunAboveHorizon = smoothstep(-0.08, 0.04, sunElev);
                 float sunMaskGround = smoothstep(-0.025, 0.02, d.y);
 
                 skyDome += _HorizonColor.rgb * warmScatter * sunAboveHorizon;
-                skyDome += _SunHaloColor.rgb * blueMieAureole * sunAboveHorizon * 0.85;
-                skyDome += _SunDiscColor.rgb * innerCorona * sunAboveHorizon * 0.35;
-                skyDome += _SunDiscColor.rgb * sunCoreEdge * (0.75 + 0.65 * sunLimb) * sunAboveHorizon * sunMaskGround * 1.65;
+                skyDome += _SunHaloColor.rgb * blueMieAureole * sunAboveHorizon * 0.65;
+                skyDome += _SunDiscColor.rgb * innerCorona * sunAboveHorizon * 0.25;
+                skyDome += _SunDiscColor.rgb * sunCoreEdge * (0.85 + 0.55 * sunLimb) * sunAboveHorizon * sunMaskGround * 1.35;
 
                 // Seam-proof deep ground scatter below y = 0
                 float belowHorizon = smoothstep(0.015, -0.055, d.y);

@@ -113,13 +113,6 @@ namespace MarsSentinel.NASA
                 if (kb.hKey.wasPressedThisFrame) pressedH = true;
             }
 #endif
-#if ENABLE_LEGACY_INPUT_MANAGER
-            if (Input.GetKeyDown(KeyCode.L)) pressedL = true;
-            if (Input.GetKeyDown(KeyCode.T)) pressedT = true;
-            if (Input.GetKeyDown(KeyCode.G)) pressedG = true;
-            if (Input.GetKeyDown(KeyCode.C) || (!exploreActive && Input.GetKeyDown(KeyCode.D))) pressedD = true;
-            if (Input.GetKeyDown(KeyCode.H)) pressedH = true;
-#endif
 
             if (pressedL)
             {

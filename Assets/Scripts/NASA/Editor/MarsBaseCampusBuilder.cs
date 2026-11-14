@@ -81,6 +81,7 @@ namespace MarsSentinel.NASA.Editor
             // Force synchronous re-import of Spacecraft GLBs in case Blender de-Draco updated them
             string[] glbs =
             {
+                "Assets/Models/Spacecraft/Astronaut.glb",
                 "Assets/Models/Spacecraft/Habitat Demonstration Unit (part 1).glb",
                 "Assets/Models/Spacecraft/Habitat Demonstration Unit (part 2).glb",
                 "Assets/Models/Spacecraft/Mobile Launcher (assembled).glb",
@@ -135,7 +136,7 @@ namespace MarsSentinel.NASA.Editor
             GameObject mark3 = PlaceGlb(
                 "Assets/Models/Spacecraft/Mark III Spacesuit.glb",
                 "MS_NASA_MarkIII_Spacesuit", hardwareRoot.transform,
-                new Vector3(-20.2f, 0.16f, 11.4f), new Vector3(0f, 142f, 0f), 1.92f);
+                new Vector3(-20.2f, 0.28f, 11.4f), new Vector3(0f, 128f, 0f), 1.92f);
 
             if (mark3 != null)
             {
@@ -170,6 +171,42 @@ namespace MarsSentinel.NASA.Editor
             EnsureSingletonObject<MarsRoverVehicleController>("MS_Pressurized_Rover");
             EnsureSingletonObject<MarsAstronautController>("MS_Astronaut_Player");
             EnsureSingletonObject<MarsInteractionSystem>("MS_InteractionSystem");
+
+            // Mount official NASA Astronaut GLB directly inside MS_Astronaut_Player so Windows player renders high-detail suit
+            GameObject astroRoot = GameObject.Find("MS_Astronaut_Player");
+            if (astroRoot != null)
+            {
+                Transform oldGlb = astroRoot.transform.Find("EVA_NASA_Astronaut_GLB");
+                if (oldGlb != null) UnityEngine.Object.DestroyImmediate(oldGlb.gameObject);
+                GameObject astroAsset = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Models/Spacecraft/Astronaut.glb");
+                if (astroAsset != null)
+                {
+                    GameObject astroInst = (GameObject)PrefabUtility.InstantiatePrefab(astroAsset, astroRoot.transform);
+                    if (astroInst == null) astroInst = UnityEngine.Object.Instantiate(astroAsset, astroRoot.transform);
+                    astroInst.name = "EVA_NASA_Astronaut_GLB";
+                    astroInst.transform.localPosition = Vector3.zero;
+                    astroInst.transform.localRotation = Quaternion.identity;
+                    astroInst.transform.localScale = Vector3.one;
+                    foreach (Collider c in astroInst.GetComponentsInChildren<Collider>(true))
+                    {
+                        UnityEngine.Object.DestroyImmediate(c);
+                    }
+                    Renderer[] rends = astroInst.GetComponentsInChildren<Renderer>(true);
+                    if (rends.Length > 0)
+                    {
+                        Bounds b = rends[0].bounds;
+                        for (int i = 1; i < rends.Length; i++) b.Encapsulate(rends[i].bounds);
+                        float factor = 1.82f / Mathf.Max(0.05f, b.size.y);
+                        astroInst.transform.localScale = Vector3.one * factor;
+                        Bounds sb = rends[0].bounds;
+                        for (int i = 1; i < rends.Length; i++) sb.Encapsulate(rends[i].bounds);
+                        astroInst.transform.position += new Vector3(
+                            astroRoot.transform.position.x - sb.center.x,
+                            astroRoot.transform.position.y - sb.min.y,
+                            astroRoot.transform.position.z - sb.center.z);
+                    }
+                }
+            }
 
             if (UnityEngine.Object.FindAnyObjectByType<EventSystem>() == null)
             {

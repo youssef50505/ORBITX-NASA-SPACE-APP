@@ -85,24 +85,66 @@ namespace MarsSentinel.NASA
             Material glassMat = MakeGlassMat("Rover_CockpitGlass", new Color(0.28f, 0.55f, 0.78f, 0.42f));
             Material consoleGlow = MakeEmissive("Rover_ConsoleGlow", new Color(0.15f, 0.85f, 1.0f), new Color(0.15f, 0.85f, 1.0f) * 1.4f);
 
-            // Pressurized Cabin Body + Lower Rocker-Bogie Frame
-            MakePart("Lower_Chassis", PrimitiveType.Cube, root.transform, new Vector3(0f, 0.78f, 0f), Vector3.zero, new Vector3(1.95f, 0.32f, 4.35f), chassisDark, true);
-            MakePart("Crew_Cabin", PrimitiveType.Cube, root.transform, new Vector3(0f, 1.48f, 0.30f), Vector3.zero, new Vector3(2.25f, 1.15f, 2.75f), cabWhite, true);
-            MakePart("Nose_Hood", PrimitiveType.Cube, root.transform, new Vector3(0f, 1.12f, 1.95f), new Vector3(18f, 0f, 0f), new Vector3(2.05f, 0.55f, 0.95f), cabWhite, false);
-            MakePart("Cockpit_Glass", PrimitiveType.Cube, root.transform, new Vector3(0f, 1.62f, 1.72f), new Vector3(-28f, 0f, 0f), new Vector3(1.88f, 0.75f, 0.12f), glassMat, false);
+            // Pressurized Cabin Body + Lower Rocker-Bogie Frame + Sloped Windshield & Radiator Louvers
+            MakePart("Lower_Chassis", PrimitiveType.Cube, root.transform, new Vector3(0f, 0.76f, 0f), Vector3.zero, new Vector3(1.98f, 0.30f, 4.45f), chassisDark, true);
+            MakePart("Front_Bumper", PrimitiveType.Cube, root.transform, new Vector3(0f, 0.72f, 2.34f), Vector3.zero, new Vector3(2.12f, 0.22f, 0.24f), chassisDark, false);
+            MakePart("Crew_Cabin", PrimitiveType.Cube, root.transform, new Vector3(0f, 1.48f, 0.25f), Vector3.zero, new Vector3(2.26f, 1.14f, 2.80f), cabWhite, true);
+            MakePart("Cabin_RoofFairing", PrimitiveType.Cube, root.transform, new Vector3(0f, 2.08f, 0.10f), Vector3.zero, new Vector3(2.14f, 0.12f, 2.60f), cabWhite, false);
+            MakePart("Nose_Hood", PrimitiveType.Cube, root.transform, new Vector3(0f, 1.12f, 1.95f), new Vector3(18f, 0f, 0f), new Vector3(2.06f, 0.52f, 0.98f), cabWhite, false);
+            MakePart("Cockpit_Glass", PrimitiveType.Cube, root.transform, new Vector3(0f, 1.64f, 1.72f), new Vector3(-28f, 0f, 0f), new Vector3(1.90f, 0.74f, 0.10f), glassMat, false);
+            MakePart("Windshield_FrameL", PrimitiveType.Cube, root.transform, new Vector3(-0.98f, 1.64f, 1.72f), new Vector3(-28f, 0f, 0f), new Vector3(0.08f, 0.78f, 0.14f), chassisDark, false);
+            MakePart("Windshield_FrameR", PrimitiveType.Cube, root.transform, new Vector3(0.98f, 1.64f, 1.72f), new Vector3(-28f, 0f, 0f), new Vector3(0.08f, 0.78f, 0.14f), chassisDark, false);
+            MakePart("SideWindow_L", PrimitiveType.Cube, root.transform, new Vector3(-1.14f, 1.68f, 0.75f), Vector3.zero, new Vector3(0.05f, 0.44f, 1.18f), glassMat, false);
+            MakePart("SideWindow_R", PrimitiveType.Cube, root.transform, new Vector3(1.14f, 1.68f, 0.75f), Vector3.zero, new Vector3(0.05f, 0.44f, 1.18f), glassMat, false);
             MakePart("Cockpit_Console", PrimitiveType.Cube, root.transform, new Vector3(0f, 1.42f, 1.38f), Vector3.zero, new Vector3(1.2f, 0.22f, 0.22f), consoleGlow, false);
 
-            // Side NASA / ORBITX Orange Accent Bars + Rear Airlock Hatch
-            MakePart("Accent_Band_L", PrimitiveType.Cube, root.transform, new Vector3(-1.14f, 1.45f, 0.30f), Vector3.zero, new Vector3(0.05f, 0.22f, 2.65f), accentOrange, false);
-            MakePart("Accent_Band_R", PrimitiveType.Cube, root.transform, new Vector3(1.14f, 1.45f, 0.30f), Vector3.zero, new Vector3(0.05f, 0.22f, 2.65f), accentOrange, false);
-            MakePart("Rear_AirlockPod", PrimitiveType.Cylinder, root.transform, new Vector3(0f, 1.48f, -1.42f), new Vector3(90f, 0f, 0f), new Vector3(1.55f, 0.55f, 1.25f), goldFoil, true);
+            // Side NASA / ORBITX Orange Accent Bars + Recessed Suitport Bulkhead (replacing oversized yellow drum)
+            MakePart("Accent_Band_L", PrimitiveType.Cube, root.transform, new Vector3(-1.14f, 1.24f, 0.25f), Vector3.zero, new Vector3(0.05f, 0.18f, 2.74f), accentOrange, false);
+            MakePart("Accent_Band_R", PrimitiveType.Cube, root.transform, new Vector3(1.14f, 1.24f, 0.25f), Vector3.zero, new Vector3(0.05f, 0.18f, 2.74f), accentOrange, false);
+            MakePart("Aft_SuitportFrame", PrimitiveType.Cube, root.transform, new Vector3(0f, 1.44f, -1.28f), Vector3.zero, new Vector3(1.68f, 1.04f, 0.44f), chassisDark, true);
+            MakePart("Aft_SuitportHatch", PrimitiveType.Cube, root.transform, new Vector3(0f, 1.46f, -1.52f), Vector3.zero, new Vector3(1.12f, 0.88f, 0.10f), cabWhite, false);
+            MakePart("Aft_ThermalMLI_L", PrimitiveType.Cube, root.transform, new Vector3(-0.78f, 1.44f, -1.51f), Vector3.zero, new Vector3(0.24f, 0.76f, 0.08f), goldFoil, false);
+            MakePart("Aft_ThermalMLI_R", PrimitiveType.Cube, root.transform, new Vector3(0.78f, 1.44f, -1.51f), Vector3.zero, new Vector3(0.24f, 0.76f, 0.08f), goldFoil, false);
+            MakePart("Aft_HatchGlow", PrimitiveType.Cube, root.transform, new Vector3(0f, 1.88f, -1.56f), Vector3.zero, new Vector3(0.60f, 0.05f, 0.03f), consoleGlow, false);
 
-            // Roof Solar Array + Mastcam-Z Sensor Mast + Twin Headlights
-            MakePart("Roof_SolarPanel", PrimitiveType.Cube, root.transform, new Vector3(0f, 2.12f, -0.05f), Vector3.zero, new Vector3(2.15f, 0.08f, 2.30f), solarMat, false);
-            MakePart("Mast_Post", PrimitiveType.Cylinder, root.transform, new Vector3(0.55f, 2.55f, 1.15f), Vector3.zero, new Vector3(0.10f, 0.45f, 0.10f), cabWhite, false);
-            MakePart("Mast_SensorHead", PrimitiveType.Cube, root.transform, new Vector3(0.55f, 3.05f, 1.18f), Vector3.zero, new Vector3(0.46f, 0.22f, 0.28f), cabWhite, false);
-            MakePart("Mast_LensL", PrimitiveType.Cylinder, root.transform, new Vector3(0.42f, 3.05f, 1.33f), new Vector3(90f, 0f, 0f), new Vector3(0.08f, 0.04f, 0.08f), consoleGlow, false);
-            MakePart("Mast_LensR", PrimitiveType.Cylinder, root.transform, new Vector3(0.68f, 3.05f, 1.33f), new Vector3(90f, 0f, 0f), new Vector3(0.08f, 0.04f, 0.08f), consoleGlow, false);
+            // NASA Meatball & ORBITX Emblems on both cabin sides & front hood
+            Material nasaBadgeMat = MarsBaseFacilitiesBuilder.CreateNasaBadgeMaterial();
+            if (nasaBadgeMat != null)
+            {
+                GameObject bL = GameObject.CreatePrimitive(PrimitiveType.Quad);
+                bL.name = "Rover_NASABadge_L";
+                bL.transform.SetParent(root.transform, false);
+                Destroy(bL.GetComponent<Collider>());
+                bL.transform.localPosition = new Vector3(-1.145f, 1.54f, -0.45f);
+                bL.transform.localRotation = Quaternion.Euler(0f, 90f, 0f);
+                bL.transform.localScale = Vector3.one * 0.44f;
+                bL.GetComponent<Renderer>().sharedMaterial = nasaBadgeMat;
+
+                GameObject bR = GameObject.CreatePrimitive(PrimitiveType.Quad);
+                bR.name = "Rover_NASABadge_R";
+                bR.transform.SetParent(root.transform, false);
+                Destroy(bR.GetComponent<Collider>());
+                bR.transform.localPosition = new Vector3(1.145f, 1.54f, -0.45f);
+                bR.transform.localRotation = Quaternion.Euler(0f, -90f, 0f);
+                bR.transform.localScale = Vector3.one * 0.44f;
+                bR.GetComponent<Renderer>().sharedMaterial = nasaBadgeMat;
+
+                GameObject bHood = GameObject.CreatePrimitive(PrimitiveType.Quad);
+                bHood.name = "Rover_NASABadge_Hood";
+                bHood.transform.SetParent(root.transform, false);
+                Destroy(bHood.GetComponent<Collider>());
+                bHood.transform.localPosition = new Vector3(0f, 1.41f, 2.02f);
+                bHood.transform.localRotation = Quaternion.Euler(72f, 180f, 0f);
+                bHood.transform.localScale = Vector3.one * 0.42f;
+                bHood.GetComponent<Renderer>().sharedMaterial = nasaBadgeMat;
+            }
+
+            // Roof Solar Array + Radiators + Mastcam-Z Sensor Mast + Twin Headlights
+            MakePart("Roof_SolarPanel", PrimitiveType.Cube, root.transform, new Vector3(0f, 2.16f, -0.10f), Vector3.zero, new Vector3(2.05f, 0.06f, 2.20f), solarMat, false);
+            MakePart("Mast_Post", PrimitiveType.Cylinder, root.transform, new Vector3(0.55f, 2.55f, 1.15f), Vector3.zero, new Vector3(0.08f, 0.42f, 0.08f), cabWhite, false);
+            MakePart("Mast_SensorHead", PrimitiveType.Cube, root.transform, new Vector3(0.55f, 3.00f, 1.18f), Vector3.zero, new Vector3(0.46f, 0.22f, 0.28f), cabWhite, false);
+            MakePart("Mast_LensL", PrimitiveType.Cylinder, root.transform, new Vector3(0.42f, 3.00f, 1.33f), new Vector3(90f, 0f, 0f), new Vector3(0.08f, 0.04f, 0.08f), consoleGlow, false);
+            MakePart("Mast_LensR", PrimitiveType.Cylinder, root.transform, new Vector3(0.68f, 3.00f, 1.33f), new Vector3(90f, 0f, 0f), new Vector3(0.08f, 0.04f, 0.08f), consoleGlow, false);
 
             // Headlights
             headLightL = CreateHeadlight(root.transform, new Vector3(-0.78f, 1.05f, 2.25f));
@@ -294,9 +336,46 @@ namespace MarsSentinel.NASA
             float speedFactor = Mathf.Clamp01(Mathf.Abs(currentSpeed) / 3.0f) * 0.8f + (Mathf.Abs(throttle) > 0.05f ? 0.2f : 0f);
             transform.Rotate(0f, steerInput * turnRateDegPerSec * turnSign * speedFactor * Time.deltaTime, 0f, Space.Self);
 
-            // Advance along horizontal projection + ground on terrain
+            // Advance along horizontal projection with swept obstacle collision + wall sliding + terrain grounding
             Vector3 fwdFlat = new Vector3(transform.forward.x, 0f, transform.forward.z).normalized;
             Vector3 deltaPos = fwdFlat * (currentSpeed * Time.deltaTime);
+            float moveDist = deltaPos.magnitude;
+            if (moveDist > 0.0001f)
+            {
+                Vector3 castDir = deltaPos / moveDist;
+                Vector3 boxCenter = transform.position + Vector3.up * 1.45f;
+                Vector3 halfExtents = new Vector3(1.18f, 0.72f, 1.85f);
+                RaycastHit[] hits = Physics.BoxCastAll(
+                    boxCenter, halfExtents, castDir, transform.rotation, moveDist + 0.35f,
+                    Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore);
+
+                float nearest = float.MaxValue;
+                Vector3 hitNormal = Vector3.zero;
+                for (int h = 0; h < hits.Length; h++)
+                {
+                    Collider hc = hits[h].collider;
+                    if (hc == null) continue;
+                    if (hc.transform.IsChildOf(transform)) continue;
+                    if (MarsAstronautController.Instance != null && hc.transform.IsChildOf(MarsAstronautController.Instance.transform)) continue;
+                    string hn = hc.gameObject.name;
+                    if (hn.Contains("Terrain") || hn.Contains("Jezero_Horizon") || hn.Contains("Foundation_Pad") || hn.Contains("RegolithPad")) continue;
+                    // Only collide with genuine vertical obstacles (avoid shallow ground slopes)
+                    if (Mathf.Abs(hits[h].normal.y) > 0.65f) continue;
+                    if (hits[h].distance < nearest)
+                    {
+                        nearest = hits[h].distance;
+                        hitNormal = new Vector3(hits[h].normal.x, 0f, hits[h].normal.z).normalized;
+                    }
+                }
+
+                if (nearest < float.MaxValue && hitNormal.sqrMagnitude > 0.01f)
+                {
+                    float allowed = Mathf.Max(0f, nearest - 0.32f);
+                    Vector3 slideRemain = Vector3.ProjectOnPlane(deltaPos - castDir * allowed, hitNormal);
+                    deltaPos = castDir * allowed + slideRemain * 0.65f;
+                    currentSpeed *= 0.45f;
+                }
+            }
             transform.position += deltaPos;
             TotalDistanceMeters += deltaPos.magnitude;
 

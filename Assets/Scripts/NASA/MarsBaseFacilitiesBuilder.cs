@@ -150,66 +150,60 @@ namespace MarsSentinel.NASA
 
             Material regolithBermMat = CreatePbrMat("Agri_Berm", new Color(0.46f, 0.25f, 0.16f), 0.0f, 0.12f);
             Material floorMat = CreatePbrMat("Agri_Floor", new Color(0.24f, 0.27f, 0.30f), 0.6f, 0.45f);
-            Material frameMat = CreatePbrMat("Agri_Frame", new Color(0.84f, 0.86f, 0.89f), 0.72f, 0.60f);
+            Material frameMat = CreatePbrMat("Agri_Frame", new Color(0.86f, 0.88f, 0.91f), 0.72f, 0.62f);
             Material accentTeal = CreatePbrMat("Agri_Teal", new Color(0.10f, 0.62f, 0.56f), 0.25f, 0.55f);
-            Material glassMat = CreateGlassMat("Agri_Glass", new Color(0.62f, 0.90f, 0.96f, 0.14f));
+            Material glassMat = CreateGlassMat("Agri_Glass", new Color(0.68f, 0.92f, 0.98f, 0.08f));
             Material trayMat = CreatePbrMat("Agri_Tray", new Color(0.75f, 0.78f, 0.82f), 0.65f, 0.55f);
             Material stemMat = CreatePbrMat("Agri_Stem", new Color(0.22f, 0.46f, 0.18f), 0.0f, 0.30f);
-            Material leafBright = CreatePbrMat("Agri_LeafA", new Color(0.18f, 0.62f, 0.22f), 0.0f, 0.42f);
-            Material leafDeep = CreatePbrMat("Agri_LeafB", new Color(0.12f, 0.48f, 0.19f), 0.0f, 0.38f);
-            Material tomatoMat = CreatePbrMat("Agri_Fruit", new Color(0.88f, 0.18f, 0.14f), 0.05f, 0.65f);
-            Material parLedMat = CreateEmissiveMat("Agri_PAR_LED", new Color(0.95f, 0.35f, 0.85f), new Color(1.0f, 0.38f, 0.88f) * 2.1f);
+            Material leafBright = CreatePbrMat("Agri_LeafA", new Color(0.20f, 0.70f, 0.24f), 0.0f, 0.45f);
+            Material leafDeep = CreatePbrMat("Agri_LeafB", new Color(0.14f, 0.54f, 0.21f), 0.0f, 0.40f);
+            Material tomatoMat = CreatePbrMat("Agri_Fruit", new Color(0.90f, 0.18f, 0.14f), 0.05f, 0.65f);
+            Material parLedMat = CreateEmissiveMat("Agri_PAR_LED", new Color(0.95f, 0.42f, 0.86f), new Color(1.0f, 0.52f, 0.90f) * 1.8f);
             Material pipeBlueMat = CreatePbrMat("Agri_WaterPipe", new Color(0.16f, 0.52f, 0.85f), 0.35f, 0.60f);
             Material pipeOrangeMat = CreatePbrMat("Agri_O2Pipe", new Color(0.88f, 0.50f, 0.12f), 0.35f, 0.60f);
             Material solarMat = CreatePbrMat("Agri_SolarCell", new Color(0.08f, 0.14f, 0.30f), 0.75f, 0.82f);
+            Material screenMat = CreateEmissiveMat("Agri_ScreenGlow", new Color(0.12f, 0.78f, 0.95f), new Color(0.15f, 0.85f, 1.0f) * 1.3f);
 
             // Walkable floor deck + radiation shielding collar (with open doorway on +X East side!)
             CreatePart("Foundation_Pad", PrimitiveType.Cylinder, root.transform, new Vector3(0f, 0.06f, 0f), Vector3.zero, new Vector3(13.2f, 0.12f, 13.2f), regolithBermMat, true);
             CreatePart("Interior_Deck", PrimitiveType.Cylinder, root.transform, new Vector3(0f, 0.13f, 0f), Vector3.zero, new Vector3(11.6f, 0.06f, 11.6f), floorMat, true);
             CreatePart("Center_Walkway", PrimitiveType.Cube, root.transform, new Vector3(0.8f, 0.17f, 0f), Vector3.zero, new Vector3(11.4f, 0.03f, 2.1f), accentTeal, false);
 
-            // Perimeter base rings leaving East door open (angles around -20..+20 deg skipped for airlock)
+            // Perimeter concrete pressure ring leaving East door open (angles around -20..+20 deg skipped for airlock)
             for (int seg = 0; seg < 16; seg++)
             {
                 float deg = seg * 22.5f;
                 if (deg < 23f || deg > 337f) continue; // Open walkable entrance facing East!
                 float rad = deg * Mathf.Deg2Rad;
-                Vector3 wp = new Vector3(Mathf.Cos(rad) * 5.85f, 0.65f, Mathf.Sin(rad) * 5.85f);
+                Vector3 wp = new Vector3(Mathf.Cos(rad) * 5.80f, 0.62f, Mathf.Sin(rad) * 5.80f);
                 Quaternion rot = Quaternion.Euler(0f, -deg, 0f);
-                CreatePart($"PerimeterWall_{seg}", PrimitiveType.Cube, root.transform, wp, rot.eulerAngles, new Vector3(0.45f, 1.15f, 2.38f), frameMat, true);
+                CreatePart($"PerimeterWall_{seg}", PrimitiveType.Cube, root.transform, wp, rot.eulerAngles, new Vector3(0.42f, 1.05f, 2.38f), frameMat, true);
             }
 
-            // Architectural Geodesic Meridian Ribs & Latitude Crown Rings flush along the dome surface
+            // Smooth Continuous Extruded Geodesic Meridian Arches (zero jagged stick overlaps)
+            Mesh ribArchMesh = BuildMeridianArchMesh(5.82f, 4.52f, 0.065f, 20);
             for (int r = 0; r < 6; r++)
             {
-                float yaw = r * 30f;
-                for (int a = 1; a <= 8; a++)
-                {
-                    float t0 = (a - 0.5f) * 18.0f + 12.0f;
-                    if (t0 >= 166f) continue;
-                    float rad = t0 * Mathf.Deg2Rad;
-                    float rx = 5.82f * Mathf.Cos(rad);
-                    float py = 0.95f + 4.52f * Mathf.Sin(rad);
-                    Vector3 radialDir = new Vector3(Mathf.Cos(yaw * Mathf.Deg2Rad), 0f, Mathf.Sin(yaw * Mathf.Deg2Rad));
-                    Vector3 ribPos = radialDir * rx + new Vector3(0f, py, 0f);
-                    // Tangent along the dome meridian arc so struts follow curvature smoothly (no radial spikes!)
-                    Vector3 tangent = (-Mathf.Sin(rad) * 5.82f * radialDir + Mathf.Cos(rad) * 4.52f * Vector3.up).normalized;
-                    Quaternion ribRot = Quaternion.FromToRotation(Vector3.up, tangent);
-                    CreatePart($"DomeRib_{r}_{a}", PrimitiveType.Cube, root.transform, ribPos, ribRot.eulerAngles, new Vector3(0.12f, 1.32f, 0.14f), frameMat, false);
-                }
+                GameObject arch = new GameObject($"DomeArch_{r}");
+                arch.transform.SetParent(root.transform, false);
+                arch.transform.localPosition = new Vector3(0f, 0.95f, 0f);
+                arch.transform.localRotation = Quaternion.Euler(0f, r * 30f, 0f);
+                arch.AddComponent<MeshFilter>().sharedMesh = ribArchMesh;
+                MeshRenderer amr = arch.AddComponent<MeshRenderer>();
+                amr.sharedMaterial = frameMat;
             }
             // Horizontal geodesic latitude collar rings at two elevations
             for (int ring = 0; ring < 2; ring++)
             {
                 float ringRad = (ring == 0 ? 32f : 58f) * Mathf.Deg2Rad;
-                float ringR = 5.80f * Mathf.Cos(ringRad);
-                float ringY = 0.95f + 4.50f * Mathf.Sin(ringRad);
+                float ringR = 5.82f * Mathf.Cos(ringRad);
+                float ringY = 0.95f + 4.52f * Mathf.Sin(ringRad);
                 for (int s = 0; s < 24; s++)
                 {
                     float a = s * 15f * Mathf.Deg2Rad;
                     Vector3 pos = new Vector3(Mathf.Cos(a) * ringR, ringY, Mathf.Sin(a) * ringR);
                     Quaternion rRot = Quaternion.Euler(0f, -s * 15f, 0f);
-                    CreatePart($"DomeCollar_{ring}_{s}", PrimitiveType.Cube, root.transform, pos, rRot.eulerAngles, new Vector3(0.10f, 0.10f, 2f * ringR * Mathf.Sin(7.5f * Mathf.Deg2Rad) + 0.06f), frameMat, false);
+                    CreatePart($"DomeCollar_{ring}_{s}", PrimitiveType.Cube, root.transform, pos, rRot.eulerAngles, new Vector3(0.09f, 0.09f, 2f * ringR * Mathf.Sin(7.5f * Mathf.Deg2Rad) + 0.05f), frameMat, false);
                 }
             }
             // Top skylight ventilation cupola cap
@@ -249,29 +243,29 @@ namespace MarsSentinel.NASA
                         CreatePart($"PAR_Light_{side}_{rack}_{tier}", PrimitiveType.Cube, root.transform,
                             new Vector3(xCenter, ty + 0.66f, zBase), Vector3.zero, new Vector3(2.1f, 0.05f, 0.22f), parLedMat, false);
 
-                        // 5 Detailed botanical plants per trough
+                        // 5 Detailed lush botanical plants per trough (multi-frond canopy visible through dome)
                         for (int p = 0; p < 5; p++)
                         {
                             float px = xCenter - 0.85f + p * 0.42f;
                             float pz = zBase + ((p % 2 == 0) ? 0.14f : -0.14f);
                             CreatePart($"PlantStem_{side}_{rack}_{tier}_{p}", PrimitiveType.Cylinder, root.transform,
-                                new Vector3(px, ty + 0.20f, pz), Vector3.zero, new Vector3(0.035f, 0.16f, 0.035f), stemMat, false);
+                                new Vector3(px, ty + 0.24f, pz), Vector3.zero, new Vector3(0.04f, 0.20f, 0.04f), stemMat, false);
 
-                            for (int lf = 0; lf < 4; lf++)
+                            for (int lf = 0; lf < 6; lf++)
                             {
-                                float lAngle = lf * 90f + p * 23f;
+                                float lAngle = lf * 60f + p * 23f;
                                 Material lMat = (lf % 2 == 0) ? leafBright : leafDeep;
-                                Quaternion lRot = Quaternion.Euler(34f, lAngle, 0f);
-                                Vector3 lOff = lRot * new Vector3(0f, 0.03f, 0.12f);
-                                CreatePart($"Leaf_{side}_{rack}_{tier}_{p}_{lf}", PrimitiveType.Cube, root.transform,
-                                    new Vector3(px, ty + 0.29f, pz) + lOff, lRot.eulerAngles, new Vector3(0.09f, 0.02f, 0.20f), lMat, false);
+                                Quaternion lRot = Quaternion.Euler(28f + (lf % 2) * 14f, lAngle, 0f);
+                                Vector3 lOff = lRot * new Vector3(0f, 0.03f, 0.15f);
+                                CreatePart($"Leaf_{side}_{rack}_{tier}_{p}_{lf}", PrimitiveType.Sphere, root.transform,
+                                    new Vector3(px, ty + 0.34f, pz) + lOff, lRot.eulerAngles, new Vector3(0.13f, 0.035f, 0.25f), lMat, false);
                             }
 
                             // Cherry tomato / pepper fruits on alternating racks
                             if (rack == 1 && (p % 2 == 0))
                             {
                                 CreatePart($"Fruit_{side}_{rack}_{tier}_{p}", PrimitiveType.Sphere, root.transform,
-                                    new Vector3(px + 0.05f, ty + 0.34f, pz - 0.04f), Vector3.zero, Vector3.one * 0.08f, tomatoMat, false);
+                                    new Vector3(px + 0.05f, ty + 0.38f, pz - 0.04f), Vector3.zero, Vector3.one * 0.09f, tomatoMat, false);
                             }
                         }
                     }
@@ -305,9 +299,13 @@ namespace MarsSentinel.NASA
             CreateSignagePlaque(root.transform, new Vector3(7.52f, 3.12f, 0f), Vector3.zero,
                 "ORBITX HYDROPONICS\nNASA MOXIE / ISRU LAB", accentTeal);
 
-            // Collidable inspector pylon outside vestibule + root inspectable
-            GameObject insp = CreatePart("Agri_InspectPylon", PrimitiveType.Cube, root.transform,
-                new Vector3(6.9f, 0.95f, -2.1f), Vector3.zero, new Vector3(0.42f, 1.9f, 0.42f), accentTeal, true);
+            // Sleek angled botanical telemetry console kiosk beside airlock (replacing boxy cube pylon)
+            GameObject insp = CreatePart("Agri_InspectPylon", PrimitiveType.Cylinder, root.transform,
+                new Vector3(6.95f, 0.52f, -2.05f), Vector3.zero, new Vector3(0.24f, 0.52f, 0.24f), frameMat, true);
+            CreatePart("Agri_InspectHead", PrimitiveType.Cube, root.transform,
+                new Vector3(6.95f, 1.08f, -2.05f), new Vector3(0f, 0f, -26f), new Vector3(0.46f, 0.07f, 0.64f), accentTeal, false);
+            CreatePart("Agri_InspectScreen", PrimitiveType.Cube, root.transform,
+                new Vector3(6.99f, 1.12f, -2.05f), new Vector3(0f, 0f, -26f), new Vector3(0.38f, 0.02f, 0.54f), screenMat, false);
 
             var target = insp.AddComponent<MarsInspectableTarget>();
             target.Configure(
@@ -351,32 +349,56 @@ namespace MarsSentinel.NASA
             Material o2TankMat = CreatePbrMat("Med_O2Tank", new Color(0.16f, 0.68f, 0.36f), 0.45f, 0.60f);
             Material darkTrim = CreatePbrMat("Med_Trim", new Color(0.18f, 0.22f, 0.26f), 0.65f, 0.45f);
 
-            // Walkable floor + 0.5m Regolith radiation shielding perimeter berm
-            CreatePart("Med_Deck", PrimitiveType.Cube, root.transform, new Vector3(0f, 0.08f, 0f), Vector3.zero, new Vector3(9.0f, 0.16f, 7.0f), floorMat, true);
-            CreatePart("Med_Roof", PrimitiveType.Cube, root.transform, new Vector3(0f, 3.55f, 0f), Vector3.zero, new Vector3(9.4f, 0.26f, 7.4f), hullWhite, true);
-            CreatePart("Med_RadShieldRoof", PrimitiveType.Cube, root.transform, new Vector3(0f, 3.74f, 0f), Vector3.zero, new Vector3(8.6f, 0.18f, 6.6f), shieldSkirt, false);
+            Material medGlass = CreateGlassMat("Med_WindowGlass", new Color(0.65f, 0.90f, 0.98f, 0.14f));
+            Material whiteMedDisc = CreatePbrMat("Med_WhiteCircle", new Color(0.96f, 0.97f, 0.99f), 0.1f, 0.5f);
 
-            // Walls: North, West, East solid; South has wide 2.6m centered airlock doorway!
+            // Walkable floor + regolith radiation shielding perimeter berm
+            CreatePart("Med_Deck", PrimitiveType.Cube, root.transform, new Vector3(0f, 0.08f, 0f), Vector3.zero, new Vector3(9.0f, 0.16f, 7.0f), floorMat, true);
+            CreatePart("Med_Roof", PrimitiveType.Cube, root.transform, new Vector3(0f, 3.55f, 0f), Vector3.zero, new Vector3(9.5f, 0.28f, 7.5f), hullWhite, true);
+            CreatePart("Med_RadShieldRoof", PrimitiveType.Cube, root.transform, new Vector3(0f, 3.75f, 0f), Vector3.zero, new Vector3(8.6f, 0.18f, 6.6f), shieldSkirt, false);
+            CreatePart("Med_EntryCanopy", PrimitiveType.Cube, root.transform, new Vector3(0f, 3.35f, -3.95f), new Vector3(8f, 0f, 0f), new Vector3(3.4f, 0.14f, 1.15f), darkTrim, false);
+
+            // Corner Structural Buttress Pillars + External Thermal Radiator Louvers
+            CreatePart("Med_Col_NW", PrimitiveType.Cube, root.transform, new Vector3(-4.45f, 1.80f, 3.45f), Vector3.zero, new Vector3(0.42f, 3.55f, 0.42f), darkTrim, false);
+            CreatePart("Med_Col_NE", PrimitiveType.Cube, root.transform, new Vector3(4.45f, 1.80f, 3.45f), Vector3.zero, new Vector3(0.42f, 3.55f, 0.42f), darkTrim, false);
+            CreatePart("Med_Col_SW", PrimitiveType.Cube, root.transform, new Vector3(-4.45f, 1.80f, -3.45f), Vector3.zero, new Vector3(0.42f, 3.55f, 0.42f), darkTrim, false);
+            CreatePart("Med_Col_SE", PrimitiveType.Cube, root.transform, new Vector3(4.45f, 1.80f, -3.45f), Vector3.zero, new Vector3(0.42f, 3.55f, 0.42f), darkTrim, false);
+            CreatePart("Med_Radiator_Unit", PrimitiveType.Cube, root.transform, new Vector3(4.65f, 2.20f, 0f), Vector3.zero, new Vector3(0.28f, 1.6f, 3.6f), darkTrim, false);
+
+            // Walls: North, West, East solid; South has wide 2.6m airlock door + TWO recessed glass viewports looking inside!
             CreatePart("Med_Wall_N", PrimitiveType.Cube, root.transform, new Vector3(0f, 1.80f, 3.4f), Vector3.zero, new Vector3(9.0f, 3.4f, 0.24f), hullWhite, true);
             CreatePart("Med_Wall_W", PrimitiveType.Cube, root.transform, new Vector3(-4.4f, 1.80f, 0f), Vector3.zero, new Vector3(0.24f, 3.4f, 7.0f), hullWhite, true);
             CreatePart("Med_Wall_E", PrimitiveType.Cube, root.transform, new Vector3(4.4f, 1.80f, 0f), Vector3.zero, new Vector3(0.24f, 3.4f, 7.0f), hullWhite, true);
-            CreatePart("Med_Wall_SW", PrimitiveType.Cube, root.transform, new Vector3(-2.9f, 1.80f, -3.4f), Vector3.zero, new Vector3(3.2f, 3.4f, 0.24f), hullWhite, true);
-            CreatePart("Med_Wall_SE", PrimitiveType.Cube, root.transform, new Vector3(2.9f, 1.80f, -3.4f), Vector3.zero, new Vector3(3.2f, 3.4f, 0.24f), hullWhite, true);
+
+            // South Wall segments around two 1.7m observation windows (sill 0..0.95m, lintel 2.10..3.5m, piers flanking door & corners)
+            CreatePart("Med_Wall_S_SillL", PrimitiveType.Cube, root.transform, new Vector3(-2.9f, 0.50f, -3.4f), Vector3.zero, new Vector3(3.2f, 0.92f, 0.24f), hullWhite, true);
+            CreatePart("Med_Wall_S_SillR", PrimitiveType.Cube, root.transform, new Vector3(2.9f, 0.50f, -3.4f), Vector3.zero, new Vector3(3.2f, 0.92f, 0.24f), hullWhite, true);
+            CreatePart("Med_Wall_S_TopL", PrimitiveType.Cube, root.transform, new Vector3(-2.9f, 2.75f, -3.4f), Vector3.zero, new Vector3(3.2f, 1.45f, 0.24f), hullWhite, true);
+            CreatePart("Med_Wall_S_TopR", PrimitiveType.Cube, root.transform, new Vector3(2.9f, 2.75f, -3.4f), Vector3.zero, new Vector3(3.2f, 1.45f, 0.24f), hullWhite, true);
+            CreatePart("Med_Wall_S_PierL", PrimitiveType.Cube, root.transform, new Vector3(-1.55f, 1.50f, -3.4f), Vector3.zero, new Vector3(0.55f, 1.12f, 0.24f), hullWhite, true);
+            CreatePart("Med_Wall_S_PierR", PrimitiveType.Cube, root.transform, new Vector3(1.55f, 1.50f, -3.4f), Vector3.zero, new Vector3(0.55f, 1.12f, 0.24f), hullWhite, true);
+            CreatePart("Med_Wall_S_CornerL", PrimitiveType.Cube, root.transform, new Vector3(-4.15f, 1.50f, -3.4f), Vector3.zero, new Vector3(0.65f, 1.12f, 0.24f), hullWhite, true);
+            CreatePart("Med_Wall_S_CornerR", PrimitiveType.Cube, root.transform, new Vector3(4.15f, 1.50f, -3.4f), Vector3.zero, new Vector3(0.65f, 1.12f, 0.24f), hullWhite, true);
+
+            // Recessed Clear Pressurized Glass Windows + Dark Aluminum Frames
+            CreatePart("Med_ViewportGlass_L", PrimitiveType.Cube, root.transform, new Vector3(-2.85f, 1.50f, -3.4f), Vector3.zero, new Vector3(2.05f, 1.05f, 0.06f), medGlass, false);
+            CreatePart("Med_ViewportGlass_R", PrimitiveType.Cube, root.transform, new Vector3(2.85f, 1.50f, -3.4f), Vector3.zero, new Vector3(2.05f, 1.05f, 0.06f), medGlass, false);
             CreatePart("Med_Door_Header", PrimitiveType.Cube, root.transform, new Vector3(0f, 3.10f, -3.4f), Vector3.zero, new Vector3(2.6f, 0.72f, 0.28f), darkTrim, true);
             CreatePart("Med_EntryRamp", PrimitiveType.Cube, root.transform, new Vector3(0f, 0.04f, -4.3f), new Vector3(4f, 0f, 0f), new Vector3(2.8f, 0.08f, 1.8f), darkTrim, true);
 
-            // Unmistakable Red Cross emblems on front facade flanking doorway + roof
-            CreatePart("Med_CrossFrontL_H", PrimitiveType.Cube, root.transform, new Vector3(-2.7f, 2.35f, -3.56f), Vector3.zero, new Vector3(1.1f, 0.34f, 0.06f), redCrossMat, false);
-            CreatePart("Med_CrossFrontL_V", PrimitiveType.Cube, root.transform, new Vector3(-2.7f, 2.35f, -3.56f), Vector3.zero, new Vector3(0.34f, 1.1f, 0.06f), redCrossMat, false);
-            CreatePart("Med_CrossFrontR_H", PrimitiveType.Cube, root.transform, new Vector3(2.7f, 2.35f, -3.56f), Vector3.zero, new Vector3(1.1f, 0.34f, 0.06f), redCrossMat, false);
-            CreatePart("Med_CrossFrontR_V", PrimitiveType.Cube, root.transform, new Vector3(2.7f, 2.35f, -3.56f), Vector3.zero, new Vector3(0.34f, 1.1f, 0.06f), redCrossMat, false);
+            // Framed White Medallion Backboards + Unmistakable Red Cross emblems on front facade + roof
+            CreatePart("Med_CrossDiscL", PrimitiveType.Cylinder, root.transform, new Vector3(-2.85f, 2.68f, -3.54f), new Vector3(90f, 0f, 0f), new Vector3(1.18f, 0.03f, 1.18f), whiteMedDisc, false);
+            CreatePart("Med_CrossDiscR", PrimitiveType.Cylinder, root.transform, new Vector3(2.85f, 2.68f, -3.54f), new Vector3(90f, 0f, 0f), new Vector3(1.18f, 0.03f, 1.18f), whiteMedDisc, false);
+            CreatePart("Med_CrossFrontL_H", PrimitiveType.Cube, root.transform, new Vector3(-2.85f, 2.68f, -3.58f), Vector3.zero, new Vector3(0.86f, 0.26f, 0.05f), redCrossMat, false);
+            CreatePart("Med_CrossFrontL_V", PrimitiveType.Cube, root.transform, new Vector3(-2.85f, 2.68f, -3.58f), Vector3.zero, new Vector3(0.26f, 0.86f, 0.05f), redCrossMat, false);
+            CreatePart("Med_CrossFrontR_H", PrimitiveType.Cube, root.transform, new Vector3(2.85f, 2.68f, -3.58f), Vector3.zero, new Vector3(0.86f, 0.26f, 0.05f), redCrossMat, false);
+            CreatePart("Med_CrossFrontR_V", PrimitiveType.Cube, root.transform, new Vector3(2.85f, 2.68f, -3.58f), Vector3.zero, new Vector3(0.26f, 0.86f, 0.05f), redCrossMat, false);
             CreatePart("Med_CrossRoof_H", PrimitiveType.Cube, root.transform, new Vector3(0f, 3.86f, 0f), Vector3.zero, new Vector3(2.4f, 0.05f, 0.72f), redCrossMat, false);
             CreatePart("Med_CrossRoof_V", PrimitiveType.Cube, root.transform, new Vector3(0f, 3.86f, 0f), Vector3.zero, new Vector3(0.72f, 0.05f, 2.4f), redCrossMat, false);
 
-            // Front overhead Medical Nameplate & glowing diagnostic window strip facing South (-Z)
+            // Front overhead Medical Nameplate facing South (-Z)
             CreateSignagePlaque(root.transform, new Vector3(0f, 3.16f, -3.58f), new Vector3(0f, 90f, 0f),
                 "FIRST AID · MEDICAL BAY\nNASA RAD TRIAGE SHELTER", redCrossMat);
-            CreatePart("Med_Window_R", PrimitiveType.Cube, root.transform, new Vector3(2.75f, 1.15f, -3.52f), Vector3.zero, new Vector3(1.55f, 0.36f, 0.04f), consoleMat, false);
 
             // Interior Clinical & Radiation Triage Equipment
             // 1. Hyperbaric Medical Exam Bed
@@ -479,6 +501,11 @@ namespace MarsSentinel.NASA
             if (mark3 != null)
             {
                 LiftPitchBlackGlbMaterials(mark3);
+                // Seat circular white-rimmed EVA Showcase Plinth directly under Mark III Spacesuit
+                CreatePart("MarkIII_ShowcasePlinth", PrimitiveType.Cylinder, root.transform,
+                    new Vector3(3.8f, 0.14f, -6.6f), Vector3.zero, new Vector3(1.45f, 0.14f, 1.45f), whiteComms, true);
+                CreatePart("MarkIII_PlinthRing", PrimitiveType.Cylinder, root.transform,
+                    new Vector3(3.8f, 0.27f, -6.6f), Vector3.zero, new Vector3(1.38f, 0.03f, 1.38f), accentAmber, false);
             }
 
             if (!foundGlb)
@@ -495,9 +522,17 @@ namespace MarsSentinel.NASA
             // Deep Space Network Comm Dish Mast + NASA Attribution Plaque
             CreatePart("Hab_CommsMast", PrimitiveType.Cylinder, root.transform, new Vector3(4.2f, 2.4f, -2.5f), Vector3.zero, new Vector3(0.18f, 2.3f, 0.18f), whiteComms, true);
             CreatePart("Hab_Dish", PrimitiveType.Cylinder, root.transform, new Vector3(4.2f, 4.6f, -2.5f), new Vector3(48f, 35f, 0f), new Vector3(1.6f, 0.08f, 1.6f), whiteComms, false);
+            CreateSignagePlaque(root.transform, new Vector3(2.4f, 3.65f, -5.1f), new Vector3(0f, 58f, 0f),
+                "NASA HABITAT UNIT (HDU)\nORBITX CREW QUARTERS", accentAmber);
 
-            GameObject pylon = CreatePart("Hab_SciencePylon", PrimitiveType.Cube, root.transform,
-                new Vector3(6.6f, 1.0f, -4.6f), Vector3.zero, new Vector3(0.5f, 2.0f, 0.5f), accentAmber, true);
+            // Sleek NASA Telemetry Lectern replacing the old tall yellow box pylon
+            Material lecternScreen = CreateEmissiveMat("HDU_ConsoleScreen", new Color(0.12f, 0.78f, 0.95f), new Color(0.15f, 0.85f, 1.0f) * 1.4f);
+            GameObject pylon = CreatePart("Hab_SciencePylon", PrimitiveType.Cylinder, root.transform,
+                new Vector3(5.8f, 0.56f, -5.2f), Vector3.zero, new Vector3(0.24f, 0.54f, 0.24f), whiteComms, true);
+            CreatePart("Hab_LecternHead", PrimitiveType.Cube, root.transform,
+                new Vector3(5.8f, 1.12f, -5.2f), new Vector3(0f, 52f, -24f), new Vector3(0.46f, 0.08f, 0.68f), accentAmber, false);
+            CreatePart("Hab_LecternScreen", PrimitiveType.Cube, root.transform,
+                new Vector3(5.82f, 1.16f, -5.22f), new Vector3(0f, 52f, -24f), new Vector3(0.38f, 0.03f, 0.58f), lecternScreen, false);
 
             var target = pylon.AddComponent<MarsInspectableTarget>();
             target.Configure(
@@ -538,7 +573,7 @@ namespace MarsSentinel.NASA
             Material thrusterAlloy = CreatePbrMat("EDL_Thruster", new Color(0.32f, 0.34f, 0.38f), 0.85f, 0.65f);
             Material aeroOrange = CreatePbrMat("EDL_NASA_Orange", new Color(0.88f, 0.34f, 0.12f), 0.35f, 0.50f);
             Material scorchMat = CreatePbrMat("EDL_BlastScorch", new Color(0.24f, 0.15f, 0.12f), 0.0f, 0.10f);
-            Material beaconGlow = CreateEmissiveMat("EDL_BeaconGlow", new Color(1.0f, 0.55f, 0.15f), new Color(1.0f, 0.55f, 0.15f) * 2.0f);
+            Material beaconGlow = CreateEmissiveMat("EDL_BeaconGlow", new Color(1.0f, 0.55f, 0.15f), new Color(0.85f, 0.45f, 0.12f));
 
             // Blast scorch footprint on regolith
             CreatePart("EDL_ScorchFootprint", PrimitiveType.Cylinder, root.transform, new Vector3(0f, 0.03f, 0f), Vector3.zero, new Vector3(9.5f, 0.04f, 9.5f), scorchMat, false);
@@ -558,26 +593,75 @@ namespace MarsSentinel.NASA
                 CreatePart($"EDL_Strut_{i}", PrimitiveType.Cylinder, root.transform, mid, legRot.eulerAngles, new Vector3(0.14f, len * 0.5f, 0.14f), thrusterAlloy, false);
             }
 
-            // 70-deg Sphere-Cone PICA-X Heatshield Belly + Lifting-Body Backshell Hull
-            CreatePart("EDL_HeatShieldDish", PrimitiveType.Cylinder, root.transform, new Vector3(0f, 1.15f, 0f), Vector3.zero, new Vector3(5.6f, 0.24f, 5.6f), thermalTile, true);
-            CreatePart("EDL_LiftingHull", PrimitiveType.Capsule, root.transform, new Vector3(0f, 1.95f, 0f), new Vector3(84f, 0f, 0f), new Vector3(3.4f, 2.8f, 2.2f), aeroShellWhite, true);
-            CreatePart("EDL_NoseCap", PrimitiveType.Sphere, root.transform, new Vector3(0f, 2.15f, 2.55f), Vector3.zero, new Vector3(1.6f, 1.15f, 1.6f), thermalTile, false);
+            // Sculpted Procedural Lifting-Body Aeroshell & PICA-X Heatshield Belly (single unified BoxCollider avoids PhysX QuickHull errors)
+            GameObject bellyShield = new GameObject("EDL_HeatShieldBelly");
+            bellyShield.transform.SetParent(root.transform, false);
+            bellyShield.transform.localPosition = new Vector3(0f, 1.24f, 0f);
+            bellyShield.AddComponent<MeshFilter>().sharedMesh = BuildLiftingBodyMesh(3.4f, 0.54f, 6.2f, true);
+            bellyShield.AddComponent<MeshRenderer>().sharedMaterial = thermalTile;
 
-            // Aerodynamic Hypersonic Winglet Fins (Left/Right) + Dorsal Fin
-            CreatePart("EDL_Wing_L", PrimitiveType.Cube, root.transform, new Vector3(-2.35f, 1.85f, -0.6f), new Vector3(0f, 22f, -14f), new Vector3(2.4f, 0.14f, 1.8f), aeroOrange, false);
-            CreatePart("EDL_Wing_R", PrimitiveType.Cube, root.transform, new Vector3(2.35f, 1.85f, -0.6f), new Vector3(0f, -22f, 14f), new Vector3(2.4f, 0.14f, 1.8f), aeroOrange, false);
-            CreatePart("EDL_TailFin", PrimitiveType.Cube, root.transform, new Vector3(0f, 3.15f, -1.7f), new Vector3(-24f, 0f, 0f), new Vector3(0.14f, 1.6f, 1.4f), aeroOrange, false);
+            GameObject dorsalShell = new GameObject("EDL_LiftingHull");
+            dorsalShell.transform.SetParent(root.transform, false);
+            dorsalShell.transform.localPosition = new Vector3(0f, 1.50f, 0f);
+            dorsalShell.AddComponent<MeshFilter>().sharedMesh = BuildLiftingBodyMesh(3.35f, 1.38f, 6.0f, false);
+            dorsalShell.AddComponent<MeshRenderer>().sharedMaterial = aeroShellWhite;
 
-            // Retro-Thruster Engine Pods & Gold MLI Payload Bay
-            CreatePart("EDL_GoldPayloadBay", PrimitiveType.Cube, root.transform, new Vector3(0f, 2.55f, 0.2f), Vector3.zero, new Vector3(2.1f, 0.75f, 2.4f), goldFoil, false);
-            for (int e = 0; e < 4; e++)
+            BoxCollider edlCol = root.AddComponent<BoxCollider>();
+            edlCol.center = new Vector3(0f, 1.65f, 0f);
+            edlCol.size = new Vector3(4.6f, 2.3f, 6.2f);
+
+            // Sculpted Swept Delta Winglets + Twin Canted Aero Tail Fins + Flush Dorsal Payload Spine & Canopy
+            Material visorGlass = CreateGlassMat("EDL_CanopyGlass", new Color(0.18f, 0.35f, 0.52f, 0.72f));
+            Mesh deltaWingMesh = BuildSweptFinMesh(2.05f, 0.75f, 1.35f, 0.11f, -0.85f);
+            Mesh tailFinMesh = BuildSweptFinMesh(1.35f, 0.52f, 1.05f, 0.09f, -0.62f);
+
+            for (int side = -1; side <= 1; side += 2)
             {
-                float ex = (e % 2 == 0) ? -1.45f : 1.45f;
-                float ez = (e < 2) ? 1.15f : -1.15f;
-                CreatePart($"EDL_EnginePod_{e}", PrimitiveType.Cylinder, root.transform, new Vector3(ex, 1.35f, ez), new Vector3(0f, 0f, ex < 0 ? 12f : -12f), new Vector3(0.36f, 0.45f, 0.36f), thrusterAlloy, false);
+                GameObject wing = new GameObject($"EDL_DeltaWing_{(side < 0 ? "L" : "R")}");
+                wing.transform.SetParent(root.transform, false);
+                wing.transform.localPosition = new Vector3(side * 1.42f, 1.48f, -0.45f);
+                wing.transform.localRotation = Quaternion.Euler(0f, 0f, side < 0 ? 84f : -84f);
+                wing.transform.localScale = Vector3.one;
+                wing.AddComponent<MeshFilter>().sharedMesh = deltaWingMesh;
+                wing.AddComponent<MeshRenderer>().sharedMaterial = aeroOrange;
+
+                GameObject fin = new GameObject($"EDL_VFin_{(side < 0 ? "L" : "R")}");
+                fin.transform.SetParent(root.transform, false);
+                fin.transform.localPosition = new Vector3(side * 0.85f, 1.88f, -1.55f);
+                fin.transform.localRotation = Quaternion.Euler(0f, 0f, side < 0 ? 22f : -22f);
+                fin.AddComponent<MeshFilter>().sharedMesh = tailFinMesh;
+                fin.AddComponent<MeshRenderer>().sharedMaterial = aeroOrange;
             }
 
-            CreatePart("EDL_StrobeBeacon", PrimitiveType.Sphere, root.transform, new Vector3(0f, 4.05f, -1.9f), Vector3.zero, Vector3.one * 0.28f, beaconGlow, false);
+            CreatePart("EDL_SensorCanopy", PrimitiveType.Cube, root.transform, new Vector3(0f, 2.02f, 1.08f), new Vector3(14f, 0f, 0f), new Vector3(0.88f, 0.24f, 1.05f), visorGlass, false);
+
+            // Flush Recessed Gold MLI Payload Bay + 8 Supersonic Retro-Thruster Pods
+            CreatePart("EDL_GoldPayloadBay", PrimitiveType.Cube, root.transform, new Vector3(0f, 2.06f, -0.42f), Vector3.zero, new Vector3(1.32f, 0.34f, 1.85f), goldFoil, false);
+            for (int e = 0; e < 4; e++)
+            {
+                float ex = (e % 2 == 0) ? -1.42f : 1.42f;
+                float ez = (e < 2) ? 1.15f : -1.15f;
+                CreatePart($"EDL_EnginePod_{e}A", PrimitiveType.Cylinder, root.transform, new Vector3(ex, 1.32f, ez - 0.18f), new Vector3(0f, 0f, ex < 0 ? 14f : -14f), new Vector3(0.28f, 0.42f, 0.28f), thrusterAlloy, false);
+                CreatePart($"EDL_EnginePod_{e}B", PrimitiveType.Cylinder, root.transform, new Vector3(ex, 1.32f, ez + 0.18f), new Vector3(0f, 0f, ex < 0 ? 14f : -14f), new Vector3(0.28f, 0.42f, 0.28f), thrusterAlloy, false);
+            }
+
+            Material edlNasaMat = CreateNasaBadgeMaterial();
+            if (edlNasaMat != null)
+            {
+                for (int s = -1; s <= 1; s += 2)
+                {
+                    GameObject b = GameObject.CreatePrimitive(PrimitiveType.Quad);
+                    b.name = $"EDL_NASABadge_{(s < 0 ? "L" : "R")}";
+                    b.transform.SetParent(root.transform, false);
+                    Destroy(b.GetComponent<Collider>());
+                    b.transform.localPosition = new Vector3(s * 1.42f, 1.68f, 0.72f);
+                    b.transform.localRotation = Quaternion.Euler(-22f, s < 0 ? 90f : -90f, 0f);
+                    b.transform.localScale = Vector3.one * 0.48f;
+                    b.GetComponent<Renderer>().sharedMaterial = edlNasaMat;
+                }
+            }
+
+            CreatePart("EDL_StrobeBeacon", PrimitiveType.Sphere, root.transform, new Vector3(0f, 2.28f, -1.85f), Vector3.zero, Vector3.one * 0.22f, beaconGlow, false);
 
             var target = root.AddComponent<MarsInspectableTarget>();
             target.Configure(
@@ -666,9 +750,31 @@ namespace MarsSentinel.NASA
                 CreatePart("Umbilical_Arm", PrimitiveType.Cube, root.transform, new Vector3(-1.35f, 11.8f, 0f), Vector3.zero, new Vector3(1.9f, 0.25f, 0.35f), hazardYellow, false);
             }
 
-            // Cryogenic ISRU LOX + LCH4 Propellant Spheres
-            CreatePart("Cryo_LOX_Sphere", PrimitiveType.Sphere, root.transform, new Vector3(5.2f, 1.55f, -3.5f), Vector3.zero, Vector3.one * 2.2f, cryoBlue, true);
-            CreatePart("Cryo_CH4_Sphere", PrimitiveType.Sphere, root.transform, new Vector3(5.2f, 1.55f, 3.5f), Vector3.zero, Vector3.one * 2.2f, cryoAmber, true);
+            // Cryogenic ISRU LOX + LCH4 Propellant Spheres on Steel Support Cradles + Propellant Manifolds
+            CreatePart("Cryo_LOX_Sphere", PrimitiveType.Sphere, root.transform, new Vector3(5.2f, 1.85f, -3.5f), Vector3.zero, Vector3.one * 2.2f, cryoBlue, true);
+            CreatePart("Cryo_CH4_Sphere", PrimitiveType.Sphere, root.transform, new Vector3(5.2f, 1.85f, 3.5f), Vector3.zero, Vector3.one * 2.2f, cryoAmber, true);
+            for (int tSide = -1; tSide <= 1; tSide += 2)
+            {
+                float tz = tSide * 3.5f;
+                for (int leg = 0; leg < 4; leg++)
+                {
+                    float la = (45f + leg * 90f) * Mathf.Deg2Rad;
+                    CreatePart($"CryoLeg_{tSide}_{leg}", PrimitiveType.Cylinder, root.transform,
+                        new Vector3(5.2f + Mathf.Cos(la) * 0.85f, 0.85f, tz + Mathf.Sin(la) * 0.85f), Vector3.zero, new Vector3(0.14f, 0.72f, 0.14f), steelMat, false);
+                }
+                // Insulated cryo feed line from storage sphere to flame launch table
+                CreatePart($"CryoPipe_{tSide}", PrimitiveType.Cylinder, root.transform,
+                    new Vector3(3.4f, 0.48f, tz * 0.65f), new Vector3(0f, tSide * 26f, 90f), new Vector3(0.18f, 2.2f, 0.18f), steelMat, false);
+            }
+            // Perimeter Blast Safety Bollards & Launch Control Signage Plaque
+            Vector2[] bollardOffsets = { new Vector2(-6.4f, -6.4f), new Vector2(6.4f, -6.4f), new Vector2(-6.4f, 6.4f), new Vector2(6.4f, 6.4f) };
+            for (int bIdx = 0; bIdx < bollardOffsets.Length; bIdx++)
+            {
+                CreatePart($"Pad_Bollard_{bIdx}", PrimitiveType.Cylinder, root.transform,
+                    new Vector3(bollardOffsets[bIdx].x, 0.72f, bollardOffsets[bIdx].y), Vector3.zero, new Vector3(0.22f, 0.42f, 0.22f), hazardYellow, true);
+            }
+            CreateSignagePlaque(root.transform, new Vector3(-5.2f, 1.45f, -6.2f), new Vector3(0f, 45f, 0f),
+                "NASA · ORBITX LAUNCH PAD\nISRU LOX / CH4 MAV COMPLEX", hazardYellow);
 
             GameObject beacon = CreatePart("Pad_BeaconLight", PrimitiveType.Sphere, root.transform, new Vector3(-2.6f, 15.6f, 0f), Vector3.zero, Vector3.one * 0.4f, hazardYellow, false);
             Light padLight = root.AddComponent<Light>();
@@ -716,61 +822,32 @@ namespace MarsSentinel.NASA
             Material veinMat = CreatePbrMat("Vein_" + data.id, new Color(0.88f, 0.87f, 0.82f), 0.0f, 0.30f);
             Material darkSpotMat = CreatePbrMat("Spot_" + data.id, new Color(0.14f, 0.12f, 0.11f), 0.0f, 0.25f);
 
-            // Build 3-layer stratified procedural outcrop rock silhouette seated cleanly into soil
+            // Sculpted Stratified Geological Outcrop Bedrock Mesh + Stratified Banded Texture (deterministic layered Perlin ridges)
             int seed = Mathf.Abs(data.id.GetHashCode());
-            System.Random rng = new System.Random(seed);
-
-            int strataCount = (data.style == "sedimentary" || data.style == "delta" || data.style == "cheyava") ? 4 : 3;
-            for (int i = 0; i < strataCount; i++)
-            {
-                float frac = (float)i / Mathf.Max(1, strataCount - 1);
-                float layerY = sc.y * (0.20f + frac * 0.42f);
-                float taper = 1.0f - frac * 0.34f;
-                float ox = (float)(rng.NextDouble() - 0.5) * sc.x * 0.25f;
-                float oz = (float)(rng.NextDouble() - 0.5) * sc.z * 0.25f;
-                float yaw = (float)rng.NextDouble() * 360f;
-
-                GameObject slab = GameObject.CreatePrimitive(i == 0 ? PrimitiveType.Cylinder : PrimitiveType.Cube);
-                slab.name = $"Stratum_{i}";
-                slab.transform.SetParent(rockRoot.transform, false);
-                slab.transform.localPosition = new Vector3(ox, layerY, oz);
-                slab.transform.localRotation = Quaternion.Euler(
-                    (float)(rng.NextDouble() - 0.5) * 14f,
-                    yaw,
-                    (float)(rng.NextDouble() - 0.5) * 14f);
-                slab.transform.localScale = new Vector3(
-                    sc.x * taper * (0.85f + (float)rng.NextDouble() * 0.30f),
-                    sc.y * 0.36f,
-                    sc.z * taper * (0.85f + (float)rng.NextDouble() * 0.30f));
-
-                Renderer sr = slab.GetComponent<Renderer>();
-                if (sr != null)
-                {
-                    Material stratumMat = new Material(primaryMat);
-                    float tint = 0.85f + frac * 0.24f;
-                    stratumMat.color = new Color(
-                        Mathf.Clamp01(baseCol.r * tint),
-                        Mathf.Clamp01(baseCol.g * tint),
-                        Mathf.Clamp01(baseCol.b * tint));
-                    sr.material = stratumMat;
-                }
-            }
+            GameObject rockMeshGo = new GameObject("RockMass_Sculpted");
+            rockMeshGo.transform.SetParent(rockRoot.transform, false);
+            rockMeshGo.AddComponent<MeshFilter>().sharedMesh = BuildStratifiedRockMesh(sc, seed, data.style);
+            Material rockMat = CreatePbrMat("RockSculpt_" + data.id, Color.white, 0.0f, 0.18f);
+            Texture2D rockTex = CreateStratifiedRockTexture(baseCol, seed, data.style);
+            if (rockMat.HasProperty("_BaseMap")) rockMat.SetTexture("_BaseMap", rockTex);
+            if (rockMat.HasProperty("_MainTex")) rockMat.SetTexture("_MainTex", rockTex);
+            rockMeshGo.AddComponent<MeshRenderer>().sharedMaterial = rockMat;
 
             // Diagnostic mineral signatures (Cheyava sulfate veins + dark redox spots, or crystal veins)
             if (data.style == "cheyava" || data.style == "carbonate")
             {
                 CreatePart("MineralVein_A", PrimitiveType.Cube, rockRoot.transform,
-                    new Vector3(0f, sc.y * 0.58f, 0f), new Vector3(8f, 35f, 0f), new Vector3(sc.x * 0.82f, 0.05f, 0.08f), veinMat, false);
+                    new Vector3(0f, sc.y * 0.72f, 0f), new Vector3(8f, 35f, 0f), new Vector3(sc.x * 0.62f, 0.05f, 0.07f), veinMat, false);
                 CreatePart("MineralVein_B", PrimitiveType.Cube, rockRoot.transform,
-                    new Vector3(0.15f, sc.y * 0.62f, -0.1f), new Vector3(-6f, 115f, 0f), new Vector3(sc.x * 0.72f, 0.05f, 0.07f), veinMat, false);
+                    new Vector3(0.12f, sc.y * 0.75f, -0.08f), new Vector3(-6f, 115f, 0f), new Vector3(sc.x * 0.56f, 0.05f, 0.06f), veinMat, false);
 
                 if (data.style == "cheyava")
                 {
                     for (int sp = 0; sp < 4; sp++)
                     {
-                        float sx = -0.35f + sp * 0.22f;
+                        float sx = -0.26f + sp * 0.17f;
                         CreatePart($"RedoxSpot_{sp}", PrimitiveType.Cylinder, rockRoot.transform,
-                            new Vector3(sx, sc.y * 0.74f, (sp % 2 == 0) ? 0.14f : -0.12f), Vector3.zero, new Vector3(0.11f, 0.04f, 0.11f), darkSpotMat, false);
+                            new Vector3(sx, sc.y * 0.78f, (sp % 2 == 0) ? 0.11f : -0.10f), Vector3.zero, new Vector3(0.10f, 0.04f, 0.10f), darkSpotMat, false);
                     }
                 }
             }
@@ -1074,6 +1151,23 @@ namespace MarsSentinel.NASA
                 Collider c = go.GetComponent<Collider>();
                 if (c != null) Destroy(c);
             }
+            else if (type == PrimitiveType.Cylinder)
+            {
+                // Replace Unity's rounded CapsuleCollider on cylinders with flat Box/convex MeshCollider
+                Collider cap = go.GetComponent<Collider>();
+                if (cap != null) Destroy(cap);
+                if (localScale.y < 0.35f)
+                {
+                    BoxCollider box = go.AddComponent<BoxCollider>();
+                    box.center = Vector3.zero;
+                    box.size = new Vector3(1f, 2f, 1f);
+                }
+                else
+                {
+                    MeshCollider mc = go.AddComponent<MeshCollider>();
+                    mc.convex = true;
+                }
+            }
 
             Renderer r = go.GetComponent<Renderer>();
             if (r != null && mat != null) r.sharedMaterial = mat;
@@ -1089,17 +1183,31 @@ namespace MarsSentinel.NASA
 
             Material plaqueBg = CreatePbrMat("Plaque_DarkSlate", new Color(0.08f, 0.11f, 0.16f), 0.25f, 0.55f);
             CreatePart("PlaqueBoard", PrimitiveType.Cube, holder.transform,
-                Vector3.zero, Vector3.zero, new Vector3(0.08f, 0.86f, 2.72f), plaqueBg, false);
+                Vector3.zero, Vector3.zero, new Vector3(0.08f, 0.86f, 2.96f), plaqueBg, false);
             CreatePart("PlaqueFrameTop", PrimitiveType.Cube, holder.transform,
-                new Vector3(0.01f, 0.45f, 0f), Vector3.zero, new Vector3(0.10f, 0.06f, 2.78f), accent, false);
+                new Vector3(0.01f, 0.45f, 0f), Vector3.zero, new Vector3(0.10f, 0.06f, 3.02f), accent, false);
             CreatePart("PlaqueFrameBot", PrimitiveType.Cube, holder.transform,
-                new Vector3(0.01f, -0.45f, 0f), Vector3.zero, new Vector3(0.10f, 0.06f, 2.78f), accent, false);
+                new Vector3(0.01f, -0.45f, 0f), Vector3.zero, new Vector3(0.10f, 0.06f, 3.02f), accent, false);
+
+            Material nasaBadgeMat = CreateNasaBadgeMaterial();
+            if (nasaBadgeMat != null)
+            {
+                GameObject emblem = GameObject.CreatePrimitive(PrimitiveType.Quad);
+                emblem.name = "Plaque_NASABadge";
+                emblem.transform.SetParent(holder.transform, false);
+                Collider ec = emblem.GetComponent<Collider>();
+                if (ec != null) Destroy(ec);
+                emblem.transform.localPosition = new Vector3(0.06f, 0f, -1.04f);
+                emblem.transform.localRotation = Quaternion.Euler(0f, -90f, 0f);
+                emblem.transform.localScale = new Vector3(0.64f, 0.64f, 0.64f);
+                emblem.GetComponent<Renderer>().sharedMaterial = nasaBadgeMat;
+            }
 
             GameObject textGo = new GameObject("PlaqueText");
             textGo.transform.SetParent(holder.transform, false);
-            textGo.transform.localPosition = new Vector3(0.06f, 0f, 0f);
+            textGo.transform.localPosition = new Vector3(0.06f, 0f, 0.30f);
             textGo.transform.localRotation = Quaternion.Euler(0f, -90f, 0f);
-            textGo.transform.localScale = Vector3.one * 0.036f;
+            textGo.transform.localScale = Vector3.one * 0.033f;
             TextMesh tm = textGo.AddComponent<TextMesh>();
             tm.text = label;
             tm.fontSize = 44;
@@ -1108,6 +1216,324 @@ namespace MarsSentinel.NASA
             tm.fontStyle = FontStyle.Bold;
             tm.anchor = TextAnchor.MiddleCenter;
             tm.color = Color.white;
+        }
+
+        private static Material cachedNasaBadgeMaterial;
+
+        public static Material CreateNasaBadgeMaterial()
+        {
+            if (cachedNasaBadgeMaterial != null) return cachedNasaBadgeMaterial;
+            const int S = 192;
+            Texture2D tex = new Texture2D(S, S, TextureFormat.RGBA32, false);
+            tex.wrapMode = TextureWrapMode.Clamp;
+            tex.filterMode = FilterMode.Bilinear;
+            Color[] px = new Color[S * S];
+            Color navy = new Color(0.043f, 0.239f, 0.569f, 1f);
+            Color white = new Color(0.97f, 0.98f, 1.0f, 1f);
+            Color nasaRed = new Color(0.98f, 0.22f, 0.13f, 1f);
+            for (int y = 0; y < S; y++)
+            {
+                float ny = (y / (float)(S - 1)) * 2f - 1f;
+                for (int x = 0; x < S; x++)
+                {
+                    float nx = (x / (float)(S - 1)) * 2f - 1f;
+                    float r = Mathf.Sqrt(nx * nx + ny * ny);
+                    Color c = new Color(0f, 0f, 0f, 0f);
+                    if (r <= 0.96f)
+                    {
+                        c = (r >= 0.89f) ? white : navy;
+                        // Subtle star field inside deep space disc
+                        int h = ((x * 73856093) ^ (y * 19349663)) & 0x3FF;
+                        if (r < 0.85f && h < 5) c = white;
+                        // White elliptical orbital ring
+                        float ox = nx * 0.82f + ny * 0.57f;
+                        float oy = -nx * 0.57f + ny * 0.82f;
+                        float orbitDist = Mathf.Abs(Mathf.Sqrt((ox / 0.80f) * (ox / 0.80f) + (oy / 0.28f) * (oy / 0.28f)) - 1.0f);
+                        if (orbitDist < 0.075f && r < 0.89f) c = white;
+                        // Iconic red supersonic chevron V-wing
+                        float leg1 = Mathf.Abs(ny - (nx * 1.45f + 0.25f));
+                        float leg2 = Mathf.Abs(ny - (-nx * 1.15f + 0.12f));
+                        if ((nx >= -0.68f && nx <= 0.12f && ny >= -0.58f && ny <= 0.62f && leg1 < 0.11f) ||
+                            (nx >= -0.05f && nx <= 0.72f && ny >= -0.42f && ny <= 0.56f && leg2 < 0.11f))
+                        {
+                            c = nasaRed;
+                        }
+                        // Crisp horizontal NASA center bar highlight
+                        if (Mathf.Abs(ny + 0.04f) < 0.14f && Mathf.Abs(nx) < 0.66f)
+                        {
+                            // Keep chevron prominent over center stripe
+                            if (Mathf.Abs(ny + 0.04f) > 0.08f) c = white;
+                        }
+                    }
+                    px[y * S + x] = c;
+                }
+            }
+            tex.SetPixels(px);
+            tex.Apply();
+
+            Shader sh = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
+            Material m = new Material(sh) { name = "NASA_ORBITX_Emblem_Mat" };
+            if (m.HasProperty("_BaseMap")) m.SetTexture("_BaseMap", tex);
+            if (m.HasProperty("_MainTex")) m.SetTexture("_MainTex", tex);
+            if (m.HasProperty("_BaseColor")) m.SetColor("_BaseColor", Color.white);
+            if (m.HasProperty("_Surface")) m.SetFloat("_Surface", 1.0f);
+            if (m.HasProperty("_AlphaClip")) m.SetFloat("_AlphaClip", 1.0f);
+            if (m.HasProperty("_Cutoff")) m.SetFloat("_Cutoff", 0.35f);
+            m.SetOverrideTag("RenderType", "TransparentCutout");
+            m.EnableKeyword("_ALPHATEST_ON");
+            if (m.HasProperty("_EmissionMap"))
+            {
+                m.EnableKeyword("_EMISSION");
+                m.SetTexture("_EmissionMap", tex);
+                m.SetColor("_EmissionColor", new Color(0.28f, 0.28f, 0.28f));
+            }
+            cachedNasaBadgeMaterial = m;
+            return m;
+        }
+
+        private static Mesh BuildMeridianArchMesh(float radiusX, float heightY, float tubeRadius, int archSteps)
+        {
+            const int sides = 6;
+            List<Vector3> verts = new List<Vector3>();
+            List<int> tris = new List<int>();
+            for (int i = 0; i <= archSteps; i++)
+            {
+                float rad = (i / (float)archSteps) * Mathf.PI;
+                Vector3 center = new Vector3(Mathf.Cos(rad) * radiusX, Mathf.Sin(rad) * heightY, 0f);
+                Vector3 tangent = new Vector3(-Mathf.Sin(rad) * radiusX, Mathf.Cos(rad) * heightY, 0f).normalized;
+                Vector3 right = Vector3.forward;
+                Vector3 normal = Vector3.Cross(right, tangent).normalized;
+                for (int s = 0; s < sides; s++)
+                {
+                    float a = (s / (float)sides) * Mathf.PI * 2f;
+                    verts.Add(center + (right * Mathf.Cos(a) + normal * Mathf.Sin(a)) * tubeRadius);
+                }
+            }
+            for (int i = 0; i < archSteps; i++)
+            {
+                int rowA = i * sides;
+                int rowB = (i + 1) * sides;
+                for (int s = 0; s < sides; s++)
+                {
+                    int sn = (s + 1) % sides;
+                    tris.Add(rowA + s); tris.Add(rowB + s); tris.Add(rowB + sn);
+                    tris.Add(rowA + s); tris.Add(rowB + sn); tris.Add(rowA + sn);
+                }
+            }
+            Mesh mesh = new Mesh { name = "Dome_ContinuousMeridianArch" };
+            mesh.SetVertices(verts);
+            mesh.SetTriangles(tris, 0);
+            mesh.RecalculateNormals();
+            mesh.RecalculateBounds();
+            return mesh;
+        }
+
+        private static Mesh BuildLiftingBodyMesh(float widthX, float heightY, float lengthZ, bool isBellyShield)
+        {
+            const int zSlices = 14;
+            const int ringVerts = 16;
+            List<Vector3> verts = new List<Vector3>();
+            List<Vector2> uvs = new List<Vector2>();
+            List<int> tris = new List<int>();
+            for (int iz = 0; iz <= zSlices; iz++)
+            {
+                float tz = iz / (float)zSlices; // 0 aft -> 1 nose
+                // Keep outer rings cleanly separated from aftCap/noseCap so no coplanar zero-area triangles produce Bloom NaNs
+                float z = Mathf.Lerp(-0.46f * lengthZ, 0.46f * lengthZ, tz);
+                float taper = Mathf.Pow(Mathf.Sin(Mathf.Lerp(0.14f, 0.86f, tz) * Mathf.PI), 0.52f) * (0.68f + 0.32f * (1f - tz));
+                float rx = Mathf.Max(0.28f, widthX * 0.5f * Mathf.Max(0.20f, taper));
+                float ry = Mathf.Max(0.14f, heightY * 0.5f * Mathf.Max(0.26f, Mathf.Sin(Mathf.Lerp(0.12f, 0.88f, tz) * Mathf.PI)));
+                for (int ir = 0; ir < ringVerts; ir++)
+                {
+                    float a = (ir / (float)ringVerts) * Mathf.PI * 2f;
+                    float x = Mathf.Cos(a) * rx;
+                    float rawY = Mathf.Sin(a) * ry;
+                    float y = isBellyShield
+                        ? (rawY < 0f ? rawY * 0.9f : rawY * 0.35f)
+                        : (rawY >= 0f ? rawY * 1.15f : rawY * 0.35f);
+                    verts.Add(new Vector3(x, y, z));
+                    uvs.Add(new Vector2(ir / (float)ringVerts, tz));
+                }
+            }
+            for (int iz = 0; iz < zSlices; iz++)
+            {
+                int rA = iz * ringVerts;
+                int rB = (iz + 1) * ringVerts;
+                for (int ir = 0; ir < ringVerts; ir++)
+                {
+                    int inx = (ir + 1) % ringVerts;
+                    tris.Add(rA + ir); tris.Add(rA + inx); tris.Add(rB + inx);
+                    tris.Add(rA + ir); tris.Add(rB + inx); tris.Add(rB + ir);
+                }
+            }
+            // Cap aft bulkhead & nose cone cleanly
+            int aftCap = verts.Count;
+            verts.Add(new Vector3(0f, 0f, -0.5f * lengthZ));
+            uvs.Add(new Vector2(0.5f, 0f));
+            int noseCap = verts.Count;
+            verts.Add(new Vector3(0f, 0f, 0.5f * lengthZ));
+            uvs.Add(new Vector2(0.5f, 1f));
+            int lastRing = zSlices * ringVerts;
+            for (int ir = 0; ir < ringVerts; ir++)
+            {
+                int inx = (ir + 1) % ringVerts;
+                tris.Add(aftCap); tris.Add(inx); tris.Add(ir);
+                tris.Add(noseCap); tris.Add(lastRing + ir); tris.Add(lastRing + inx);
+            }
+            Mesh m = new Mesh { name = isBellyShield ? "EDL_BellyHeatshield" : "EDL_LiftingAeroshell" };
+            m.SetVertices(verts);
+            m.SetUVs(0, uvs);
+            m.SetTriangles(tris, 0);
+            m.RecalculateNormals();
+            Vector3[] norms = m.normals;
+            for (int i = 0; i < norms.Length; i++)
+            {
+                if (norms[i].sqrMagnitude < 1e-5f || float.IsNaN(norms[i].x)) norms[i] = Vector3.up;
+            }
+            m.normals = norms;
+            m.RecalculateTangents();
+            m.RecalculateBounds();
+            return m;
+        }
+
+        private static Mesh BuildSweptFinMesh(float rootChord, float tipChord, float span, float thickness, float sweep)
+        {
+            float ht = thickness * 0.5f;
+            float rFront = rootChord * 0.5f;
+            float rBack = -rootChord * 0.5f;
+            float tFront = tipChord * 0.5f + sweep;
+            float tBack = -tipChord * 0.5f + sweep;
+
+            Vector3[] baseVerts =
+            {
+                new Vector3(-ht, 0f, rFront),  // 0: root front-left
+                new Vector3( ht, 0f, rFront),  // 1: root front-right
+                new Vector3( ht, 0f, rBack),   // 2: root back-right
+                new Vector3(-ht, 0f, rBack),   // 3: root back-left
+                new Vector3(-ht * 0.5f, span, tFront), // 4: tip front-left
+                new Vector3( ht * 0.5f, span, tFront), // 5: tip front-right
+                new Vector3( ht * 0.5f, span, tBack),  // 6: tip back-right
+                new Vector3(-ht * 0.5f, span, tBack)   // 7: tip back-left
+            };
+            int[] idx =
+            {
+                0,4,5, 0,5,1, // leading edge
+                1,5,6, 1,6,2, // right face
+                2,6,7, 2,7,3, // trailing edge
+                3,7,4, 3,4,0, // left face
+                4,7,6, 4,6,5, // top cap
+                0,1,2, 0,2,3  // root cap
+            };
+            Vector3[] verts = new Vector3[idx.Length];
+            Vector2[] uvs = new Vector2[idx.Length];
+            int[] tris = new int[idx.Length];
+            for (int i = 0; i < idx.Length; i++)
+            {
+                verts[i] = baseVerts[idx[i]];
+                uvs[i] = new Vector2((verts[i].z + rootChord) / (rootChord * 2f), verts[i].y / Mathf.Max(0.1f, span));
+                tris[i] = i;
+            }
+            Mesh m = new Mesh { name = "SweptFinMesh" };
+            m.vertices = verts;
+            m.uv = uvs;
+            m.triangles = tris;
+            m.RecalculateNormals();
+            m.RecalculateTangents();
+            m.RecalculateBounds();
+            return m;
+        }
+
+        private static Texture2D CreateStratifiedRockTexture(Color baseColor, int seed, string style)
+        {
+            const int W = 64, H = 64;
+            Texture2D tex = new Texture2D(W, H, TextureFormat.RGBA32, false);
+            tex.wrapMode = TextureWrapMode.Repeat;
+            Color[] px = new Color[W * H];
+            bool layered = style == "sedimentary" || style == "delta" || style == "cheyava";
+            float ox = (seed % 53) * 0.41f;
+            for (int y = 0; y < H; y++)
+            {
+                float v = y / (float)(H - 1);
+                float strata = layered ? (0.84f + 0.24f * Mathf.Sin(v * 22f) + 0.10f * Mathf.Cos(v * 47f)) : (0.90f + 0.14f * v);
+                for (int x = 0; x < W; x++)
+                {
+                    float u = x / (float)(W - 1);
+                    float grain = Mathf.PerlinNoise(u * 12f + ox, v * 10f + ox);
+                    float darkCrack = (layered && Mathf.Abs(Mathf.Sin(v * 18f + grain * 0.8f)) < 0.08f) ? 0.68f : 1.0f;
+                    float mul = Mathf.Clamp(strata * (0.82f + grain * 0.34f) * darkCrack, 0.45f, 1.35f);
+                    px[y * W + x] = new Color(
+                        Mathf.Clamp01(baseColor.r * mul),
+                        Mathf.Clamp01(baseColor.g * mul),
+                        Mathf.Clamp01(baseColor.b * mul), 1f);
+                }
+            }
+            tex.SetPixels(px);
+            tex.Apply();
+            return tex;
+        }
+
+        private static Mesh BuildStratifiedRockMesh(Vector3 scale, int seed, string style)
+        {
+            const int rings = 10;
+            const int sectors = 16;
+            List<Vector3> verts = new List<Vector3>();
+            List<Vector2> uvs = new List<Vector2>();
+            List<int> tris = new List<int>();
+            float ox = (seed % 97) * 0.37f;
+            float oz = ((seed / 97) % 89) * 0.41f;
+            bool layered = style == "sedimentary" || style == "delta" || style == "cheyava";
+            for (int r = 0; r <= rings; r++)
+            {
+                float v = r / (float)rings; // 0 wide grounded base -> 1 mesa summit
+                float ringR = Mathf.Pow(Mathf.Max(0.06f, 1.0f - v * 0.76f), 0.55f);
+                float baseH = -0.22f + v * 1.04f; // sunk -0.22*scale.y into regolith up to +0.82*scale.y
+                for (int s = 0; s < sectors; s++)
+                {
+                    float theta = (s / (float)sectors) * Mathf.PI * 2f;
+                    float dx = Mathf.Cos(theta) * ringR;
+                    float dz = Mathf.Sin(theta) * ringR;
+                    float n1 = Mathf.PerlinNoise(dx * 2.1f + ox, dz * 2.1f + oz);
+                    float n2 = Mathf.PerlinNoise(dx * 4.5f + oz + 3.1f, v * 5.2f + ox);
+                    float terrace = layered
+                        ? (Mathf.Floor(Mathf.Max(0f, baseH) * 5.0f) / 5.0f * 0.30f + baseH * 0.70f)
+                        : baseH;
+                    float radJitter = 0.78f + n1 * 0.44f + (n2 - 0.5f) * 0.16f;
+                    float y = (r == 0)
+                        ? -0.22f * scale.y
+                        : Mathf.Max(-0.08f * scale.y, (terrace + (n2 - 0.5f) * 0.14f) * scale.y);
+                    verts.Add(new Vector3(dx * radJitter * scale.x * 0.56f, y, dz * radJitter * scale.z * 0.56f));
+                    uvs.Add(new Vector2(s / (float)sectors, v));
+                }
+            }
+            for (int r = 0; r < rings; r++)
+            {
+                int rowA = r * sectors;
+                int rowB = (r + 1) * sectors;
+                for (int s = 0; s < sectors; s++)
+                {
+                    int sn = (s + 1) % sectors;
+                    // Grounded tapering dome: Cross(rowB+s - rowA+s, rowB+sn - rowA+s) points +outward & +upward
+                    tris.Add(rowA + s); tris.Add(rowB + s); tris.Add(rowB + sn);
+                    tris.Add(rowA + s); tris.Add(rowB + sn); tris.Add(rowA + sn);
+                }
+            }
+            // Cap rugged plateau apex outward & upward
+            int apexIdx = verts.Count;
+            verts.Add(new Vector3(0f, scale.y * 0.88f, 0f));
+            uvs.Add(new Vector2(0.5f, 1.0f));
+            int topRow = rings * sectors;
+            for (int s = 0; s < sectors; s++)
+            {
+                tris.Add(topRow + s); tris.Add(apexIdx); tris.Add(topRow + (s + 1) % sectors);
+            }
+            Mesh mesh = new Mesh { name = "Stratified_Mars_Outcrop" };
+            mesh.SetVertices(verts);
+            mesh.SetUVs(0, uvs);
+            mesh.SetTriangles(tris, 0);
+            mesh.RecalculateNormals();
+            mesh.RecalculateTangents();
+            mesh.RecalculateBounds();
+            return mesh;
         }
 
         private static Material CreatePbrMat(string name, Color col, float metallic, float smoothness)

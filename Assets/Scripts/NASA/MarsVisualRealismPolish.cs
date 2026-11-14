@@ -597,8 +597,8 @@ namespace MarsSentinel.NASA
                 float targetW = isIngenuity ? 0.038f : 0.050f;
                 lr.startWidth = targetW;
                 lr.endWidth = targetW;
-                lr.numCornerVertices = 8;
-                lr.numCapVertices = 8;
+                lr.numCornerVertices = 2;
+                lr.numCapVertices = 2;
 
                 if (!lr.useWorldSpace)
                 {
@@ -746,6 +746,18 @@ namespace MarsSentinel.NASA
             float lastGy = SampleHorizonHeight(last.x, last.z) + 0.045f;
             last.y = preserveHeight ? Mathf.Max(last.y, lastGy) : lastGy;
             spline.Add(last);
+
+            const int maxLinePts = 320;
+            if (spline.Count > maxLinePts)
+            {
+                var capped = new Vector3[maxLinePts];
+                for (int k = 0; k < maxLinePts; k++)
+                {
+                    int srcIdx = Mathf.RoundToInt((k / (float)(maxLinePts - 1)) * (spline.Count - 1));
+                    capped[k] = spline[srcIdx];
+                }
+                return capped;
+            }
             return spline.ToArray();
         }
 
@@ -847,12 +859,15 @@ namespace MarsSentinel.NASA
                     string n = r.gameObject.name.ToLowerInvariant();
                     MeshFilter mf = r.GetComponent<MeshFilter>();
                     int vCount = (mf != null && mf.sharedMesh != null) ? mf.sharedMesh.vertexCount : 9999;
-                    bool isHelper = n.StartsWith("shadow") || n.StartsWith("cube_0") || n.EndsWith("_p") ||
-                                    n.Contains("_root_p") || n.Contains("pivot") || n.Contains("empty") ||
-                                    n.StartsWith("hazcam") || n.StartsWith("mastcam") || n.StartsWith("navcam") ||
-                                    n.StartsWith("mahli_cam") || n == "mardi" ||
-                                    (vCount <= 24 && (n.Contains("cam") || n.Contains("box") || n.Contains("dummy"))) ||
-                                    (r.gameObject == root && n.Contains("curiosity"));
+                    bool keepCuriosityCam = rootName == "MS_Curiosity_Root" &&
+                        (n.StartsWith("mastcam") || n.StartsWith("navcam") || n.StartsWith("hazcam"));
+                    bool isHelper = !keepCuriosityCam && (
+                        n.StartsWith("shadow") || n.StartsWith("cube_0") || n.EndsWith("_p") ||
+                        n.Contains("_root_p") || n.Contains("pivot") || n.Contains("empty") ||
+                        n.StartsWith("hazcam") || n.StartsWith("mastcam") || n.StartsWith("navcam") ||
+                        n.StartsWith("mahli_cam") || n == "mardi" ||
+                        (vCount <= 24 && (n.Contains("cam") || n.Contains("box") || n.Contains("dummy"))) ||
+                        (r.gameObject == root && n.Contains("curiosity")));
                     if (isHelper)
                     {
                         r.enabled = false;
@@ -868,14 +883,16 @@ namespace MarsSentinel.NASA
                 SeatRootOnTerrain(persev);
             }
 
-            // 3. Seat MS_Curiosity_Root cleanly at (-7.5, y, -8.5) in readable 3/4 side profile
+            // 3. Seat MS_Curiosity_Root cleanly at (-7.5, y, -8.5) in level 3/4 side profile
+            //    Test both pitch signs to guarantee front/rear axle equilibrium, plus align wheels flush to sand
             GameObject curiosity = GameObject.Find("MS_Curiosity_Root");
             if (curiosity != null)
             {
                 curiosity.transform.position = new Vector3(-7.5f, 0f, -8.5f);
-                curiosity.transform.rotation = Quaternion.Euler(0f, 22f, 0f);
+                curiosity.transform.rotation = Quaternion.Euler(0f, 34f, 0f);
                 NormalizeFleetScale(curiosity, 2.8f);
                 PolishImportedFleetMaterials(curiosity, true);
+                LevelCuriosityWheels(curiosity);
                 SeatRootOnTerrain(curiosity);
             }
 
@@ -894,14 +911,14 @@ namespace MarsSentinel.NASA
                 SeatRootOnTerrain(opp);
             }
 
-            // 5. Fix MS_Viking_Lander_Root (was 16.7m wide buried at Y=-9..-0.2) & keep nicely visible inside overview cone
+            // 5. Fix MS_Viking_Lander_Root (polySurfa1/2 boom artifact shrank Viking to a spindly 1-pixel stick)
             GameObject viking = GameObject.Find("MS_Viking_Lander_Root");
             if (viking != null)
             {
+                foreach (Renderer r in viking.GetComponentsInChildren<Renderer>(true)) r.enabled = false;
                 viking.transform.position = new Vector3(2.8f, 0f, 6.2f);
                 viking.transform.rotation = Quaternion.Euler(0f, -35f, 0f);
-                NormalizeFleetScale(viking, 3.0f);
-                PolishImportedFleetMaterials(viking, false);
+                BuildVikingLanderMesh(viking.transform, goldFoil, whiteThermal, darkCarbon);
                 SeatRootOnTerrain(viking);
             }
 
@@ -951,9 +968,19 @@ namespace MarsSentinel.NASA
                         m.SetFloat("_Metallic", 0.24f);
                         changed = true;
                     }
+                    if (m.HasProperty("metallicFactor") && m.GetFloat("metallicFactor") > 0.28f)
+                    {
+                        m.SetFloat("metallicFactor", 0.24f);
+                        changed = true;
+                    }
                     if (m.HasProperty("_Smoothness") && m.GetFloat("_Smoothness") > 0.48f)
                     {
                         m.SetFloat("_Smoothness", 0.42f);
+                        changed = true;
+                    }
+                    if (m.HasProperty("roughnessFactor") && m.GetFloat("roughnessFactor") < 0.55f)
+                    {
+                        m.SetFloat("roughnessFactor", 0.58f);
                         changed = true;
                     }
                     if (liftDarkChassis && !isDarkIntentional)
@@ -982,18 +1009,129 @@ namespace MarsSentinel.NASA
                                 changed = true;
                             }
                         }
+                        if (m.HasProperty("baseColorFactor"))
+                        {
+                            Color c = m.GetColor("baseColorFactor");
+                            Texture tex = m.HasProperty("baseColorTexture") ? m.GetTexture("baseColorTexture") : null;
+                            float lum = c.r * 0.299f + c.g * 0.587f + c.b * 0.114f;
+                            if (lum < 0.45f && tex == null)
+                            {
+                                float boost = 0.65f / Mathf.Max(0.08f, lum);
+                                m.SetColor("baseColorFactor", new Color(
+                                    Mathf.Clamp01(c.r * boost + 0.16f),
+                                    Mathf.Clamp01(c.g * boost + 0.14f),
+                                    Mathf.Clamp01(c.b * boost + 0.11f),
+                                    1f));
+                                changed = true;
+                            }
+                            else
+                            {
+                                m.SetColor("baseColorFactor", new Color(
+                                    Mathf.Max(c.r, 1.0f),
+                                    Mathf.Max(c.g, 0.97f),
+                                    Mathf.Max(c.b, 0.93f),
+                                    1f));
+                                changed = true;
+                            }
+                        }
                         if (m.HasProperty("_EmissionColor"))
                         {
                             m.EnableKeyword("_EMISSION");
-                            Color emitCol = (liftDarkChassis && !isDarkIntentional)
-                                ? new Color(0.14f, 0.11f, 0.085f, 1f)
-                                : new Color(0.11f, 0.088f, 0.068f, 1f);
+                            Color emitCol = new Color(0.16f, 0.13f, 0.105f, 1f);
                             m.SetColor("_EmissionColor", emitCol);
+                            changed = true;
+                        }
+                        if (m.HasProperty("emissiveFactor"))
+                        {
+                            m.SetColor("emissiveFactor", new Color(0.24f, 0.21f, 0.17f, 1f));
                             changed = true;
                         }
                     }
                 }
                 if (changed) r.materials = mats;
+            }
+        }
+
+        private void LevelCuriosityWheels(GameObject curiosity)
+        {
+            if (curiosity == null) return;
+
+            // Deploy mast upright & pitch front rocker-bogie arms down smoothly so all 6 wheels touch evenly
+            Transform mastPivot = null;
+            Transform frontArmL = null;
+            Transform frontArmR = null;
+            Transform midWheelRef = null;
+            Transform frontWheelRefL = null;
+            Transform frontWheelRefR = null;
+
+            foreach (Transform t in curiosity.GetComponentsInChildren<Transform>(true))
+            {
+                if (t.name == "mast_p") mastPivot = t;
+                else if (t.name == "suspension_arm_F_L_p") frontArmL = t;
+                else if (t.name == "suspension_arm_F_R_p") frontArmR = t;
+                else if (t.name == "wheel_02_L") midWheelRef = t;
+                else if (t.name == "wheel_01_L") frontWheelRefL = t;
+                else if (t.name == "wheel_01_R") frontWheelRefR = t;
+            }
+
+            if (mastPivot != null)
+            {
+                mastPivot.localRotation = Quaternion.identity;
+            }
+
+            if (midWheelRef != null)
+            {
+                float targetY = midWheelRef.position.y;
+                if (frontArmL != null && frontWheelRefL != null)
+                {
+                    Quaternion orig = frontArmL.localRotation;
+                    Quaternion plus = orig * Quaternion.Euler(16f, 0f, 0f);
+                    Quaternion minus = orig * Quaternion.Euler(-16f, 0f, 0f);
+                    frontArmL.localRotation = plus;
+                    float dPlus = Mathf.Abs(frontWheelRefL.position.y - targetY);
+                    frontArmL.localRotation = minus;
+                    float dMinus = Mathf.Abs(frontWheelRefL.position.y - targetY);
+                    frontArmL.localRotation = dPlus < dMinus ? plus : minus;
+                }
+                if (frontArmR != null && frontWheelRefR != null)
+                {
+                    Quaternion orig = frontArmR.localRotation;
+                    Quaternion plus = orig * Quaternion.Euler(16f, 0f, 0f);
+                    Quaternion minus = orig * Quaternion.Euler(-16f, 0f, 0f);
+                    frontArmR.localRotation = plus;
+                    float dPlus = Mathf.Abs(frontWheelRefR.position.y - targetY);
+                    frontArmR.localRotation = minus;
+                    float dMinus = Mathf.Abs(frontWheelRefR.position.y - targetY);
+                    frontArmR.localRotation = dPlus < dMinus ? plus : minus;
+                }
+            }
+
+            // Level front/mid/rear wheel groups so all 6 wheels sit evenly on flat regolith
+            var wheels = new List<Transform>();
+            float minWheelY = float.MaxValue;
+            foreach (Transform t in curiosity.GetComponentsInChildren<Transform>(true))
+            {
+                string ln = t.name.ToLowerInvariant();
+                if (ln.StartsWith("wheel_0"))
+                {
+                    Renderer r = t.GetComponent<Renderer>();
+                    if (r != null && r.enabled)
+                    {
+                        wheels.Add(t);
+                        if (r.bounds.min.y < minWheelY) minWheelY = r.bounds.min.y;
+                    }
+                }
+            }
+            if (wheels.Count == 0 || minWheelY > 1e6f) return;
+            foreach (Transform w in wheels)
+            {
+                Renderer r = w.GetComponent<Renderer>();
+                if (r == null) continue;
+                float dy = minWheelY - r.bounds.min.y;
+                if (Mathf.Abs(dy) > 0.01f && Mathf.Abs(dy) < 0.25f)
+                {
+                    w.position += new Vector3(0f, dy, 0f);
+                }
             }
         }
 
@@ -1091,6 +1229,29 @@ namespace MarsSentinel.NASA
                     CreatePart(PrimitiveType.Cylinder, container.transform, $"Wheel_{xi}_{zi}",
                         new Vector3(wx[xi], 0.16f, wz[zi]), new Vector3(0f, 0f, 90f), new Vector3(0.28f, 0.10f, 0.28f), dark);
                 }
+            }
+        }
+
+        private void BuildVikingLanderMesh(Transform parent, Material gold, Material whiteMat, Material dark)
+        {
+            var container = new GameObject("MS_Viking_Detailed");
+            container.transform.SetParent(parent, false);
+
+            CreatePart(PrimitiveType.Cylinder, container.transform, "Viking_HexBody", new Vector3(0f, 0.82f, 0f), Vector3.zero, new Vector3(1.55f, 0.28f, 1.35f), whiteMat);
+            CreatePart(PrimitiveType.Cube, container.transform, "Viking_RTG_L", new Vector3(-0.78f, 0.88f, 0f), Vector3.zero, new Vector3(0.45f, 0.26f, 0.58f), gold);
+            CreatePart(PrimitiveType.Cube, container.transform, "Viking_RTG_R", new Vector3(0.78f, 0.88f, 0f), Vector3.zero, new Vector3(0.45f, 0.26f, 0.58f), gold);
+            CreatePart(PrimitiveType.Cylinder, container.transform, "Viking_HGA_Mast", new Vector3(-0.18f, 1.35f, -0.10f), Vector3.zero, new Vector3(0.07f, 0.35f, 0.07f), dark);
+            CreatePart(PrimitiveType.Cylinder, container.transform, "Viking_HGA_Dish", new Vector3(-0.18f, 1.66f, -0.10f), new Vector3(26f, 0f, 0f), new Vector3(0.88f, 0.04f, 0.88f), whiteMat);
+            CreatePart(PrimitiveType.Cylinder, container.transform, "Viking_MetMast", new Vector3(0.42f, 1.32f, 0.32f), Vector3.zero, new Vector3(0.05f, 0.34f, 0.05f), whiteMat);
+
+            for (int k = 0; k < 3; k++)
+            {
+                float a = k * 120f * Mathf.Deg2Rad;
+                Vector3 footPos = new Vector3(Mathf.Cos(a) * 1.12f, 0.06f, Mathf.Sin(a) * 1.12f);
+                CreatePart(PrimitiveType.Cylinder, container.transform, $"Footpad_{k}", footPos, Vector3.zero, new Vector3(0.36f, 0.05f, 0.36f), dark);
+                Vector3 hip = new Vector3(Mathf.Cos(a) * 0.62f, 0.72f, Mathf.Sin(a) * 0.62f);
+                var leg = CreatePart(PrimitiveType.Cylinder, container.transform, $"Leg_{k}", (hip + footPos) * 0.5f, Vector3.zero, new Vector3(0.09f, 0.44f, 0.09f), dark);
+                leg.transform.up = (hip - footPos).normalized;
             }
         }
 
@@ -1779,7 +1940,7 @@ namespace MarsSentinel.NASA
                 skyboxMat.SetColor("_ZenithColor", zenith);
                 skyboxMat.SetColor("_HorizonColor", horizon);
                 skyboxMat.SetColor("_SunHaloColor", haloCol);
-                skyboxMat.SetColor("_SunDiscColor", new Color(7.5f, 6.2f, 4.6f, 1f));
+                skyboxMat.SetColor("_SunDiscColor", new Color(3.2f, 2.75f, 2.2f, 1f));
                 skyboxMat.SetFloat("_SpaceBlend", spaceBlend);
                 skyboxMat.SetFloat("_StarIntensity", Mathf.Lerp(1.6f, 2.5f, spaceBlend));
                 skyboxMat.SetFloat("_DustTau", 0.42f);
@@ -2090,6 +2251,7 @@ namespace MarsSentinel.NASA
             if (fiEnhancerOrbitOverride != null && enhancer != null) fiEnhancerOrbitOverride.SetValue(enhancer, false);
             if (fiEnhancerFocusMode != null && enhancer != null) fiEnhancerFocusMode.SetValue(enhancer, 0);
             if (fiEnhancerSpaceBlend != null && enhancer != null) fiEnhancerSpaceBlend.SetValue(enhancer, 0f);
+            if (enhancer != null) enhancer.SendMessage("ClearCameraOverrides", SendMessageOptions.DontRequireReceiver);
             if (cinemachineBrain != null) cinemachineBrain.enabled = false;
             MarsAudioManager.Instance?.PlayUiClick();
         }
@@ -2113,6 +2275,7 @@ namespace MarsSentinel.NASA
             if (fiEnhancerOrbitOverride != null && enhancer != null) fiEnhancerOrbitOverride.SetValue(enhancer, false);
             if (fiEnhancerFocusMode != null && enhancer != null) fiEnhancerFocusMode.SetValue(enhancer, 0);
             if (fiEnhancerSpaceBlend != null && enhancer != null) fiEnhancerSpaceBlend.SetValue(enhancer, 0f);
+            if (enhancer != null) enhancer.SendMessage("ClearCameraOverrides", SendMessageOptions.DontRequireReceiver);
 
             if (orbitalCam != null) orbitalCam.Priority.Value = 5;
             if (surfaceCam != null) surfaceCam.Priority.Value = activeSurfaceKey == 1 ? 30 : 10;
