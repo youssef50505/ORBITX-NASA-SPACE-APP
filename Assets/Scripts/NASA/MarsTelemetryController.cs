@@ -34,16 +34,21 @@ namespace MarsSentinel.NASA
         [SerializeField] private LineRenderer lineSafest;
         [SerializeField] private LineRenderer lineShortest;
         [SerializeField] private LineRenderer lineScience;
+        [SerializeField] private LineRenderer lineIngenuity;
+        [SerializeField] private LineRenderer linePerseveranceHistory;
         [SerializeField] private float lineWidth = 0.8f;
 
         [Header("Colors")]
         [SerializeField] private Color colorSafest = new Color(0.0f, 0.95f, 0.75f, 1.0f);   // Cyan / Green
         [SerializeField] private Color colorShortest = new Color(1.0f, 0.84f, 0.0f, 1.0f);  // Yellow
         [SerializeField] private Color colorScience = new Color(0.9f, 0.25f, 0.98f, 1.0f);  // Magenta
+        [SerializeField] private Color colorIngenuity = new Color(0.25f, 0.85f, 1.0f, 0.9f); // Sky Blue
+        [SerializeField] private Color colorPerseveranceHistory = new Color(1.0f, 0.52f, 0.22f, 0.85f); // Rusty Orange
 
         [Header("Waypoints")]
         [SerializeField] private Transform waypointContainer;
         [SerializeField] private bool showSampleTubes = true;
+        [SerializeField] private bool showHistoricalOverlays = true;
 
         [Header("Active Rover Telemetry")]
         [SerializeField] private RoverTelemetry telemetry = new RoverTelemetry
@@ -104,9 +109,11 @@ namespace MarsSentinel.NASA
             if (lineSafest == null) lineSafest = CreateRouteRenderer("LineRenderer_SafestRoute", colorSafest);
             if (lineShortest == null) lineShortest = CreateRouteRenderer("LineRenderer_ShortestRoute", colorShortest);
             if (lineScience == null) lineScience = CreateRouteRenderer("LineRenderer_ScienceRoute", colorScience);
+            if (lineIngenuity == null) lineIngenuity = CreateRouteRenderer("LineRenderer_IngenuityFlights", colorIngenuity, 0.35f);
+            if (linePerseveranceHistory == null) linePerseveranceHistory = CreateRouteRenderer("LineRenderer_PerseveranceHistory", colorPerseveranceHistory, 0.45f);
         }
 
-        private LineRenderer CreateRouteRenderer(string objectName, Color color)
+        private LineRenderer CreateRouteRenderer(string objectName, Color color, float overrideWidth = -1f)
         {
             Transform existing = transform.Find(objectName);
             GameObject go = existing != null ? existing.gameObject : new GameObject(objectName);
@@ -123,8 +130,9 @@ namespace MarsSentinel.NASA
 
             lr.startColor = color;
             lr.endColor = color;
-            lr.startWidth = lineWidth;
-            lr.endWidth = lineWidth;
+            float w = overrideWidth > 0f ? overrideWidth : lineWidth;
+            lr.startWidth = w;
+            lr.endWidth = w;
             lr.useWorldSpace = true;
             lr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             lr.receiveShadows = false;
@@ -135,11 +143,37 @@ namespace MarsSentinel.NASA
         private void PopulateRouteLines()
         {
             var data = MarsDatasetLoader.Instance?.RoutesData;
-            if (data == null) return;
+            if (data != null)
+            {
+                SetLinePoints(lineSafest, data.safest.unityPositions);
+                SetLinePoints(lineShortest, data.shortest.unityPositions);
+                SetLinePoints(lineScience, data.science.unityPositions);
+            }
 
-            SetLinePoints(lineSafest, data.safest.unityPositions);
-            SetLinePoints(lineShortest, data.shortest.unityPositions);
-            SetLinePoints(lineScience, data.science.unityPositions);
+            if (MarsDatasetLoader.Instance != null)
+            {
+                var ingPts = new List<Vector3>();
+                foreach (var fl in MarsDatasetLoader.Instance.IngenuityFlights)
+                {
+                    foreach (var p in fl.points)
+                    {
+                        ingPts.Add(new Vector3(p.x, p.y + 1.8f, p.z));
+                    }
+                }
+                SetLinePoints(lineIngenuity, ingPts);
+                if (lineIngenuity != null) lineIngenuity.enabled = showHistoricalOverlays;
+
+                var persevPts = new List<Vector3>();
+                foreach (var leg in MarsDatasetLoader.Instance.PerseveranceTraverses)
+                {
+                    foreach (var p in leg.points)
+                    {
+                        persevPts.Add(p);
+                    }
+                }
+                SetLinePoints(linePerseveranceHistory, persevPts);
+                if (linePerseveranceHistory != null) linePerseveranceHistory.enabled = showHistoricalOverlays;
+            }
         }
 
         private void SetLinePoints(LineRenderer lr, List<Vector3> points)
@@ -182,15 +216,12 @@ namespace MarsSentinel.NASA
                 CreateBeacon("Science_Site_Rochette", new Vector3(uX, 0f, uZ), colorScience, 1.2f);
             }
 
-            // Spawn Sample Tubes
+            // Spawn ALL 22 NASA Perseverance Sample Tubes
             if (showSampleTubes && MarsDatasetLoader.Instance != null)
             {
-                int count = 0;
                 foreach (var tube in MarsDatasetLoader.Instance.SampleTubes)
                 {
                     CreateSampleMarker($"SampleTube_{tube.sample_num}_{tube.sample_name}", tube.unityPosition, tube);
-                    count++;
-                    if (count >= 15) break; // Display primary 15 surface sample tubes
                 }
             }
         }
@@ -244,6 +275,13 @@ namespace MarsSentinel.NASA
             if (lineSafest != null) lineSafest.enabled = safest;
             if (lineShortest != null) lineShortest.enabled = shortest;
             if (lineScience != null) lineScience.enabled = science;
+        }
+
+        public void SetHistoricalOverlaysVisibility(bool ingenuityVisible, bool perseveranceHistoryVisible)
+        {
+            showHistoricalOverlays = ingenuityVisible || perseveranceHistoryVisible;
+            if (lineIngenuity != null) lineIngenuity.enabled = ingenuityVisible;
+            if (linePerseveranceHistory != null) linePerseveranceHistory.enabled = perseveranceHistoryVisible;
         }
 
         public void UpdateRoverMotionTelemetry(float speedMps, float headingDeg, float distanceTraveled)

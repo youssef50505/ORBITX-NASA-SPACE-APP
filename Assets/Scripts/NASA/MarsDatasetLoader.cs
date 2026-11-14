@@ -103,6 +103,34 @@ namespace MarsSentinel.NASA
         public List<GeologyEpoch> epochs = new List<GeologyEpoch>();
     }
 
+    [Serializable]
+    public class IngenuityFlightData
+    {
+        public int flightNumber;
+        public int sol;
+        public float lengthMeters;
+        public List<Vector3> points = new List<Vector3>();
+    }
+
+    [Serializable]
+    public class CuriosityTraverseStats
+    {
+        public int featureCount;
+        public int vertexCount;
+        public float totalLengthMeters;
+    }
+
+    [Serializable]
+    public class PerseveranceImageryMeta
+    {
+        public string imageId;
+        public int sol;
+        public string instrument;
+        public float mastAzDeg;
+        public float mastElDeg;
+        public string dimension;
+    }
+
     /// <summary>
     /// Loads and manages NASA planetary science datasets from StreamingAssets/NASA_Data/.
     /// Converts IAU2000 Mars planetocentric coordinates to Unity Left-Handed Cartesian space.
@@ -124,6 +152,11 @@ namespace MarsSentinel.NASA
         public DistinctRoutesData RoutesData { get; private set; } = new DistinctRoutesData();
         public List<SampleTubeData> SampleTubes { get; private set; } = new List<SampleTubeData>();
         public List<TraverseLeg> PerseveranceTraverses { get; private set; } = new List<TraverseLeg>();
+        public List<IngenuityFlightData> IngenuityFlights { get; private set; } = new List<IngenuityFlightData>();
+        public CuriosityTraverseStats CuriosityStats { get; private set; } = new CuriosityTraverseStats();
+        public PerseveranceImageryMeta SampleImageryMeta { get; private set; } = new PerseveranceImageryMeta();
+        public int PerseveranceDropoutsFiltered { get; private set; }
+        public int OfficialResourcesCount { get; private set; }
         public List<GeologyUnit> GeologyUnits { get; private set; } = new List<GeologyUnit>();
         public GeologyStratigraphy Stratigraphy { get; private set; } = new GeologyStratigraphy();
 
@@ -159,16 +192,21 @@ namespace MarsSentinel.NASA
             yield return StartCoroutine(LoadDistinctRoutes(Path.Combine(basePath, "jez_distinct_routes.json")));
             yield return StartCoroutine(LoadSampleTubes(Path.Combine(basePath, "routes_traverses", "sample_tubes_m20.geojson")));
             yield return StartCoroutine(LoadPerseveranceTraverse(Path.Combine(basePath, "routes_traverses", "perseverance_traverse_m20.geojson")));
+            yield return StartCoroutine(LoadIngenuityFlights(Path.Combine(basePath, "routes_traverses", "ingenuity_flights_m20.geojson")));
+            yield return StartCoroutine(LoadCuriosityTraverseSummary(Path.Combine(basePath, "routes_traverses", "curiosity_traverse_msl.geojson")));
             yield return StartCoroutine(LoadGeologyUnits(Path.Combine(basePath, "geology", "usgs_sim3292_units.json")));
             yield return StartCoroutine(LoadGeologyStratigraphy(Path.Combine(basePath, "geology", "usgs_sim3292_stratigraphy.json")));
+            yield return StartCoroutine(LoadSampleImageryMetadata(Path.Combine(basePath, "imagery", "perseverance_sample_metadata.json")));
+            yield return StartCoroutine(LoadApiManifest(Path.Combine(basePath, "apis", "nasa_endpoints_manifest.json")));
 
             isLoaded = true;
             Debug.Log($"[MarsDatasetLoader] All datasets loaded successfully! " +
                       $"Routes: Safest({RoutesData.safest.unityPositions.Count}pts), " +
                       $"Shortest({RoutesData.shortest.unityPositions.Count}pts), " +
                       $"Science({RoutesData.science.unityPositions.Count}pts). " +
-                      $"Sample Tubes: {SampleTubes.Count}, Geology Units: {GeologyUnits.Count}, " +
-                      $"Stratigraphy Epochs: {Stratigraphy.epochs.Count}.");
+                      $"Sample Tubes: {SampleTubes.Count}, Ingenuity Flights: {IngenuityFlights.Count}, " +
+                      $"Persev Dropouts Filtered: {PerseveranceDropoutsFiltered}, Curiosity Features: {CuriosityStats.featureCount}, " +
+                      $"Geology Units: {GeologyUnits.Count}, Stratigraphy Epochs: {Stratigraphy.epochs.Count}, NASA Resources: {OfficialResourcesCount}.");
 
             OnDataLoaded?.Invoke();
         }
@@ -319,6 +357,20 @@ namespace MarsSentinel.NASA
             }));
         }
 
+        /// <summary>
+        /// Filters NASA Jezero telemetry elevation dropouts (e.g., ~0m points when local terrain sits at ~-2570m).
+        /// </summary>
+        public static double FilterJezeroAltitudeDropout(double rawAlt, double lastValidAlt, double originAlt, out bool wasFiltered)
+        {
+            if (rawAlt > -1000.0 && originAlt < -2000.0)
+            {
+                wasFiltered = true;
+                return lastValidAlt;
+            }
+            wasFiltered = false;
+            return rawAlt;
+        }
+
         private IEnumerator LoadPerseveranceTraverse(string path)
         {
             yield return StartCoroutine(ReadTextFile(path, (json) =>
@@ -326,6 +378,9 @@ namespace MarsSentinel.NASA
                 if (string.IsNullOrEmpty(json)) return;
 
                 PerseveranceTraverses.Clear();
+                PerseveranceDropoutsFiltered = 0;
+                double lastValidElev = DEFAULT_ORIGIN_ELEV;
+
                 MatchCollection featureMatches = Regex.Matches(json, @"\{\s*""type""\s*:\s*""Feature""\s*,\s*""properties""\s*:\s*\{([^}]+)\}\s*,\s*""geometry""\s*:\s*\{\s*""type""\s*:\s*""LineString""\s*,\s*""coordinates""\s*:\s*\[(.*?)\]\s*\}\s*\}");
                 foreach (Match m in featureMatches)
                 {
@@ -338,12 +393,19 @@ namespace MarsSentinel.NASA
                         length = (float)ExtractDouble(props, "length", 0)
                     };
 
-                    MatchCollection coordMatches = Regex.Matches(coordsStr, @"\[\s*(-?[\d\.]+)\s*,\s*(-?[\d\.]+)\s*,\s*(-?[\d\.]+)\s*\]");
+                    MatchCollection coordMatches = Regex.Matches(coordsStr, @"\[\s*(-?[\d\.eE+-]+)\s*,\s*(-?[\d\.eE+-]+)(?:\s*,\s*(-?[\d\.eE+-]+))?\s*\]");
                     foreach (Match cm in coordMatches)
                     {
                         double lon = double.Parse(cm.Groups[1].Value, CultureInfo.InvariantCulture);
                         double lat = double.Parse(cm.Groups[2].Value, CultureInfo.InvariantCulture);
-                        double elev = double.Parse(cm.Groups[3].Value, CultureInfo.InvariantCulture);
+                        double elev = cm.Groups[3].Success && !string.IsNullOrEmpty(cm.Groups[3].Value)
+                            ? double.Parse(cm.Groups[3].Value, CultureInfo.InvariantCulture)
+                            : lastValidElev;
+
+                        elev = FilterJezeroAltitudeDropout(elev, lastValidElev, DEFAULT_ORIGIN_ELEV, out bool filtered);
+                        if (filtered) PerseveranceDropoutsFiltered++;
+                        else lastValidElev = elev;
+
                         leg.points.Add(PlanetocentricToUnity(lat, lon, elev, DEFAULT_ORIGIN_LAT, DEFAULT_ORIGIN_LON, DEFAULT_ORIGIN_ELEV));
                     }
 
@@ -352,6 +414,98 @@ namespace MarsSentinel.NASA
                         PerseveranceTraverses.Add(leg);
                     }
                 }
+            }));
+        }
+
+        private IEnumerator LoadIngenuityFlights(string path)
+        {
+            yield return StartCoroutine(ReadTextFile(path, (json) =>
+            {
+                if (string.IsNullOrEmpty(json)) return;
+
+                IngenuityFlights.Clear();
+                MatchCollection featureMatches = Regex.Matches(json, @"\{\s*""type""\s*:\s*""Feature""\s*,\s*""properties""\s*:\s*\{([^}]+)\}\s*,\s*""geometry""\s*:\s*\{\s*""type""\s*:\s*""LineString""\s*,\s*""coordinates""\s*:\s*\[(.*?)\]\s*\}\s*\}", RegexOptions.Singleline);
+                foreach (Match m in featureMatches)
+                {
+                    string props = m.Groups[1].Value;
+                    string coordsStr = m.Groups[2].Value;
+
+                    IngenuityFlightData fl = new IngenuityFlightData
+                    {
+                        flightNumber = (int)ExtractDouble(props, "Flight", 0),
+                        sol = (int)ExtractDouble(props, "Sol", 0),
+                        lengthMeters = (float)ExtractDouble(props, "Length_m", 0)
+                    };
+
+                    // Ingenuity coordinates are 2D [lon, lat]; safely fall back to DEFAULT_ORIGIN_ELEV
+                    MatchCollection coordMatches = Regex.Matches(coordsStr, @"\[\s*(-?[\d\.eE+-]+)\s*,\s*(-?[\d\.eE+-]+)(?:\s*,\s*(-?[\d\.eE+-]+))?\s*\]");
+                    foreach (Match cm in coordMatches)
+                    {
+                        double lon = double.Parse(cm.Groups[1].Value, CultureInfo.InvariantCulture);
+                        double lat = double.Parse(cm.Groups[2].Value, CultureInfo.InvariantCulture);
+                        double elev = cm.Groups[3].Success && !string.IsNullOrEmpty(cm.Groups[3].Value)
+                            ? double.Parse(cm.Groups[3].Value, CultureInfo.InvariantCulture)
+                            : DEFAULT_ORIGIN_ELEV;
+                        fl.points.Add(PlanetocentricToUnity(lat, lon, elev, DEFAULT_ORIGIN_LAT, DEFAULT_ORIGIN_LON, DEFAULT_ORIGIN_ELEV));
+                    }
+
+                    if (fl.points.Count > 0)
+                    {
+                        IngenuityFlights.Add(fl);
+                    }
+                }
+            }));
+        }
+
+        private IEnumerator LoadCuriosityTraverseSummary(string path)
+        {
+            yield return StartCoroutine(ReadTextFile(path, (json) =>
+            {
+                if (string.IsNullOrEmpty(json)) return;
+
+                MatchCollection features = Regex.Matches(json, @"""type""\s*:\s*""Feature""");
+                MatchCollection lengths = Regex.Matches(json, @"""Length""\s*:\s*(-?[\d\.]+)");
+                float sumLen = 0f;
+                foreach (Match lm in lengths)
+                {
+                    if (float.TryParse(lm.Groups[1].Value, NumberStyles.Float, CultureInfo.InvariantCulture, out float l))
+                        sumLen += l;
+                }
+
+                CuriosityStats = new CuriosityTraverseStats
+                {
+                    featureCount = features.Count,
+                    vertexCount = Regex.Matches(json, @"\[\s*137\.\d+\s*,\s*-4\.\d+").Count,
+                    totalLengthMeters = sumLen
+                };
+            }));
+        }
+
+        private IEnumerator LoadSampleImageryMetadata(string path)
+        {
+            yield return StartCoroutine(ReadTextFile(path, (json) =>
+            {
+                if (string.IsNullOrEmpty(json)) return;
+
+                SampleImageryMeta = new PerseveranceImageryMeta
+                {
+                    imageId = ExtractString(json, "imageid", "ZR2_0100_0675835095"),
+                    sol = (int)ExtractDouble(json, "sol", 100),
+                    instrument = ExtractString(json, "instrument", "MASTCAM_Z_RIGHT"),
+                    mastAzDeg = (float)ExtractDouble(json, "mastAz", 82.51),
+                    mastElDeg = (float)ExtractDouble(json, "mastEl", 19.09),
+                    dimension = ExtractString(json, "dimension", "(1648,1200)")
+                };
+            }));
+        }
+
+        private IEnumerator LoadApiManifest(string path)
+        {
+            yield return StartCoroutine(ReadTextFile(path, (json) =>
+            {
+                if (string.IsNullOrEmpty(json)) return;
+
+                OfficialResourcesCount = Regex.Matches(json, @"""id""\s*:\s*""").Count;
             }));
         }
 

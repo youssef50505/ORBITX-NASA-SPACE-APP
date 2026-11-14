@@ -30,11 +30,15 @@ namespace MarsSentinel.NASA
         [SerializeField] private MarsTerrainManager terrainManager;
         [SerializeField] private IngenuityRotorAnimator ingenuityAnimator;
 
-        [Header("Environment & Lighting")]
+        [Header("Environment & EVA Survival Physics")]
         [SerializeField] private Light sunLight;
         [SerializeField] private Color sunColor = new Color(1.0f, 0.878f, 0.698f, 1.0f); // #FFE0B2
         [SerializeField] private float sunIntensity = 1.3f;
         [SerializeField] private Color ambientColor = new Color(0.769f, 0.478f, 0.322f, 1.0f); // #C47A52
+        [Range(0.3f, 3.5f)] [SerializeField] private float dustOpticalDepthTau = 0.45f;
+
+        private int currentGeologyUnitIndex = 0;
+        private bool showHistoricalOverlays = true;
 
         [Header("UI References (uGUI)")]
         [SerializeField] private Canvas hudCanvas;
@@ -92,6 +96,61 @@ namespace MarsSentinel.NASA
                     celestialController.SetSolHour(celestialController.SolHour + 1.0f);
                 }
             }
+            else if (UnityEngine.Input.GetKeyDown(KeyCode.G))
+            {
+                CycleGeologyUnit();
+            }
+            else if (UnityEngine.Input.GetKeyDown(KeyCode.D))
+            {
+                CycleDustStormOpticalDepth();
+            }
+            else if (UnityEngine.Input.GetKeyDown(KeyCode.H))
+            {
+                showHistoricalOverlays = !showHistoricalOverlays;
+                if (telemetryController != null)
+                {
+                    telemetryController.SetHistoricalOverlaysVisibility(showHistoricalOverlays, showHistoricalOverlays);
+                    RefreshRoutesHudText();
+                }
+            }
+        }
+
+        public void CycleGeologyUnit()
+        {
+            if (datasetLoader != null && datasetLoader.GeologyUnits != null && datasetLoader.GeologyUnits.Count > 0)
+            {
+                currentGeologyUnitIndex = (currentGeologyUnitIndex + 1) % datasetLoader.GeologyUnits.Count;
+                RefreshGeologyHudText();
+            }
+        }
+
+        public void CycleDustStormOpticalDepth()
+        {
+            if (dustOpticalDepthTau < 0.7f) dustOpticalDepthTau = 0.90f;
+            else if (dustOpticalDepthTau < 1.3f) dustOpticalDepthTau = 1.65f;
+            else if (dustOpticalDepthTau < 2.2f) dustOpticalDepthTau = 2.80f;
+            else dustOpticalDepthTau = 0.45f;
+
+            ApplyMartianLighting();
+            if (telemetryController != null)
+            {
+                UpdateTelemetryDisplay(telemetryController.CurrentTelemetry);
+            }
+        }
+
+        public static float ComputeBeerLambertTransmission(float tau, float solarElevationDeg)
+        {
+            float clampedElev = Mathf.Clamp(solarElevationDeg, 5.0f, 90.0f);
+            float cosZenith = Mathf.Max(0.087f, Mathf.Sin(clampedElev * Mathf.Deg2Rad));
+            float airMass = 1.0f / cosZenith;
+            return Mathf.Exp(-Mathf.Max(0f, tau) * airMass);
+        }
+
+        public static float ComputeEvaSafeRadiusMeters(float tau, float remainingO2Fraction = 0.94f)
+        {
+            // Baseline Mars EVA safe Point-of-No-Return radius (~1800 m nominal at clear sky tau=0.45, reduced under dust storms)
+            float clearVisFactor = Mathf.Clamp(1.0f - (tau - 0.45f) * 0.18f, 0.35f, 1.0f);
+            return 1800.0f * clearVisFactor * Mathf.Clamp01(remainingO2Fraction);
         }
 
         private void EnsureRequiredComponents()
@@ -178,6 +237,7 @@ namespace MarsSentinel.NASA
 
             CreateFleetAnchor("MS_Perseverance_Root", surfaceFleet, new Vector3(0f, 0f, 0f));
             CreateFleetAnchor("MS_Ingenuity_Root", surfaceFleet, new Vector3(10f, 0f, 12f));
+            CreateFleetAnchor("MS_Curiosity_Root", surfaceFleet, new Vector3(-8f, 0f, -14f));
             CreateFleetAnchor("MS_InSight_Lander_Root", surfaceFleet, new Vector3(-15f, 0f, 20f));
             CreateFleetAnchor("MS_Opportunity_Root", surfaceFleet, new Vector3(-25f, 0f, 5f));
             CreateFleetAnchor("MS_Viking_Lander_Root", surfaceFleet, new Vector3(22f, 0f, -10f));
@@ -225,8 +285,10 @@ namespace MarsSentinel.NASA
 
             if (sunLight != null)
             {
-                sunLight.color = sunColor;
-                sunLight.intensity = sunIntensity;
+                float elevDeg = celestialController != null ? celestialController.SolarElevationDeg : 45.0f;
+                float transmission = ComputeBeerLambertTransmission(dustOpticalDepthTau, elevDeg);
+                sunLight.color = Color.Lerp(sunColor, new Color(0.85f, 0.45f, 0.22f, 1.0f), Mathf.Clamp01((dustOpticalDepthTau - 0.45f) / 2.5f));
+                sunLight.intensity = sunIntensity * Mathf.Lerp(0.45f, 1.05f, transmission);
                 sunLight.shadows = LightShadows.Soft;
             }
 
@@ -280,24 +342,45 @@ namespace MarsSentinel.NASA
 
         private void HandleDataLoaded()
         {
-            var r = datasetLoader.RoutesData;
+            RefreshRoutesHudText();
+            RefreshGeologyHudText();
+            if (telemetryController != null)
+            {
+                UpdateTelemetryDisplay(telemetryController.CurrentTelemetry);
+            }
+        }
+
+        private void RefreshRoutesHudText()
+        {
+            var r = datasetLoader != null ? datasetLoader.RoutesData : null;
             if (txtRoutes != null && r != null)
             {
+                int tubes = datasetLoader.SampleTubes != null ? datasetLoader.SampleTubes.Count : 0;
+                int flights = datasetLoader.IngenuityFlights != null ? datasetLoader.IngenuityFlights.Count : 0;
+                int dropouts = datasetLoader.PerseveranceDropoutsFiltered;
+                float curKm = datasetLoader.CuriosityStats != null ? datasetLoader.CuriosityStats.totalLengthMeters / 1000.0f : 0f;
                 txtRoutes.text = $"A* TRAVERSE ROUTES (JEZERO CRATER)\n" +
-                                 $"• Safest Path:   {r.safest.distance_m:F1} m (Slope: {r.safest.max_slope_deg:F1}°)\n" +
-                                 $"• Shortest Path: {r.shortest.distance_m:F1} m (Slope: {r.shortest.max_slope_deg:F1}°)\n" +
-                                 $"• Science Path:  {r.science.distance_m:F1} m (Slope: {r.science.max_slope_deg:F1}°)";
+                                 $"• Safest: {r.safest.distance_m:F1}m ({r.safest.max_slope_deg:F1}°) | Short: {r.shortest.distance_m:F1}m | Sci: {r.science.distance_m:F1}m\n" +
+                                 $"• Tubes: {tubes}/22 | Ingenuity: {flights} Flights | Dropouts Fixed: {dropouts}\n" +
+                                 $"• Curiosity MSL Gale: {curKm:F1} km | History Overlay [H]: {(showHistoricalOverlays ? "ON" : "OFF")}";
             }
+        }
 
+        private void RefreshGeologyHudText()
+        {
             if (txtGeology != null)
             {
-                if (datasetLoader.GeologyUnits != null && datasetLoader.GeologyUnits.Count > 0)
+                if (datasetLoader != null && datasetLoader.GeologyUnits != null && datasetLoader.GeologyUnits.Count > 0)
                 {
-                    var g = datasetLoader.GeologyUnits[0];
-                    txtGeology.text = $"USGS SIM 3292 GEOLOGY\n" +
+                    int idx = Mathf.Clamp(currentGeologyUnitIndex, 0, datasetLoader.GeologyUnits.Count - 1);
+                    var g = datasetLoader.GeologyUnits[idx];
+                    string povInfo = datasetLoader.SampleImageryMeta != null
+                        ? $"Sol {datasetLoader.SampleImageryMeta.sol} Mastcam-Z Az {datasetLoader.SampleImageryMeta.mastAzDeg:F1}° El {datasetLoader.SampleImageryMeta.mastElDeg:F1}°"
+                        : "Mastcam-Z Nominal";
+                    txtGeology.text = $"USGS SIM 3292 GEOLOGY [{idx + 1}/{datasetLoader.GeologyUnits.Count}] ([G] Next)\n" +
                                       $"Unit: {g.symbol} ({g.name})\n" +
-                                      $"System: {g.system} | Trafficability: {g.trafficability}/5\n" +
-                                      $"Note: {g.trafficability_desc}";
+                                      $"Trafficability: {g.trafficability}/5 | H2O Ice: {g.water_ice_potential}\n" +
+                                      $"POV: {povInfo}";
                 }
                 else
                 {
@@ -311,25 +394,27 @@ namespace MarsSentinel.NASA
         {
             if (txtVisorTitle != null)
             {
-                txtVisorTitle.text = "MARSSENTINEL — JEZERO SURFACE SHOWCASE";
+                txtVisorTitle.text = "MARSSENTINEL — JEZERO SURFACE SHOWCASE (10 MISSIONS)";
             }
+
+            float elevDeg = celestialController != null ? celestialController.SolarElevationDeg : 45.0f;
+            float trans = ComputeBeerLambertTransmission(dustOpticalDepthTau, elevDeg);
+            float safeRadius = ComputeEvaSafeRadiusMeters(dustOpticalDepthTau, t.batteryPercent / 100.0f);
 
             if (txtCoordinates != null)
             {
                 float solHr = celestialController != null ? celestialController.SolHour : 12.0f;
-                float sunElev = celestialController != null ? celestialController.SolarElevationDeg : 45.0f;
-                txtCoordinates.text = $"SOL {t.sol} | LMST {solHr:F1}h | SUN ELEV: {sunElev:F1}°\n" +
+                txtCoordinates.text = $"SOL {t.sol} | LMST {solHr:F1}h | SUN ELEV: {elevDeg:F1}° | DUST τ={dustOpticalDepthTau:F2} (Solar {trans * 100f:F0}%)\n" +
                                       $"COORDS: {t.longitudeEastDeg:F4}°E, {t.latitudeNorthDeg:F4}°N | ELEV: {t.elevationMeters:F1}m";
             }
 
             if (txtTelemetry != null)
             {
-                txtTelemetry.text = $"ROVER TELEMETRY (PERSEVERANCE M20)\n" +
-                                    $"• Speed:     {t.currentSpeedMps:F2} m/s\n" +
-                                    $"• Heading:   {t.headingDeg:F1}° WNW\n" +
-                                    $"• Slope:     {t.currentSlopeDeg:F1}° ({t.trafficabilityStatus})\n" +
-                                    $"• Traveled:  {t.distanceTraveledMeters:F2} m\n" +
-                                    $"• Power:     {t.batteryStatus}";
+                txtTelemetry.text = $"EVA & ROVER TELEMETRY (PERSEVERANCE + SUIT)\n" +
+                                    $"• Speed: {t.currentSpeedMps:F2} m/s | Hdg: {t.headingDeg:F1}° | Slope: {t.currentSlopeDeg:F1}°\n" +
+                                    $"• Beer-Lambert Solar Flux: {586.2f * trans:F0} W/m² (τ={dustOpticalDepthTau:F2})\n" +
+                                    $"• EVA O2 Reserve: {t.batteryPercent:F0}% | PNR Safe Radius: {safeRadius:F0} m\n" +
+                                    $"• Traveled: {t.distanceTraveledMeters:F2} m | {t.trafficabilityStatus}";
             }
         }
 
@@ -418,7 +503,7 @@ namespace MarsSentinel.NASA
             txtActiveCamera.rectTransform.anchoredPosition = new Vector2(0, -50);
 
             txtControlsLegend = CreateText("TxtControlsLegend", statusPanel.transform,
-                "CAMERAS: [1]-[5] | [L] Solar Preset | [T] Advance Hour\n[1] Surface Fleet | [2] Rover Close-Up\n[3] Ingenuity Scout | [4] Route Orbit\n[5] Orbital Fleet Skyward",
+                "CAMERAS: [1]-[5] | [L] Solar | [T] +1h | [D] Dust τ | [G] Geo | [H] History\n[1] Surface Fleet | [2] Rover Close-Up | [3] Ingenuity\n[4] Route Orbit | [5] Orbital Fleet Skyward",
                 12, FontStyle.Normal, new Color(0.85f, 0.85f, 0.9f), TextAnchor.UpperLeft, defaultFont);
             txtControlsLegend.rectTransform.anchoredPosition = new Vector2(0, -95);
         }

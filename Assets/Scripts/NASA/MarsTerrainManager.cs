@@ -1,7 +1,9 @@
 using System;
 using System.IO;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Networking;
 
 namespace MarsSentinel.NASA
 {
@@ -86,6 +88,13 @@ namespace MarsSentinel.NASA
 
         private Mesh LoadSTLOrGenerateFallback()
         {
+#if UNITY_WEBGL && !UNITY_EDITOR
+            if (Application.isPlaying)
+            {
+                StartCoroutine(LoadSTLWebGLCoroutine());
+                return null;
+            }
+#endif
             string fullPath = Path.Combine(Application.streamingAssetsPath, stlRelativePath);
             if (File.Exists(fullPath))
             {
@@ -102,10 +111,45 @@ namespace MarsSentinel.NASA
             return GenerateProceduralCraterMesh();
         }
 
+        private IEnumerator LoadSTLWebGLCoroutine()
+        {
+            string url = Application.streamingAssetsPath.TrimEnd('/') + "/" + stlRelativePath.TrimStart('/');
+            using (UnityWebRequest req = UnityWebRequest.Get(url))
+            {
+                yield return req.SendWebRequest();
+                if (req.result == UnityWebRequest.Result.Success && req.downloadHandler != null && req.downloadHandler.data != null)
+                {
+                    try
+                    {
+                        Mesh stlMesh = ParseBinarySTL(req.downloadHandler.data);
+                        if (stlMesh != null && meshFilter != null)
+                        {
+                            meshFilter.sharedMesh = stlMesh;
+                            yield break;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.LogWarning($"[MarsTerrainManager] WebGL STL parse failed: {ex.Message}");
+                    }
+                }
+            }
+
+            if (meshFilter != null && meshFilter.sharedMesh == null)
+            {
+                meshFilter.sharedMesh = GenerateProceduralCraterMesh();
+            }
+        }
+
         public static Mesh ParseBinarySTL(string path)
         {
             byte[] bytes = File.ReadAllBytes(path);
-            if (bytes.Length < 84) throw new InvalidDataException("STL file is too small to contain valid header and count.");
+            return ParseBinarySTL(bytes);
+        }
+
+        public static Mesh ParseBinarySTL(byte[] bytes)
+        {
+            if (bytes == null || bytes.Length < 84) throw new InvalidDataException("STL file is too small to contain valid header and count.");
 
             uint triangleCount = BitConverter.ToUInt32(bytes, 80);
             if (bytes.Length < 84 + triangleCount * 50)
@@ -122,31 +166,55 @@ namespace MarsSentinel.NASA
             int[] triangles = new int[triangleCount * 3];
 
             int offset = 84;
+            bool requiresNormalRecalc = false;
             for (int i = 0; i < triangleCount; i++)
             {
                 float nx = BitConverter.ToSingle(bytes, offset);
                 float ny = BitConverter.ToSingle(bytes, offset + 4);
                 float nz = BitConverter.ToSingle(bytes, offset + 8);
-                Vector3 normal = new Vector3(nx, nz, ny); // Swap Y and Z for Unity coordinate system
+                // Swap Y and Z from Blender/Mars Z-up right-handed to Unity Y-up left-handed
+                Vector3 normal = new Vector3(nx, nz, ny);
+                float sqrMag = normal.sqrMagnitude;
+                if (sqrMag < 0.001f || float.IsNaN(sqrMag))
+                {
+                    requiresNormalRecalc = true;
+                    normal = Vector3.up;
+                }
+                else
+                {
+                    normal /= Mathf.Sqrt(sqrMag);
+                }
 
+                int baseIdx = i * 3;
                 for (int v = 0; v < 3; v++)
                 {
                     float vx = BitConverter.ToSingle(bytes, offset + 12 + v * 12);
                     float vy = BitConverter.ToSingle(bytes, offset + 16 + v * 12);
                     float vz = BitConverter.ToSingle(bytes, offset + 20 + v * 12);
 
-                    int vertIdx = i * 3 + v;
+                    int vertIdx = baseIdx + v;
                     vertices[vertIdx] = new Vector3(vx, vz, vy);
                     normals[vertIdx] = normal;
-                    triangles[vertIdx] = vertIdx;
                 }
+
+                // Swapping Y and Z flips handedness (-1 determinant): reverse winding (0, 2, 1) so triangles face +Y
+                triangles[baseIdx] = baseIdx;
+                triangles[baseIdx + 1] = baseIdx + 2;
+                triangles[baseIdx + 2] = baseIdx + 1;
 
                 offset += 50; // 12 (normal) + 36 (3 vertices) + 2 (attribute byte count)
             }
 
             mesh.vertices = vertices;
-            mesh.normals = normals;
             mesh.triangles = triangles;
+            if (requiresNormalRecalc)
+            {
+                mesh.RecalculateNormals();
+            }
+            else
+            {
+                mesh.normals = normals;
+            }
             mesh.RecalculateBounds();
             mesh.RecalculateTangents();
 
