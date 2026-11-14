@@ -245,5 +245,13 @@ namespace MarsSentinel.NASA
             if (lineShortest != null) lineShortest.enabled = shortest;
             if (lineScience != null) lineScience.enabled = science;
         }
+
+        public void UpdateRoverMotionTelemetry(float speedMps, float headingDeg, float distanceTraveled)
+        {
+            telemetry.currentSpeedMps = speedMps;
+            telemetry.headingDeg = headingDeg;
+            telemetry.distanceTraveledMeters = distanceTraveled;
+            OnTelemetryUpdated?.Invoke(telemetry);
+        }
     }
 }

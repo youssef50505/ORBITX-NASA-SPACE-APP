@@ -25,6 +25,11 @@ namespace MarsSentinel.NASA
         [SerializeField] private MarsCelestialOrbitController celestialController;
         [SerializeField] private MarsSatelliteConstellation constellationController;
 
+        [Header("Visual Polish & Animation Controllers (Milestone 9)")]
+        [SerializeField] private MarsSimulationAnimator simulationAnimator;
+        [SerializeField] private MarsTerrainManager terrainManager;
+        [SerializeField] private IngenuityRotorAnimator ingenuityAnimator;
+
         [Header("Environment & Lighting")]
         [SerializeField] private Light sunLight;
         [SerializeField] private Color sunColor = new Color(1.0f, 0.878f, 0.698f, 1.0f); // #FFE0B2
@@ -135,7 +140,29 @@ namespace MarsSentinel.NASA
                 if (constellationController == null) constellationController = gameObject.AddComponent<MarsSatelliteConstellation>();
             }
 
+            if (simulationAnimator == null)
+            {
+                simulationAnimator = FindAnyObjectByType<MarsSimulationAnimator>();
+                if (simulationAnimator == null) simulationAnimator = gameObject.AddComponent<MarsSimulationAnimator>();
+            }
+
             EnsureFleetHierarchy();
+
+            // Wire Terrain Manager on MS_Terrain_Jezero
+            Transform terrainAnchor = transform.Find("MS_Mars_Fleet_Surface/MS_Terrain_Jezero");
+            if (terrainAnchor != null)
+            {
+                terrainManager = terrainAnchor.GetComponent<MarsTerrainManager>();
+                if (terrainManager == null) terrainManager = terrainAnchor.gameObject.AddComponent<MarsTerrainManager>();
+            }
+
+            // Wire Ingenuity Rotor Animator on MS_Ingenuity_Root
+            Transform ingAnchor = transform.Find("MS_Mars_Fleet_Surface/MS_Ingenuity_Root");
+            if (ingAnchor != null)
+            {
+                ingenuityAnimator = ingAnchor.GetComponent<IngenuityRotorAnimator>();
+                if (ingenuityAnimator == null) ingenuityAnimator = ingAnchor.gameObject.AddComponent<IngenuityRotorAnimator>();
+            }
         }
 
         private void EnsureFleetHierarchy()
@@ -203,9 +230,10 @@ namespace MarsSentinel.NASA
                 sunLight.shadows = LightShadows.Soft;
             }
 
-            RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Flat;
-            RenderSettings.ambientLight = ambientColor;
-            RenderSettings.ambientSkyColor = ambientColor;
+            RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Trilight;
+            RenderSettings.ambientSkyColor = new Color(0.7686f, 0.4784f, 0.3216f, 1.0f); // #C47A52
+            RenderSettings.ambientEquatorColor = new Color(0.549f, 0.3098f, 0.196f, 1.0f); // #8C4F32
+            RenderSettings.ambientGroundColor = new Color(0.1804f, 0.0941f, 0.0627f, 1.0f); // #2E1810
         }
 
         private void SubscribeEvents()

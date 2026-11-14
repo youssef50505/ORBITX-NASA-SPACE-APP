@@ -82,9 +82,10 @@ namespace MarsSentinel.Editor
             sunLight.shadows = LightShadows.Soft;
             sunLight.transform.rotation = Quaternion.Euler(50f, -30f, 0f);
 
-            RenderSettings.ambientMode = AmbientMode.Flat;
-            RenderSettings.ambientLight = new Color(0.7686f, 0.4784f, 0.3216f, 1.0f); // #C47A52
-            RenderSettings.ambientSkyColor = new Color(0.7686f, 0.4784f, 0.3216f, 1.0f);
+            RenderSettings.ambientMode = AmbientMode.Trilight;
+            RenderSettings.ambientSkyColor = new Color(0.7686f, 0.4784f, 0.3216f, 1.0f); // #C47A52
+            RenderSettings.ambientEquatorColor = new Color(0.549f, 0.3098f, 0.196f, 1.0f); // #8C4F32
+            RenderSettings.ambientGroundColor = new Color(0.1804f, 0.0941f, 0.0627f, 1.0f); // #2E1810
 
             // 3. Setup Global Volume with SampleSceneProfile
             Volume globalVolume = Object.FindAnyObjectByType<Volume>();
@@ -126,6 +127,9 @@ namespace MarsSentinel.Editor
             if (orchestrator.GetComponent<MarsSatelliteConstellation>() == null)
                 orchestrator.AddComponent<MarsSatelliteConstellation>();
 
+            if (orchestrator.GetComponent<MarsSimulationAnimator>() == null)
+                orchestrator.AddComponent<MarsSimulationAnimator>();
+
             var celCtrl = orchestrator.GetComponent<MarsCelestialOrbitController>();
             celCtrl.EnsureMoonsHierarchy();
 
@@ -166,6 +170,28 @@ namespace MarsSentinel.Editor
             InstantiateFleetModel("InSight Cruise Lander (panels deployed).glb", "MS_InSight_Lander_Root", surfaceRoot, new Vector3(-12, 0, 16));
             InstantiateFleetModel("mars-exploration-rover-opportunity-mer-b.glb", "MS_Opportunity_Root", surfaceRoot, new Vector3(-20, 0, 4));
             InstantiateFleetModel("Viking Lander.glb", "MS_Viking_Lander_Root", surfaceRoot, new Vector3(18, 0, -8));
+
+            // Wire Ingenuity Rotor Animator
+            Transform ingNode = surfaceRoot.Find("MS_Ingenuity_Root");
+            if (ingNode != null && ingNode.GetComponent<IngenuityRotorAnimator>() == null)
+            {
+                var ingAnim = ingNode.gameObject.AddComponent<IngenuityRotorAnimator>();
+                ingAnim.LocateOrCreateRotors();
+            }
+
+            // Wire Terrain Manager on MS_Terrain_Jezero
+            Transform terrainNode = surfaceRoot.Find("MS_Terrain_Jezero");
+            if (terrainNode == null)
+            {
+                var tGo = new GameObject("MS_Terrain_Jezero");
+                tGo.transform.SetParent(surfaceRoot, false);
+                terrainNode = tGo.transform;
+            }
+            if (terrainNode.GetComponent<MarsTerrainManager>() == null)
+            {
+                var terrMgr = terrainNode.gameObject.AddComponent<MarsTerrainManager>();
+                terrMgr.InitializeTerrain();
+            }
 
             // Instantiate orbiters under orbital root
             InstantiateFleetModel("Mars Reconnaissance Orbiter (MRO) (A).glb", "MS_MRO_Root", orbitRoot, new Vector3(-80, 250, 150));
