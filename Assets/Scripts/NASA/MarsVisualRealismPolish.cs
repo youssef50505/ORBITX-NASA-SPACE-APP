@@ -125,7 +125,7 @@ namespace MarsSentinel.NASA
                 {
                     if (arg.StartsWith("-captureShowcase=", StringComparison.OrdinalIgnoreCase))
                     {
-                        captureOutDir = arg.Substring("-captureShowcase=".Length).Trim().Trim('"');
+                        captureOutDir = arg.Substring("-captureShowcase=".Length).Trim().Trim((char)34);
                     }
                 }
             }
