@@ -680,6 +680,10 @@ namespace MarsSentinel.NASA
 
         private void LateUpdate()
         {
+            if (GetComponent<MarsVisualRealismPolish>() == null)
+            {
+                gameObject.AddComponent<MarsVisualRealismPolish>();
+            }
             simTime += Time.deltaTime;
             HandleCelestialFocusHotkeys();
 
@@ -779,9 +783,9 @@ namespace MarsSentinel.NASA
             Keyboard kb = Keyboard.current;
             if (kb == null) return;
 
-            if (kb.oKey.wasPressedThisFrame && orbitalCam != null)
+            if ((kb.oKey.wasPressedThisFrame || kb.digit5Key.wasPressedThisFrame) && orbitalCam != null)
             {
-                orbitOverrideActive = !orbitOverrideActive;
+                orbitOverrideActive = kb.digit5Key.wasPressedThisFrame ? true : !orbitOverrideActive;
                 orbitalCam.Priority.Value = orbitOverrideActive ? 100 : 5;
                 focusTargetMode = 0;
             }
@@ -798,12 +802,11 @@ namespace MarsSentinel.NASA
                 focusTargetMode = (focusTargetMode == 3) ? 0 : 3;
             }
             else if (kb.digit1Key.wasPressedThisFrame || kb.digit2Key.wasPressedThisFrame ||
-                     kb.digit3Key.wasPressedThisFrame || kb.digit4Key.wasPressedThisFrame ||
-                     kb.digit5Key.wasPressedThisFrame)
+                     kb.digit3Key.wasPressedThisFrame || kb.digit4Key.wasPressedThisFrame)
             {
                 focusTargetMode = 0;
                 orbitOverrideActive = false;
-                if (kb.digit1Key.wasPressedThisFrame && orbitalCam != null)
+                if (orbitalCam != null)
                 {
                     orbitalCam.Priority.Value = 5;
                 }

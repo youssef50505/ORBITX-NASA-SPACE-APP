@@ -142,7 +142,7 @@ namespace MarsSentinel.Editor
                     if (!keptCameraRigs && tr.childCount > 0)
                     {
                         keptCameraRigs = true;
-                        tr.SetParent(mainCam.transform, false);
+                        tr.SetParent(null, false);
                     }
                     else if (tr.childCount == 0)
                     {

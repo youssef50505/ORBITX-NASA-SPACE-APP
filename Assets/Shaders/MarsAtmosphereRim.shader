@@ -2,22 +2,20 @@ Shader "MarsSentinel/MarsAtmosphereRim"
 {
     Properties
     {
-        _SunDir ("Sun Direction", Vector) = (-0.4, 0.55, 0.72, 0.0)
-        _DayRimColor ("Day Scatter Color", Color) = (0.96, 0.62, 0.36, 1.0)
-        _TwilightRimColor ("Terminator Scatter Color", Color) = (0.42, 0.72, 0.98, 1.0)
-        _Intensity ("Atmosphere Intensity", Range(0.1, 3.0)) = 1.25
+        _DayRimColor ("Day Rim Color", Color) = (0.96, 0.62, 0.36, 1)
+        _TwilightRimColor ("Twilight Rim Color", Color) = (0.45, 0.76, 1.0, 1)
+        _SunDir ("Sun Direction", Vector) = (0.34, 0.34, 0.88, 0)
+        _Intensity ("Intensity", Range(0.0, 4.0)) = 1.35
     }
-
     SubShader
     {
-        Tags { "Queue"="Transparent" "RenderType"="Transparent" "RenderPipeline"="UniversalPipeline" }
-        Blend SrcAlpha One
-        ZWrite Off
+        Tags { "Queue"="Transparent" "RenderType"="Transparent" "IgnoreProjector"="True" }
+        Blend One One
         Cull Back
+        ZWrite Off
 
         Pass
         {
-            Name "MarsAtmoRimPass"
             HLSLPROGRAM
             #pragma vertex vert
             #pragma fragment frag
@@ -36,38 +34,38 @@ Shader "MarsSentinel/MarsAtmosphereRim"
                 float3 viewDirWS : TEXCOORD1;
             };
 
-            CBUFFER_START(UnityPerMaterial)
-                float4 _SunDir;
-                half4 _DayRimColor;
-                half4 _TwilightRimColor;
-                float _Intensity;
-            CBUFFER_END
+            float4 _DayRimColor;
+            float4 _TwilightRimColor;
+            float4 _SunDir;
+            float _Intensity;
 
-            Varyings vert(Attributes IN)
+            Varyings vert(Attributes v)
             {
-                Varyings OUT;
-                VertexPositionInputs posInputs = GetVertexPositionInputs(IN.positionOS.xyz);
-                VertexNormalInputs normInputs = GetVertexNormalInputs(IN.normalOS);
-                OUT.positionHCS = posInputs.positionCS;
-                OUT.normalWS = normInputs.normalWS;
-                OUT.viewDirWS = GetWorldSpaceViewDir(posInputs.positionWS);
-                return OUT;
+                Varyings o;
+                float3 posWS = TransformObjectToWorld(v.positionOS.xyz);
+                o.positionHCS = TransformWorldToHClip(posWS);
+                o.normalWS = TransformObjectToWorldNormal(v.normalOS);
+                o.viewDirWS = GetWorldSpaceViewDir(posWS);
+                return o;
             }
 
-            half4 frag(Varyings IN) : SV_Target
+            half4 frag(Varyings i) : SV_Target
             {
-                float3 n = normalize(IN.normalWS);
-                float3 v = normalize(IN.viewDirWS);
-                float3 s = normalize(_SunDir.xyz);
+                float3 N = normalize(i.normalWS);
+                float3 V = normalize(i.viewDirWS);
+                float3 L = normalize(_SunDir.xyz);
 
-                float fresnel = pow(saturate(1.0 - max(dot(n, v), 0.0)), 3.2);
-                float sunDot = dot(n, s);
-                float daySide = smoothstep(-0.28, 0.65, sunDot);
-                float terminator = exp(-pow((sunDot + 0.04) * 4.2, 2.0));
+                float ndotv = saturate(dot(N, V));
+                float fresnel = pow(1.0 - ndotv, 3.6);
+                // Smooth outer falloff to eliminate hard shell outline
+                float outerFade = smoothstep(0.02, 0.32, ndotv);
+                float sunTerm = dot(N, L);
+                float dayMask = smoothstep(-0.22, 0.45, sunTerm);
+                float terminator = exp(-pow((sunTerm - 0.05) * 3.8, 2.0));
 
-                half3 col = lerp(_DayRimColor.rgb, _TwilightRimColor.rgb, (half)(terminator * 0.78));
-                float alpha = fresnel * (0.06 + daySide * 0.68 + terminator * 0.30) * _Intensity;
-                return half4(col * (half)alpha, saturate(alpha));
+                float3 col = lerp(_DayRimColor.rgb, _TwilightRimColor.rgb, saturate(0.55 + terminator * 0.45));
+                float alpha = fresnel * (0.35 + 0.65 * outerFade) * (0.10 + 0.90 * dayMask) * _Intensity;
+                return half4(col * alpha, saturate(alpha));
             }
             ENDHLSL
         }

@@ -2,24 +2,24 @@ Shader "MarsSentinel/MartianAtmosphereSkybox"
 {
     Properties
     {
-        _SunDir ("Sun Direction", Vector) = (-0.4, 0.55, 0.72, 0.0)
-        _ZenithColor ("Zenith Color", Color) = (0.56, 0.34, 0.21, 1.0)
-        _HorizonColor ("Horizon Color", Color) = (0.86, 0.57, 0.37, 1.0)
-        _SunHaloColor ("Blue Forward Scatter Halo", Color) = (0.55, 0.78, 0.98, 1.0)
-        _SunDiscColor ("Sun Photosphere Color", Color) = (4.2, 3.7, 2.9, 1.0)
-        _DustTau ("Dust Optical Depth Tau", Range(0.05, 2.5)) = 0.45
-        _SpaceBlend ("Deep Space Starfield Blend", Range(0.0, 1.0)) = 0.0
-        _StarIntensity ("Starfield Intensity", Range(0.0, 2.0)) = 1.15
+        _SunDir ("Sun Direction", Vector) = (0.34, 0.34, 0.88, 0)
+        _SunDiscColor ("Sun Disc Color", Color) = (6.5, 5.4, 4.1, 1)
+        _SunHaloColor ("Sun Halo Color", Color) = (0.58, 0.78, 0.98, 1)
+        _ZenithColor ("Zenith Color", Color) = (0.34, 0.25, 0.21, 1)
+        _HorizonColor ("Horizon Color", Color) = (0.78, 0.50, 0.34, 1)
+        _GroundColor ("Ground Color", Color) = (0.20, 0.08, 0.04, 1)
+        _DustTau ("Dust Tau", Range(0.05, 2.0)) = 0.42
+        _SpaceBlend ("Space Blend", Range(0.0, 1.0)) = 0.0
+        _StarIntensity ("Star Intensity", Range(0.0, 4.0)) = 1.25
     }
-
     SubShader
     {
-        Tags { "Queue"="Background" "RenderType"="Background" "PreviewType"="Skybox" "RenderPipeline"="UniversalPipeline" }
-        Cull Off ZWrite Off
+        Tags { "Queue"="Background" "RenderType"="Background" "PreviewType"="Skybox" }
+        Cull Off
+        ZWrite Off
 
         Pass
         {
-            Name "MartianSkyPass"
             HLSLPROGRAM
             #pragma vertex vert
             #pragma fragment frag
@@ -33,90 +33,103 @@ Shader "MarsSentinel/MartianAtmosphereSkybox"
             struct Varyings
             {
                 float4 positionHCS : SV_POSITION;
-                float3 viewDirWS : TEXCOORD0;
+                float3 dir : TEXCOORD0;
             };
 
-            CBUFFER_START(UnityPerMaterial)
-                float4 _SunDir;
-                half4 _ZenithColor;
-                half4 _HorizonColor;
-                half4 _SunHaloColor;
-                half4 _SunDiscColor;
-                float _DustTau;
-                float _SpaceBlend;
-                float _StarIntensity;
-            CBUFFER_END
+            float4 _SunDir;
+            float4 _SunDiscColor;
+            float4 _SunHaloColor;
+            float4 _ZenithColor;
+            float4 _HorizonColor;
+            float4 _GroundColor;
+            float _DustTau;
+            float _SpaceBlend;
+            float _StarIntensity;
 
-            float hash31(float3 p)
+            float3 Hash33(float3 p)
             {
-                p = frac(p * float3(443.897, 441.423, 437.195));
-                p += dot(p, p.yzx + 19.19);
-                return frac((p.x + p.y) * p.z);
+                p = float3(dot(p, float3(127.1, 311.7, 74.7)),
+                           dot(p, float3(269.5, 183.3, 246.1)),
+                           dot(p, float3(113.5, 271.9, 124.6)));
+                return frac(sin(p) * 43758.5453123);
             }
 
-            float starLayer(float3 dir, float cellScale, float threshold)
+            float StarLayer(float3 dir, float scale, float threshold, float sharpness)
             {
-                float3 grid = dir * cellScale;
-                float3 cell = floor(grid);
-                float3 local = frac(grid) - 0.5;
-                float h = hash31(cell);
-                if (h < threshold) return 0.0;
-                float3 offset = float3(hash31(cell + 1.3), hash31(cell + 2.7), hash31(cell + 4.1)) - 0.5;
-                float d = length(local - offset * 0.65);
-                float spark = smoothstep(0.16, 0.01, d);
-                return spark * spark * ((h - threshold) / (1.0 - threshold));
+                float3 p = dir * scale;
+                float3 id = floor(p);
+                float3 f = frac(p) - 0.5;
+                float3 rnd = Hash33(id);
+                if (rnd.x < threshold) return 0.0;
+                float3 offset = (rnd - 0.5) * 0.65;
+                float d = length(f - offset);
+                float size = lerp(0.035, 0.11, rnd.y);
+                float star = saturate(1.0 - d / size);
+                return pow(star, sharpness) * (0.45 + 0.85 * rnd.z);
             }
 
-            Varyings vert(Attributes IN)
+            Varyings vert(Attributes v)
             {
-                Varyings OUT;
-                VertexPositionInputs posInputs = GetVertexPositionInputs(IN.positionOS.xyz);
-                OUT.positionHCS = posInputs.positionCS;
-                OUT.viewDirWS = IN.positionOS.xyz;
-                return OUT;
+                Varyings o;
+                o.positionHCS = TransformObjectToHClip(v.positionOS.xyz);
+                o.dir = v.positionOS.xyz;
+                return o;
             }
 
-            half4 frag(Varyings IN) : SV_Target
+            half4 frag(Varyings i) : SV_Target
             {
-                float3 d = normalize(IN.viewDirWS);
-                float3 sun = normalize(_SunDir.xyz);
+                float3 d = normalize(i.dir);
+                float3 sunDir = normalize(_SunDir.xyz);
+                float sunDot = dot(d, sunDir);
+                float sunElev = sunDir.y;
 
-                float elev = clamp(d.y, -0.3, 1.0);
-                float horizMix = pow(1.0 - saturate(elev), 1.55 + _DustTau * 0.85);
-                half3 marsSky = lerp(_ZenithColor.rgb, _HorizonColor.rgb, (half)horizMix);
+                // Atmospheric Martian surface sky
+                float horizonCurve = pow(1.0 - saturate(d.y), 3.1);
+                float antiSun = saturate(0.5 - 0.5 * sunDot);
+                float dustFactor = saturate(_DustTau * 0.72);
 
-                // Ground bounce below horizon
-                if (d.y < 0.0)
-                {
-                    marsSky = lerp(_HorizonColor.rgb, _HorizonColor.rgb * (half)0.36, (half)saturate(-d.y * 5.0));
-                }
+                float3 skyDome = lerp(_ZenithColor.rgb, _HorizonColor.rgb, saturate(horizonCurve * (0.85 + 0.25 * dustFactor)));
+                // Subtle anti-solar shadow darkening opposite the sun (Belt of Venus / dust belt)
+                skyDome *= lerp(1.0, 0.80, antiSun * saturate(1.0 - abs(d.y) * 2.2));
 
-                // Martian Rayleigh + Mie forward dust scattering (famous Curiosity steel-blue sunset glow)
-                float sunDot = max(dot(d, sun), 0.0);
-                float wideMie = pow(sunDot, 3.2) * (0.24 + _DustTau * 0.22);
-                float blueAureole = pow(sunDot, 22.0) * (0.35 + (1.0 - saturate(sun.y * 2.2)) * 0.55);
+                // Martian forward-scattering blue Mie halo around Sun + warm dust scatter
+                float warmScatter = pow(saturate(sunDot), 8.0) * (0.28 + 0.22 * dustFactor);
+                float blueMieAureole = pow(saturate(sunDot), 52.0) * (0.58 + 0.24 * (1.0 - saturate(sunElev)));
+                float innerCorona = pow(saturate(sunDot), 380.0) * 1.15;
 
-                marsSky = lerp(marsSky, _SunHaloColor.rgb, (half)saturate(blueAureole));
-                marsSky += half3(0.95, 0.72, 0.45) * (half)wideMie;
+                // Crisp glowing HDR solar photosphere disc with slight limb darkening
+                float sunCoreEdge = smoothstep(0.99935, 0.99968, sunDot);
+                float sunLimb = pow(saturate((sunDot - 0.99935) / (1.0 - 0.99935)), 0.35);
 
-                // Crisp deep-space starfield & faint Milky Way band
-                float mwBand = exp(-pow((d.y * 0.65 - d.x * 0.45 + 0.1) * 4.5, 2.0));
-                half3 deepSpace = half3(0.012, 0.015, 0.024) + half3(0.032, 0.036, 0.055) * (half)mwBand;
-                float s1 = starLayer(d, 130.0, 0.968) * 1.4;
-                float s2 = starLayer(d * 1.37 + 0.21, 210.0, 0.955) * 0.75;
-                deepSpace += half3(0.92, 0.95, 1.0) * (half)((s1 + s2) * _StarIntensity * (1.0 + mwBand * 0.8));
+                float sunAboveHorizon = smoothstep(-0.08, 0.04, sunElev);
+                float sunMaskGround = smoothstep(-0.025, 0.02, d.y);
 
-                // Blend daytime Martian atmosphere smoothly into cosmic Space / Night
-                half3 sky = lerp(marsSky, deepSpace, (half)_SpaceBlend);
+                skyDome += _HorizonColor.rgb * warmScatter * sunAboveHorizon;
+                skyDome += _SunHaloColor.rgb * blueMieAureole * sunAboveHorizon * 0.85;
+                skyDome += _SunDiscColor.rgb * innerCorona * sunAboveHorizon * 0.35;
+                skyDome += _SunDiscColor.rgb * sunCoreEdge * (0.75 + 0.65 * sunLimb) * sunAboveHorizon * sunMaskGround * 1.65;
 
-                // Blazing HDR Solar Photosphere & Corona visible in BOTH Surface sky & Space!
-                float angularDist = acos(clamp(dot(d, sun), -1.0, 1.0));
-                float coreMask = smoothstep(0.022, 0.011, angularDist);
-                float coronaMask = pow(sunDot, 260.0) * 1.8 + pow(sunDot, 48.0) * 0.42;
+                // Seam-proof deep ground scatter below y = 0
+                float belowHorizon = smoothstep(0.015, -0.055, d.y);
+                float3 groundRefl = lerp(_HorizonColor.rgb * 0.42, _GroundColor.rgb, saturate(-d.y * 8.0));
+                float3 surfaceSky = lerp(skyDome, groundRefl, belowHorizon);
 
-                // Keep stars suppressed right inside Sun glow
-                sky += _SunDiscColor.rgb * (half)(coreMask + coronaMask * 0.45);
-                return half4(sky, 1.0);
+                // Deep space starfield + Milky Way subtle dust band
+                float galacticPlane = exp(-pow(abs(dot(d, normalize(float3(0.42, 0.76, -0.49)))) * 3.4, 2.0));
+                float3 spaceBg = float3(0.005, 0.007, 0.014) + float3(0.014, 0.016, 0.026) * galacticPlane;
+                float s1 = StarLayer(d, 115.0, 0.968, 2.6);
+                float s2 = StarLayer(d, 210.0, 0.978, 3.0);
+                float3 starTint1 = lerp(float3(1.0, 0.88, 0.74), float3(0.76, 0.88, 1.0), frac(d.x * 19.7 + d.z * 31.3));
+                float3 spaceStars = (s1 * starTint1 * 1.25 + s2 * float3(0.88, 0.93, 1.0) * 0.75) * _StarIntensity;
+                float nightStarBoost = smoothstep(0.08, -0.18, sunElev) * smoothstep(-0.02, 0.12, d.y);
+                float3 fullSpaceSky = spaceBg + spaceStars;
+
+                // Night stars gently pierce Martian sky; SpaceBlend swaps cleanly to deep space
+                surfaceSky += spaceStars * nightStarBoost * 0.9;
+                float3 finalCol = lerp(surfaceSky, fullSpaceSky, saturate(_SpaceBlend));
+
+                // In orbit space, render crisp directional star-sun glints from skybox if aligned
+                return half4(max(finalCol, 0.0), 1.0);
             }
             ENDHLSL
         }
