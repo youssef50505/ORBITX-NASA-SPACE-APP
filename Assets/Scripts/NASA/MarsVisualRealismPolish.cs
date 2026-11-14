@@ -44,6 +44,7 @@ namespace MarsSentinel.NASA
         private MarsSatelliteConstellation constellation;
         private CinemachineBrain cinemachineBrain;
         private Light sunLight;
+        private Light spaceFillLight;
         private Material skyboxMat;
         private Material rimMat;
 
@@ -56,6 +57,8 @@ namespace MarsSentinel.NASA
         private GameObject waypointsObj;
         private Transform sunHaloQuadA;
         private Transform sunHaloQuadB;
+        private Transform sunSpikeQuadA;
+        private Transform sunSpikeQuadB;
 
         private CinemachineCamera orbitalCam;
         private CinemachineCamera surfaceCam;
@@ -63,14 +66,22 @@ namespace MarsSentinel.NASA
         private CinemachineCamera ingenuityCam;
         private CinemachineCamera traverseCam;
 
+        private const float PhobosOrbitRadius = 1340f;
+        private const float DeimosOrbitRadius = 2060f;
+        private const float PhobosInclDeg = 1.09f;
+        private const float PhobosAscDeg = 22f;
+        private const float DeimosInclDeg = 1.79f;
+        private const float DeimosAscDeg = 38f;
+
         private readonly List<LineRenderer> allOrbitLines = new List<LineRenderer>();
         private readonly List<LineRenderer> legacyOrbitLines = new List<LineRenderer>();
         private readonly List<GameObject> orbiterRoots = new List<GameObject>();
         private readonly float[] orbiterInclinationsDeg = { 92.8f, 93.1f, 75.0f, 92.8f };
         private readonly float[] orbiterAscendingDeg = { 18f, 118f, 215f, 305f };
-        private readonly float[] orbiterRadii = { 650f, 700f, 890f, 675f };
+        private readonly float[] orbiterRadii = { 820f, 910f, 1080f, 980f };
         private readonly float[] orbiterSpeeds = { 0.42f, 0.36f, 0.25f, 0.39f };
-        private readonly float[] orbiterPhaseOffsets = { 0.5f, 2.3f, 4.1f, 5.4f };
+        private readonly float[] orbiterPhaseOffsets = { 0.80f, 2.20f, 3.60f, 4.30f };
+        private readonly Dictionary<LineRenderer, int> smoothedRouteCounts = new Dictionary<LineRenderer, int>();
 
         private Shader urpLitShader;
         private Shader spriteShader;
@@ -78,6 +89,7 @@ namespace MarsSentinel.NASA
         private Material deimosMat;
         private Light phobosCrescentLight;
         private Light deimosCrescentLight;
+        private Texture2D orbitRibbonTex;
 
         private Text txtControlsLegend;
         private Text txtActiveCamera;
@@ -102,7 +114,7 @@ namespace MarsSentinel.NASA
         private float orbitPitchOffset;
         private float orbitZoomMultiplier = 1f;
         private Vector3 lastAlignedSunDir = new Vector3(-0.34f, 0.25f, 0.91f).normalized;
-        private readonly Vector3 orbitSunDirection = new Vector3(-0.68f, 0.30f, 0.67f).normalized;
+        private readonly Vector3 orbitSunDirection = new Vector3(-0.92f, 0.31f, -0.24f).normalized;
         private string captureOutDir;
         private bool captureStarted;
 
@@ -385,9 +397,9 @@ namespace MarsSentinel.NASA
         private float SampleHorizonHeight(float x, float z)
         {
             float r = Mathf.Sqrt(x * x + z * z);
-            // Smooth basin floor flat around landing showcase (r < 28m), rising into realistic Jezero mesa rim (~20-26m at 480m so upper sky remains wide open)
-            float padBlend = SmoothStep01(26f, 95f, r);
-            float farRim = SmoothStep01(160f, 470f, r);
+            // Level pad around landing fleet showcase (r < 16m) so every wheel rests flush, rising smoothly into Jezero dunes & mesa rim
+            float padBlend = SmoothStep01(18f, 82f, r);
+            float farRim = SmoothStep01(145f, 460f, r);
 
             float rollingDunes =
                 Mathf.Sin(x * 0.032f + z * 0.019f) * 0.95f +
@@ -401,13 +413,15 @@ namespace MarsSentinel.NASA
                  Mathf.Sin(ridgeAzimuth * 13.0f + 2.2f) * 0.10f + 1.05f);
 
             float rimElevation = farRim * 22.0f * Mathf.Clamp(craterRimProfile, 0.42f, 1.55f);
-            float baseUndulation = Mathf.Sin(x * 0.12f) * Mathf.Cos(z * 0.12f) * 0.08f;
+            float undulationFade = SmoothStep01(12f, 32f, r);
+            float baseUndulation = Mathf.Sin(x * 0.06f) * Mathf.Cos(z * 0.06f) * 0.05f * undulationFade;
 
             return Mathf.Lerp(baseUndulation, rollingDunes + rimElevation, padBlend);
         }
 
         private static float SmoothStep01(float edge0, float edge1, float x)
         {
+            if (edge1 < edge0) return 1f - SmoothStep01(edge1, edge0, x);
             float denom = Mathf.Max(0.0001f, edge1 - edge0);
             float t = Mathf.Clamp01((x - edge0) / denom);
             return t * t * (3f - 2f * t);
@@ -415,8 +429,8 @@ namespace MarsSentinel.NASA
 
         private void UpgradeHorizonAndTerrain()
         {
-            Texture2D regolithTex = BuildRegolithSandTexture(512);
-            Texture2D regolithBump = BuildRegolithNormalTexture(512);
+            Texture2D regolithTex = BuildRegolithSandTexture(1024);
+            Texture2D regolithBump = BuildRegolithNormalTexture(1024);
 
             GameObject horizonGo = GameObject.Find("MS_Jezero_Horizon_Terrain");
             if (horizonGo == null)
@@ -426,17 +440,17 @@ namespace MarsSentinel.NASA
             horizonTerrainObj = horizonGo;
             var mf = horizonGo.GetComponent<MeshFilter>() ?? horizonGo.AddComponent<MeshFilter>();
             var mr = horizonGo.GetComponent<MeshRenderer>() ?? horizonGo.AddComponent<MeshRenderer>();
-            mf.sharedMesh = BuildTerrainWithSkirtMesh(128, 1280f);
+            mf.sharedMesh = BuildTerrainWithSkirtMesh(192, 1280f);
 
             Material terrainMat = CreateLitMaterial(
                 "MS_Polished_Regolith_Mat",
-                new Color(0.84f, 0.56f, 0.40f, 1f),
-                0.02f,
-                0.08f,
+                new Color(0.98f, 0.94f, 0.90f, 1f),
+                0.01f,
+                0.06f,
                 regolithTex,
                 regolithBump,
-                new Vector2(36f, 36f),
-                1.25f
+                new Vector2(12f, 12f),
+                0.65f
             );
             mr.sharedMaterial = terrainMat;
             mr.shadowCastingMode = ShadowCastingMode.On;
@@ -451,18 +465,18 @@ namespace MarsSentinel.NASA
                 {
                     Material stlMat = CreateLitMaterial(
                         "MS_STL_Regolith_Mat",
-                        new Color(0.84f, 0.56f, 0.40f, 1f),
-                        0.02f,
-                        0.08f,
+                        new Color(0.98f, 0.94f, 0.90f, 1f),
+                        0.01f,
+                        0.06f,
                         regolithTex,
                         regolithBump,
-                        new Vector2(2.4f, 2.4f),
-                        1.0f
+                        new Vector2(1.5f, 1.5f),
+                        0.65f
                     );
                     stlRend.sharedMaterial = stlMat;
                 }
                 Vector3 sp = stlTerrain.transform.position;
-                stlTerrain.transform.position = new Vector3(sp.x, -0.44f, sp.z);
+                stlTerrain.transform.position = new Vector3(sp.x, -0.74f, sp.z);
             }
 
             // Replace smooth egg rock primitives from earlier pass with realistic faceted basalt boulders
@@ -477,13 +491,13 @@ namespace MarsSentinel.NASA
 
             Material rockMat = CreateLitMaterial(
                 "MS_Basalt_Boulder_Mat",
-                new Color(0.27f, 0.21f, 0.19f, 1f),
-                0.06f,
-                0.18f,
+                new Color(0.32f, 0.25f, 0.22f, 1f),
+                0.05f,
+                0.16f,
                 null,
                 regolithBump,
                 new Vector2(2f, 2f),
-                1.0f
+                0.75f
             );
 
             if (oldRocks.Count > 0)
@@ -541,25 +555,173 @@ namespace MarsSentinel.NASA
                 }
             }
 
-            // Refine thick flat A* route strips into sleek thin precision surface overlays
+            // Refine jagged A* grid & historical route strips into sleek smooth surface spline overlays
             foreach (LineRenderer lr in FindObjectsByType<LineRenderer>(FindObjectsSortMode.None))
             {
                 string ln = lr.name.ToLowerInvariant();
                 if (ln.Contains("orbit") || ln.Contains("trail")) continue;
-                lr.startWidth = 0.09f;
-                lr.endWidth = 0.09f;
-                lr.numCornerVertices = 4;
-                lr.numCapVertices = 4;
                 int count = lr.positionCount;
-                for (int k = 0; k < count; k++)
+                if (count < 2) continue;
+
+                if (smoothedRouteCounts.TryGetValue(lr, out int prevCount) && prevCount == count && lr.startWidth <= 0.08f)
                 {
-                    Vector3 pt = lr.GetPosition(k);
-                    float gy = SampleHorizonHeight(pt.x, pt.z);
-                    lr.SetPosition(k, new Vector3(pt.x, Mathf.Max(pt.y, gy + 0.06f), pt.z));
+                    continue;
                 }
+
+                bool isIngenuity = ln.Contains("ingenuity");
+                float targetW = isIngenuity ? 0.038f : 0.050f;
+                lr.startWidth = targetW;
+                lr.endWidth = targetW;
+                lr.numCornerVertices = 8;
+                lr.numCapVertices = 8;
+
+                if (!lr.useWorldSpace)
+                {
+                    Transform t = lr.transform;
+                    for (int k = 0; k < count; k++)
+                    {
+                        lr.SetPosition(k, t.TransformPoint(lr.GetPosition(k)));
+                    }
+                    lr.useWorldSpace = true;
+                }
+
+                var raw = new Vector3[count];
+                for (int k = 0; k < count; k++) raw[k] = lr.GetPosition(k);
+
+                // Soften overly harsh neon unlit beam colors into crisp scientific survey overlays
+                if (lr.sharedMaterial != null && lr.sharedMaterial.HasProperty("_BaseColor"))
+                {
+                    Color sc = lr.startColor;
+                    sc.a = isIngenuity ? 0.65f : 0.78f;
+                    lr.startColor = sc;
+                    lr.endColor = sc;
+                }
+
+                Vector3[] smoothPts = SmoothRoutePoints(raw, isIngenuity);
+                lr.positionCount = smoothPts.Length;
+                lr.SetPositions(smoothPts);
+                smoothedRouteCounts[lr] = smoothPts.Length;
             }
 
             if (foundOctavia) beaconsSanitized = true;
+        }
+
+        private Vector3[] SmoothRoutePoints(Vector3[] raw, bool preserveHeight)
+        {
+            if (raw == null || raw.Length <= 2)
+            {
+                if (raw == null) return Array.Empty<Vector3>();
+                var flat = new Vector3[raw.Length];
+                for (int i = 0; i < raw.Length; i++)
+                {
+                    float y = preserveHeight ? Mathf.Max(raw[i].y, SampleHorizonHeight(raw[i].x, raw[i].z) + 0.045f) : SampleHorizonHeight(raw[i].x, raw[i].z) + 0.045f;
+                    flat[i] = new Vector3(raw[i].x, y, raw[i].z);
+                }
+                return flat;
+            }
+
+            var dedup = new List<Vector3>(raw.Length) { raw[0] };
+            float minDedupDist = preserveHeight ? 0.25f : 0.55f;
+            for (int i = 1; i < raw.Length - 1; i++)
+            {
+                Vector2 prev = new Vector2(dedup[dedup.Count - 1].x, dedup[dedup.Count - 1].z);
+                Vector2 cur = new Vector2(raw[i].x, raw[i].z);
+                if (Vector2.Distance(prev, cur) > minDedupDist)
+                {
+                    dedup.Add(raw[i]);
+                }
+            }
+            dedup.Add(raw[raw.Length - 1]);
+            if (dedup.Count <= 2)
+            {
+                for (int i = 0; i < dedup.Count; i++)
+                {
+                    Vector3 p = dedup[i];
+                    float y = preserveHeight ? Mathf.Max(p.y, SampleHorizonHeight(p.x, p.z) + 0.045f) : SampleHorizonHeight(p.x, p.z) + 0.045f;
+                    dedup[i] = new Vector3(p.x, y, p.z);
+                }
+                return dedup.ToArray();
+            }
+
+            var relaxed = new List<Vector3>(dedup);
+            for (int pass = 0; pass < 5; pass++)
+            {
+                var next = new List<Vector3>(relaxed.Count * 2) { relaxed[0] };
+                for (int i = 0; i < relaxed.Count - 1; i++)
+                {
+                    Vector3 a = relaxed[i];
+                    Vector3 b = relaxed[i + 1];
+                    if (i > 0) next.Add(Vector3.Lerp(a, b, 0.25f));
+                    if (i < relaxed.Count - 2) next.Add(Vector3.Lerp(a, b, 0.75f));
+                }
+                next.Add(relaxed[relaxed.Count - 1]);
+                relaxed = next;
+            }
+
+            // Uniform arc-length resample so Laplacian diffusion rounds long straight hairpins evenly
+            float totalLen = 0f;
+            for (int i = 0; i < relaxed.Count - 1; i++)
+            {
+                totalLen += Vector3.Distance(relaxed[i], relaxed[i + 1]);
+            }
+            float targetStep = Mathf.Max(preserveHeight ? 0.60f : 0.85f, totalLen / 460f);
+            if (totalLen > targetStep * 2f)
+            {
+                var uniform = new List<Vector3>(Mathf.Min(500, Mathf.CeilToInt(totalLen / targetStep) + 2)) { relaxed[0] };
+                for (int i = 0; i < relaxed.Count - 1; i++)
+                {
+                    Vector3 a = relaxed[i];
+                    Vector3 b = relaxed[i + 1];
+                    float segLen = Vector3.Distance(a, b);
+                    int segSubs = Mathf.Clamp(Mathf.CeilToInt(segLen / targetStep), 1, 24);
+                    for (int s = 1; s <= segSubs; s++)
+                    {
+                        uniform.Add(Vector3.Lerp(a, b, s / (float)segSubs));
+                    }
+                }
+                relaxed = uniform;
+            }
+
+            for (int smoothPass = 0; smoothPass < 10 && relaxed.Count >= 4; smoothPass++)
+            {
+                var copy = new List<Vector3>(relaxed);
+                for (int i = 1; i < relaxed.Count - 1; i++)
+                {
+                    copy[i] = 0.25f * relaxed[i - 1] + 0.50f * relaxed[i] + 0.25f * relaxed[i + 1];
+                }
+                relaxed = copy;
+            }
+
+            int n = relaxed.Count;
+            var spline = new List<Vector3>(n * 4);
+            const int subDiv = 4;
+            for (int i = 0; i < n - 1; i++)
+            {
+                Vector3 p0 = relaxed[Mathf.Max(0, i - 1)];
+                Vector3 p1 = relaxed[i];
+                Vector3 p2 = relaxed[i + 1];
+                Vector3 p3 = relaxed[Mathf.Min(n - 1, i + 2)];
+                for (int s = 0; s < subDiv; s++)
+                {
+                    float u = s / (float)subDiv;
+                    float u2 = u * u;
+                    float u3 = u2 * u;
+                    Vector3 pt = 0.5f * (
+                        (2f * p1) +
+                        (-p0 + p2) * u +
+                        (2f * p0 - 5f * p1 + 4f * p2 - p3) * u2 +
+                        (-p0 + 3f * p1 - 3f * p2 + p3) * u3
+                    );
+                    float gy = SampleHorizonHeight(pt.x, pt.z) + 0.045f;
+                    pt.y = preserveHeight ? Mathf.Max(pt.y, gy) : gy;
+                    spline.Add(pt);
+                }
+            }
+            Vector3 last = relaxed[n - 1];
+            float lastGy = SampleHorizonHeight(last.x, last.z) + 0.045f;
+            last.y = preserveHeight ? Mathf.Max(last.y, lastGy) : lastGy;
+            spline.Add(last);
+            return spline.ToArray();
         }
 
         private Mesh BuildTerrainWithSkirtMesh(int gridN, float sizeMeters)
@@ -658,8 +820,14 @@ namespace MarsSentinel.NASA
                 foreach (Renderer r in root.GetComponentsInChildren<Renderer>(true))
                 {
                     string n = r.gameObject.name.ToLowerInvariant();
+                    MeshFilter mf = r.GetComponent<MeshFilter>();
+                    int vCount = (mf != null && mf.sharedMesh != null) ? mf.sharedMesh.vertexCount : 9999;
                     bool isHelper = n.StartsWith("shadow") || n.StartsWith("cube_0") || n.EndsWith("_p") ||
-                                    n.Contains("_root_p") || (r.gameObject == root && n.Contains("curiosity"));
+                                    n.Contains("_root_p") || n.Contains("pivot") || n.Contains("empty") ||
+                                    n.StartsWith("hazcam") || n.StartsWith("mastcam") || n.StartsWith("navcam") ||
+                                    n.StartsWith("mahli_cam") || n == "mardi" ||
+                                    (vCount <= 24 && (n.Contains("cam") || n.Contains("box") || n.Contains("dummy"))) ||
+                                    (r.gameObject == root && n.Contains("curiosity"));
                     if (isHelper)
                     {
                         r.enabled = false;
@@ -671,16 +839,18 @@ namespace MarsSentinel.NASA
             GameObject persev = GameObject.Find("MS_Perseverance_Root");
             if (persev != null)
             {
+                PolishImportedFleetMaterials(persev, false);
                 SeatRootOnTerrain(persev);
             }
 
-            // 3. Seat MS_Curiosity_Root cleanly at (-7.5, y, -8.5)
+            // 3. Seat MS_Curiosity_Root cleanly at (-7.5, y, -8.5) in readable 3/4 side profile
             GameObject curiosity = GameObject.Find("MS_Curiosity_Root");
             if (curiosity != null)
             {
                 curiosity.transform.position = new Vector3(-7.5f, 0f, -8.5f);
-                curiosity.transform.rotation = Quaternion.Euler(0f, 32f, 0f);
+                curiosity.transform.rotation = Quaternion.Euler(0f, 22f, 0f);
                 NormalizeFleetScale(curiosity, 2.8f);
+                PolishImportedFleetMaterials(curiosity, true);
                 SeatRootOnTerrain(curiosity);
             }
 
@@ -706,6 +876,7 @@ namespace MarsSentinel.NASA
                 viking.transform.position = new Vector3(2.8f, 0f, 6.2f);
                 viking.transform.rotation = Quaternion.Euler(0f, -35f, 0f);
                 NormalizeFleetScale(viking, 3.0f);
+                PolishImportedFleetMaterials(viking, false);
                 SeatRootOnTerrain(viking);
             }
 
@@ -736,6 +907,71 @@ namespace MarsSentinel.NASA
             }
         }
 
+        private void PolishImportedFleetMaterials(GameObject root, bool liftDarkChassis)
+        {
+            foreach (Renderer r in root.GetComponentsInChildren<Renderer>(true))
+            {
+                if (!r.enabled) continue;
+                string rn = r.gameObject.name.ToLowerInvariant();
+                bool isDarkIntentional = rn.Contains("wheel") || rn.Contains("tire") || rn.Contains("tread") ||
+                                         rn.Contains("solar") || rn.Contains("lens");
+                Material[] mats = r.materials;
+                bool changed = false;
+                for (int i = 0; i < mats.Length; i++)
+                {
+                    Material m = mats[i];
+                    if (m == null) continue;
+                    if (m.HasProperty("_Metallic") && m.GetFloat("_Metallic") > 0.28f)
+                    {
+                        m.SetFloat("_Metallic", 0.24f);
+                        changed = true;
+                    }
+                    if (m.HasProperty("_Smoothness") && m.GetFloat("_Smoothness") > 0.48f)
+                    {
+                        m.SetFloat("_Smoothness", 0.42f);
+                        changed = true;
+                    }
+                    if (liftDarkChassis && !isDarkIntentional)
+                    {
+                        if (m.HasProperty("_BaseColor"))
+                        {
+                            Color c = m.GetColor("_BaseColor");
+                            float lum = c.r * 0.299f + c.g * 0.587f + c.b * 0.114f;
+                            if (lum < 0.34f && m.GetTexture("_BaseMap") == null)
+                            {
+                                float boost = 0.54f / Mathf.Max(0.08f, lum);
+                                m.SetColor("_BaseColor", new Color(
+                                    Mathf.Clamp01(c.r * boost + 0.12f),
+                                    Mathf.Clamp01(c.g * boost + 0.10f),
+                                    Mathf.Clamp01(c.b * boost + 0.085f),
+                                    1f));
+                                changed = true;
+                            }
+                            else if (m.GetTexture("_BaseMap") != null)
+                            {
+                                m.SetColor("_BaseColor", new Color(
+                                    Mathf.Max(c.r, 1.0f),
+                                    Mathf.Max(c.g, 0.96f),
+                                    Mathf.Max(c.b, 0.92f),
+                                    1f));
+                                changed = true;
+                            }
+                        }
+                        if (m.HasProperty("_EmissionColor"))
+                        {
+                            m.EnableKeyword("_EMISSION");
+                            Color emitCol = (liftDarkChassis && !isDarkIntentional)
+                                ? new Color(0.14f, 0.11f, 0.085f, 1f)
+                                : new Color(0.11f, 0.088f, 0.068f, 1f);
+                            m.SetColor("_EmissionColor", emitCol);
+                            changed = true;
+                        }
+                    }
+                }
+                if (changed) r.materials = mats;
+            }
+        }
+
         private void NormalizeFleetScale(GameObject root, float targetMaxDim)
         {
             if (TryGetActiveBounds(root, out Bounds b))
@@ -753,27 +989,34 @@ namespace MarsSentinel.NASA
         {
             Vector3 p = root.transform.position;
             float gy = SampleHorizonHeight(p.x, p.z);
-            float minWorldY = float.MaxValue;
+            float minWheelY = float.MaxValue;
+            float minAnyY = float.MaxValue;
             foreach (MeshFilter mf in root.GetComponentsInChildren<MeshFilter>(true))
             {
                 Renderer r = mf.GetComponent<Renderer>();
                 if (r == null || !r.enabled || mf.sharedMesh == null) continue;
+                string fn = mf.gameObject.name.ToLowerInvariant();
+                bool isWheelOrFoot = fn.Contains("wheel") || fn.Contains("tire") || fn.Contains("foot") ||
+                                     fn.Contains("pad") || fn.Contains("skid") || fn.Contains("leg");
                 Vector3[] verts = mf.sharedMesh.vertices;
                 Matrix4x4 l2w = mf.transform.localToWorldMatrix;
-                int step = Mathf.Max(1, verts.Length / 200);
+                int step = verts.Length <= 4000 ? 1 : Mathf.Max(1, verts.Length / 1000);
                 for (int i = 0; i < verts.Length; i += step)
                 {
                     float wy = l2w.MultiplyPoint3x4(verts[i]).y;
-                    if (wy < minWorldY) minWorldY = wy;
+                    if (wy < minAnyY) minAnyY = wy;
+                    if (isWheelOrFoot && wy < minWheelY) minWheelY = wy;
                 }
             }
-            if (minWorldY < float.MaxValue * 0.5f)
+            float refMinY = minWheelY < float.MaxValue * 0.5f ? minWheelY : minAnyY;
+            if (refMinY < float.MaxValue * 0.5f)
             {
-                root.transform.position = new Vector3(p.x, p.y + (gy - minWorldY), p.z);
+                // Sink 8mm into loose Martian sand so wheels & footpads show grounded contact with full tire profile
+                root.transform.position = new Vector3(p.x, p.y + (gy - refMinY - 0.008f), p.z);
             }
             else if (TryGetActiveBounds(root, out Bounds b))
             {
-                root.transform.position = new Vector3(p.x, p.y + (gy - b.min.y), p.z);
+                root.transform.position = new Vector3(p.x, p.y + (gy - b.min.y - 0.008f), p.z);
             }
             else
             {
@@ -907,16 +1150,16 @@ namespace MarsSentinel.NASA
             {
                 Material marsMat = CreateLitMaterial(
                     "MS_Mars_Globe_Mat",
-                    new Color(0.96f, 0.90f, 0.85f, 1f),
+                    new Color(1.0f, 0.95f, 0.91f, 1f),
                     0.02f,
-                    0.12f,
+                    0.14f,
                     marsTex,
                     marsNormal,
                     Vector2.one,
-                    1.25f
+                    1.05f
                 );
                 marsMat.EnableKeyword("_EMISSION");
-                marsMat.SetColor("_EmissionColor", new Color(0.06f, 0.03f, 0.02f, 1f));
+                marsMat.SetColor("_EmissionColor", new Color(0.11f, 0.055f, 0.032f, 1f));
                 globeRend.sharedMaterial = marsMat;
             }
 
@@ -929,14 +1172,34 @@ namespace MarsSentinel.NASA
                 atmoGo.transform.SetParent(marsGlobe.transform, false);
                 atmoTf = atmoGo.transform;
             }
-            atmoTf.localScale = Vector3.one * 1.038f;
+            atmoTf.localScale = Vector3.one * 1.056f;
+            if (rimMat != null)
+            {
+                if (rimMat.HasProperty("_DayRimColor")) rimMat.SetColor("_DayRimColor", new Color(1.0f, 0.68f, 0.40f, 1f));
+                if (rimMat.HasProperty("_TwilightRimColor")) rimMat.SetColor("_TwilightRimColor", new Color(0.54f, 0.84f, 1.0f, 1f));
+                if (rimMat.HasProperty("_Intensity")) rimMat.SetFloat("_Intensity", 2.65f);
+            }
             Renderer atmoRend = atmoTf.GetComponent<Renderer>();
             if (atmoRend != null && rimMat != null)
             {
                 atmoRend.sharedMaterial = rimMat;
             }
 
-            // 2. Blazing 3D Space Sun + Custom Additive URP Corona Shader
+            // Soft 3/4 planetary fill light active ONLY in Space / Orbital view so Mars globe & moons remain rich and dimensional
+            GameObject fillGo = GameObject.Find("MS_Space_MarsFillLight");
+            if (fillGo == null)
+            {
+                fillGo = new GameObject("MS_Space_MarsFillLight");
+                fillGo.transform.SetParent(transform, false);
+            }
+            spaceFillLight = fillGo.GetComponent<Light>() ?? fillGo.AddComponent<Light>();
+            spaceFillLight.type = LightType.Directional;
+            spaceFillLight.color = new Color(1.0f, 0.85f, 0.72f, 1f);
+            spaceFillLight.intensity = 1.15f;
+            spaceFillLight.shadows = LightShadows.None;
+            spaceFillLight.enabled = false;
+
+            // 2. Blazing 3D Space Sun + Custom Additive URP Corona Shader + 4-point diffraction starflare
             spaceSunObj = GameObject.Find("MS_Space_Sun");
             if (spaceSunObj == null)
             {
@@ -944,7 +1207,7 @@ namespace MarsSentinel.NASA
                 spaceSunObj.name = "MS_Space_Sun";
                 DestroyImmediate(spaceSunObj.GetComponent<Collider>());
             }
-            spaceSunObj.transform.localScale = Vector3.one * 250f;
+            spaceSunObj.transform.localScale = Vector3.one * 220f;
             Shader unlitShader = Shader.Find("Universal Render Pipeline/Unlit") ?? urpLitShader;
             Renderer sunRend = spaceSunObj.GetComponent<Renderer>();
             if (sunRend != null)
@@ -972,20 +1235,34 @@ namespace MarsSentinel.NASA
                 baseGlowMat = new Material(glowShader);
             }
             Material innerGlowMat = new Material(baseGlowMat);
-            if (innerGlowMat.HasProperty("_Color")) innerGlowMat.SetColor("_Color", new Color(3.2f, 2.3f, 1.15f, 1f));
-            if (innerGlowMat.HasProperty("_CorePower")) innerGlowMat.SetFloat("_CorePower", 3.0f);
-            sunHaloQuadA = EnsureHaloQuad(spaceSunObj.transform, "MS_Sun_Halo_Inner", 3.8f, innerGlowMat);
+            if (innerGlowMat.HasProperty("_Color")) innerGlowMat.SetColor("_Color", new Color(2.8f, 1.9f, 0.95f, 1f));
+            if (innerGlowMat.HasProperty("_CorePower")) innerGlowMat.SetFloat("_CorePower", 3.6f);
+            sunHaloQuadA = EnsureHaloQuad(spaceSunObj.transform, "MS_Sun_Halo_Inner", 3.2f, innerGlowMat);
 
             Material outerGlowMat = new Material(baseGlowMat);
-            if (outerGlowMat.HasProperty("_Color")) outerGlowMat.SetColor("_Color", new Color(1.6f, 0.85f, 0.32f, 1f));
-            if (outerGlowMat.HasProperty("_CorePower")) outerGlowMat.SetFloat("_CorePower", 1.8f);
-            sunHaloQuadB = EnsureHaloQuad(spaceSunObj.transform, "MS_Sun_Halo_Outer", 7.6f, outerGlowMat);
+            if (outerGlowMat.HasProperty("_Color")) outerGlowMat.SetColor("_Color", new Color(1.15f, 0.58f, 0.20f, 1f));
+            if (outerGlowMat.HasProperty("_CorePower")) outerGlowMat.SetFloat("_CorePower", 2.6f);
+            sunHaloQuadB = EnsureHaloQuad(spaceSunObj.transform, "MS_Sun_Halo_Outer", 5.0f, outerGlowMat);
 
-            // 3. Detailed Cratered Phobos & Deimos (replace child sphere created by MarsCelestialOrbitController)
-            Texture2D moonTex = BuildCraterMoonTexture(512, 256, 33);
-            Texture2D moonBump = BuildCraterNormalTexture(512, 256, 33);
-            phobosMat = CreateLitMaterial("MS_Phobos_PolishedMat", new Color(0.95f, 0.87f, 0.79f, 1f), 0.04f, 0.14f, moonTex, moonBump, Vector2.one, 1.85f);
-            deimosMat = CreateLitMaterial("MS_Deimos_PolishedMat", new Color(0.96f, 0.89f, 0.81f, 1f), 0.04f, 0.12f, moonTex, moonBump, Vector2.one, 1.55f);
+            if (spriteShader != null)
+            {
+                Texture2D spikeTex = BuildDiffractionSpikeTexture(128);
+                Material spikeMat = new Material(spriteShader) { name = "MS_Sun_Diffraction_Mat" };
+                spikeMat.mainTexture = spikeTex;
+                spikeMat.color = new Color(1.0f, 0.90f, 0.72f, 0.48f);
+                sunSpikeQuadA = EnsureHaloQuad(spaceSunObj.transform, "MS_Sun_Spike_A", 1.0f, spikeMat);
+                sunSpikeQuadA.localScale = new Vector3(10.0f, 0.72f, 1f);
+                sunSpikeQuadB = EnsureHaloQuad(spaceSunObj.transform, "MS_Sun_Spike_B", 1.0f, spikeMat);
+                sunSpikeQuadB.localScale = new Vector3(8.2f, 0.68f, 1f);
+            }
+
+            // 3. Detailed Cratered Phobos & Deimos (realistic sculpted crater relief without concentric bullseye rings)
+            Texture2D phobosTex = BuildCraterMoonTexture(512, 256, 33);
+            Texture2D phobosBump = BuildCraterNormalTexture(512, 256, 33);
+            Texture2D deimosTex = BuildCraterMoonTexture(512, 256, 91);
+            Texture2D deimosBump = BuildCraterNormalTexture(512, 256, 91);
+            phobosMat = CreateLitMaterial("MS_Phobos_PolishedMat", new Color(0.96f, 0.91f, 0.85f, 1f), 0.03f, 0.12f, phobosTex, phobosBump, Vector2.one, 1.15f);
+            deimosMat = CreateLitMaterial("MS_Deimos_PolishedMat", new Color(0.97f, 0.92f, 0.86f, 1f), 0.03f, 0.10f, deimosTex, deimosBump, Vector2.one, 1.05f);
 
             phobosObj = GameObject.Find("Phobos");
             if (phobosObj != null)
@@ -1024,26 +1301,27 @@ namespace MarsSentinel.NASA
                     {
                         BuildOrbiterSpacecraft(orb.transform, goldFoil, solarBlue, dishWhite);
                     }
-                    orb.transform.localScale = Vector3.one * 28f;
+                    orb.transform.localScale = Vector3.one * 22f;
                 }
             }
 
-            // 5. Sleek Precision Multi-Layer Orbital Rings (thin translucent arcs, hidden in Surface View!)
+            // 5. Sleek Precision Multi-Layer Orbital Rings (open moon arcs avoiding intersections + AA ribbon texture)
+            if (orbitRibbonTex == null) orbitRibbonTex = BuildOrbitRibbonTexture(4, 32);
             allOrbitLines.Clear();
-            RebuildSleekOrbitLine("MS_Orbit_Phobos_Trail", 1120f, 1.09f, 22f, new Color(0.45f, 0.78f, 1.0f, 0.78f), 2.8f);
-            RebuildSleekOrbitLine("MS_Orbit_Deimos_Trail", 1880f, 1.79f, 38f, new Color(1.0f, 0.86f, 0.42f, 0.75f), 2.8f);
+            RebuildSleekOrbitLine("MS_Orbit_Phobos_Trail", PhobosOrbitRadius, PhobosInclDeg, PhobosAscDeg, new Color(0.45f, 0.82f, 1.0f, 0.85f), 2.8f, false);
+            RebuildSleekOrbitLine("MS_Orbit_Deimos_Trail", DeimosOrbitRadius, DeimosInclDeg, DeimosAscDeg, new Color(1.0f, 0.86f, 0.44f, 0.82f), 2.8f, false);
 
             Color[] satColors =
             {
-                new Color(0.32f, 0.88f, 1.0f, 0.72f),
-                new Color(0.38f, 0.96f, 0.72f, 0.68f),
-                new Color(0.98f, 0.52f, 0.82f, 0.68f),
-                new Color(0.68f, 0.74f, 1.0f, 0.68f)
+                new Color(0.32f, 0.88f, 1.0f, 0.75f),
+                new Color(0.38f, 0.96f, 0.72f, 0.70f),
+                new Color(0.98f, 0.52f, 0.82f, 0.70f),
+                new Color(0.68f, 0.74f, 1.0f, 0.70f)
             };
             string[] trailNames = { "MRO_OrbitTrail", "Odyssey_OrbitTrail", "MAVEN_OrbitTrail", "GlobalSurveyor_OrbitTrail" };
             for (int i = 0; i < trailNames.Length; i++)
             {
-                RebuildSleekOrbitLine(trailNames[i], orbiterRadii[i], orbiterInclinationsDeg[i], orbiterAscendingDeg[i], satColors[i], 1.7f);
+                RebuildSleekOrbitLine(trailNames[i], orbiterRadii[i], orbiterInclinationsDeg[i], orbiterAscendingDeg[i], satColors[i], 1.8f, true);
             }
         }
 
@@ -1117,7 +1395,7 @@ namespace MarsSentinel.NASA
             CreatePart(PrimitiveType.Cylinder, parent, "Boom", new Vector3(0f, -1.1f, 0f), Vector3.zero, new Vector3(0.08f, 0.7f, 0.08f), whiteMat);
         }
 
-        private void RebuildSleekOrbitLine(string name, float radius, float inclDeg, float ascDeg, Color col, float width)
+        private void RebuildSleekOrbitLine(string name, float radius, float inclDeg, float ascDeg, Color col, float width, bool loopClosed)
         {
             GameObject go = GameObject.Find(name);
             if (go == null)
@@ -1127,10 +1405,12 @@ namespace MarsSentinel.NASA
             LineRenderer lr = go.GetComponent<LineRenderer>() ?? go.AddComponent<LineRenderer>();
             legacyOrbitLines.Remove(lr);
             lr.useWorldSpace = true;
-            lr.loop = true;
+            lr.loop = loopClosed;
             lr.numCornerVertices = 4;
             lr.numCapVertices = 4;
             lr.alignment = LineAlignment.View;
+            lr.textureMode = LineTextureMode.Stretch;
+            lr.widthMultiplier = 1f;
             lr.startWidth = width;
             lr.endWidth = width;
             lr.shadowCastingMode = ShadowCastingMode.Off;
@@ -1139,27 +1419,50 @@ namespace MarsSentinel.NASA
             {
                 Material m = new Material(spriteShader);
                 m.color = Color.white;
+                if (orbitRibbonTex != null) m.mainTexture = orbitRibbonTex;
                 lr.sharedMaterial = m;
             }
 
             var grad = new Gradient();
-            grad.SetKeys(
-                new[]
-                {
-                    new GradientColorKey(col, 0f),
-                    new GradientColorKey(Color.Lerp(col, Color.white, 0.40f), 0.5f),
-                    new GradientColorKey(col, 1f)
-                },
-                new[]
-                {
-                    new GradientAlphaKey(0.40f, 0f),
-                    new GradientAlphaKey(0.88f, 0.5f),
-                    new GradientAlphaKey(0.40f, 1f)
-                }
-            );
+            if (loopClosed)
+            {
+                grad.SetKeys(
+                    new[]
+                    {
+                        new GradientColorKey(col, 0f),
+                        new GradientColorKey(Color.Lerp(col, Color.white, 0.36f), 0.5f),
+                        new GradientColorKey(col, 1f)
+                    },
+                    new[]
+                    {
+                        new GradientAlphaKey(0.42f, 0f),
+                        new GradientAlphaKey(0.88f, 0.5f),
+                        new GradientAlphaKey(0.42f, 1f)
+                    }
+                );
+            }
+            else
+            {
+                grad.SetKeys(
+                    new[]
+                    {
+                        new GradientColorKey(col, 0f),
+                        new GradientColorKey(Color.Lerp(col, Color.white, 0.35f), 0.5f),
+                        new GradientColorKey(col, 1f)
+                    },
+                    new[]
+                    {
+                        new GradientAlphaKey(0.0f, 0.00f),
+                        new GradientAlphaKey(0.55f, 0.06f),
+                        new GradientAlphaKey(0.90f, 0.50f),
+                        new GradientAlphaKey(0.55f, 0.94f),
+                        new GradientAlphaKey(0.0f, 1.00f)
+                    }
+                );
+            }
             lr.colorGradient = grad;
 
-            const int segs = 240;
+            const int segs = 360;
             lr.positionCount = segs;
             Quaternion qOrbit = Quaternion.Euler(inclDeg, ascDeg, 0f);
             for (int i = 0; i < segs; i++)
@@ -1171,10 +1474,96 @@ namespace MarsSentinel.NASA
             allOrbitLines.Add(lr);
         }
 
+        private void UpdateMoonArcOrbitLine(LineRenderer lr, float radius, float inclDeg, float ascDeg,
+            float moonAngleRad, float moonVisualRadius)
+        {
+            if (lr == null) return;
+            lr.loop = false;
+            int segs = lr.positionCount;
+            if (segs < 32)
+            {
+                segs = 360;
+                lr.positionCount = segs;
+            }
+            // Clear wide gap around moon silhouette so orbit track never cuts visually across Phobos or Deimos
+            float gapRad = Mathf.Clamp((moonVisualRadius * 2.45f) / Mathf.Max(100f, radius), 0.045f, 0.16f);
+            float startAng = moonAngleRad + gapRad;
+            float span = Mathf.PI * 2f - gapRad * 2f;
+            Quaternion qOrbit = Quaternion.Euler(inclDeg, ascDeg, 0f);
+            for (int i = 0; i < segs; i++)
+            {
+                float u = i / (float)(segs - 1);
+                float th = startAng + u * span;
+                Vector3 local = new Vector3(Mathf.Cos(th) * radius, 0f, Mathf.Sin(th) * radius);
+                lr.SetPosition(i, marsCenter + qOrbit * local);
+            }
+        }
+
+        private static void ApplyDistanceCompensatedWidthCurve(LineRenderer lr, Camera cam, float desiredPx, float minWidth, float maxWidth)
+        {
+            if (lr == null || lr.positionCount < 2) return;
+            float fovRad = (cam != null ? cam.fieldOfView : 52f) * Mathf.Deg2Rad;
+            float screenH = Mathf.Max(480f, Screen.height);
+            float factor = (2f * Mathf.Tan(fovRad * 0.5f)) / screenH;
+            int count = lr.positionCount;
+            const int keyCount = 13;
+            var keys = new Keyframe[keyCount];
+            for (int k = 0; k < keyCount; k++)
+            {
+                float t = k / (float)(keyCount - 1);
+                int idx = Mathf.Clamp(Mathf.RoundToInt(t * (count - 1)), 0, count - 1);
+                float dist = cam != null ? Vector3.Distance(cam.transform.position, lr.GetPosition(idx)) : 3600f;
+                float worldW = Mathf.Clamp(desiredPx * dist * factor, minWidth, maxWidth);
+                keys[k] = new Keyframe(t, worldW);
+            }
+            lr.widthMultiplier = 1f;
+            lr.widthCurve = new AnimationCurve(keys);
+        }
+
+        private Texture2D BuildOrbitRibbonTexture(int w, int h)
+        {
+            var tex = new Texture2D(w, h, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp };
+            var cols = new Color[w * h];
+            for (int y = 0; y < h; y++)
+            {
+                float ny = (y / (float)(h - 1)) * 2f - 1f; // -1..+1 across line width
+                float a = Mathf.Exp(-ny * ny * 2.1f) * SmoothStep01(1.0f, 0.55f, Mathf.Abs(ny));
+                Color c = new Color(1f, 1f, 1f, a);
+                for (int x = 0; x < w; x++) cols[y * w + x] = c;
+            }
+            tex.SetPixels(cols);
+            tex.Apply();
+            return tex;
+        }
+
+        private Texture2D BuildDiffractionSpikeTexture(int size)
+        {
+            var tex = new Texture2D(size, size, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp };
+            var cols = new Color[size * size];
+            for (int y = 0; y < size; y++)
+            {
+                float ny = (y / (float)(size - 1)) * 2f - 1f;
+                float vFalloff = Mathf.Exp(-ny * ny * 18.0f) * SmoothStep01(1.0f, 0.65f, Mathf.Abs(ny));
+                for (int x = 0; x < size; x++)
+                {
+                    float nx = (x / (float)(size - 1)) * 2f - 1f;
+                    float hFalloff = SmoothStep01(1.0f, 0.12f, Mathf.Abs(nx));
+                    float alpha = vFalloff * hFalloff * hFalloff;
+                    cols[y * size + x] = new Color(1f, 0.94f, 0.80f, alpha);
+                }
+            }
+            tex.SetPixels(cols);
+            tex.Apply();
+            return tex;
+        }
+
         private void LateUpdate()
         {
             if (!initialized) InitializePolish();
-            if (!beaconsSanitized && Time.frameCount % 10 == 0) SanitizeBeaconsAndRoutes();
+            if (!beaconsSanitized || Time.frameCount <= 30 || (Time.frameCount % 8 == 0 && Time.frameCount <= 240))
+            {
+                SanitizeBeaconsAndRoutes();
+            }
 
             SyncStateWithEnhancerAndInput();
             UpdateSpaceBlend();
@@ -1319,14 +1708,25 @@ namespace MarsSentinel.NASA
             if (sunLight != null)
             {
                 sunLight.transform.rotation = Quaternion.LookRotation(-sunDir, Vector3.up);
-                sunLight.intensity = spaceBlend > 0.5f ? 2.85f : Mathf.Lerp(0.22f, 2.35f, dayFactor);
+                sunLight.intensity = spaceBlend > 0.5f ? 3.25f : Mathf.Lerp(0.24f, 2.45f, dayFactor);
                 sunLight.color = spaceBlend > 0.5f
                     ? new Color(1.0f, 0.96f, 0.90f, 1f)
                     : Color.Lerp(
                         new Color(1.0f, 0.52f, 0.28f, 1f),
-                        new Color(1.0f, 0.90f, 0.78f, 1f),
+                        new Color(1.0f, 0.92f, 0.80f, 1f),
                         SmoothStep01(0.06f, 0.45f, elev)
                     );
+            }
+
+            if (spaceFillLight != null)
+            {
+                spaceFillLight.enabled = spaceBlend > 0.35f;
+                if (spaceFillLight.enabled)
+                {
+                    Vector3 fillDir = new Vector3(0.45f, 0.35f, -0.82f).normalized;
+                    spaceFillLight.transform.rotation = Quaternion.LookRotation(-fillDir, Vector3.up);
+                    spaceFillLight.intensity = 1.10f * spaceBlend;
+                }
             }
 
             Color zenithDay = new Color(0.32f, 0.24f, 0.21f, 1f);
@@ -1346,37 +1746,48 @@ namespace MarsSentinel.NASA
                 skyboxMat.SetColor("_SunHaloColor", haloCol);
                 skyboxMat.SetColor("_SunDiscColor", new Color(7.5f, 6.2f, 4.6f, 1f));
                 skyboxMat.SetFloat("_SpaceBlend", spaceBlend);
-                skyboxMat.SetFloat("_StarIntensity", Mathf.Lerp(1.6f, 2.4f, spaceBlend));
+                skyboxMat.SetFloat("_StarIntensity", Mathf.Lerp(1.6f, 2.5f, spaceBlend));
                 skyboxMat.SetFloat("_DustTau", 0.42f);
             }
 
             if (rimMat != null)
             {
                 rimMat.SetVector("_SunDir", new Vector4(orbitSunDirection.x, orbitSunDirection.y, orbitSunDirection.z, 0f));
-                rimMat.SetFloat("_Intensity", 1.55f);
+                rimMat.SetFloat("_Intensity", 2.65f);
             }
 
             RenderSettings.fog = spaceBlend < 0.45f;
             RenderSettings.fogMode = FogMode.ExponentialSquared;
             RenderSettings.fogColor = horizon;
-            RenderSettings.fogDensity = Mathf.Lerp(0.00055f, 0.0f, spaceBlend);
+            RenderSettings.fogDensity = Mathf.Lerp(0.00050f, 0.0f, spaceBlend);
             RenderSettings.ambientLight = Color.Lerp(
-                Color.Lerp(new Color(0.05f, 0.04f, 0.05f, 1f), new Color(0.48f, 0.30f, 0.22f, 1f), dayFactor),
-                new Color(0.11f, 0.10f, 0.12f, 1f),
+                Color.Lerp(new Color(0.06f, 0.045f, 0.055f, 1f), new Color(0.54f, 0.36f, 0.28f, 1f), dayFactor),
+                new Color(0.22f, 0.17f, 0.16f, 1f),
                 spaceBlend
             );
 
-            // Space Sun positioned cleanly along orbitSunDirection at r = 3400m
+            // Space Sun positioned cleanly along orbitSunDirection at r = 3200m (outside Deimos 2060m orbit, visible in upper-left frame)
             if (spaceSunObj != null)
             {
                 spaceSunObj.SetActive(spaceBlend > 0.1f || focusMode == 1);
-                Vector3 orbitSunPos = marsCenter + orbitSunDirection * 3400f;
+                Vector3 orbitSunPos = marsCenter + orbitSunDirection * 3200f;
                 spaceSunObj.transform.position = orbitSunPos;
                 if (Camera.main != null)
                 {
                     Vector3 toCam = (Camera.main.transform.position - orbitSunPos).normalized;
-                    if (sunHaloQuadA != null) sunHaloQuadA.rotation = Quaternion.LookRotation(-toCam, Vector3.up);
-                    if (sunHaloQuadB != null) sunHaloQuadB.rotation = Quaternion.LookRotation(-toCam, Vector3.up);
+                    Vector3 camUp = Camera.main.transform.up;
+                    if (sunHaloQuadA != null) sunHaloQuadA.rotation = Quaternion.LookRotation(-toCam, camUp);
+                    if (sunHaloQuadB != null) sunHaloQuadB.rotation = Quaternion.LookRotation(-toCam, camUp);
+                    if (sunSpikeQuadA != null)
+                    {
+                        sunSpikeQuadA.localScale = new Vector3(10.0f, 0.68f, 1f);
+                        sunSpikeQuadA.rotation = Quaternion.LookRotation(-toCam, camUp);
+                    }
+                    if (sunSpikeQuadB != null)
+                    {
+                        sunSpikeQuadB.localScale = new Vector3(8.2f, 0.64f, 1f);
+                        sunSpikeQuadB.rotation = Quaternion.LookRotation(-toCam, camUp) * Quaternion.Euler(0f, 0f, 90f);
+                    }
                 }
             }
         }
@@ -1386,11 +1797,13 @@ namespace MarsSentinel.NASA
             float t = (focusMode == 2 || focusMode == 3) ? 4.0f : Time.time;
             float dayFactor = SmoothStep01(-0.08f, 0.32f, sunDir.y);
 
-            // Orbital positions around Mars Center
-            float phAngle = t * 0.22f + 1.15f;
-            Vector3 phOrbPos = marsCenter + Quaternion.Euler(1.09f, 22f, 0f) * new Vector3(Mathf.Cos(phAngle) * 1120f, 0f, Mathf.Sin(phAngle) * 1120f);
-            float deAngle = t * 0.09f + 2.35f;
-            Vector3 deOrbPos = marsCenter + Quaternion.Euler(1.79f, 38f, 0f) * new Vector3(Mathf.Cos(deAngle) * 1880f, 0f, Mathf.Sin(deAngle) * 1880f);
+            // Orbital positions around Mars Center (Phobos in open right-foreground, Deimos in open left-foreground)
+            float phAngle = t * 0.20f - 0.48f;
+            Vector3 phOrbPos = marsCenter + Quaternion.Euler(PhobosInclDeg, PhobosAscDeg, 0f) *
+                new Vector3(Mathf.Cos(phAngle) * PhobosOrbitRadius, 0f, Mathf.Sin(phAngle) * PhobosOrbitRadius);
+            float deAngle = t * 0.08f + 3.48f;
+            Vector3 deOrbPos = marsCenter + Quaternion.Euler(DeimosInclDeg, DeimosAscDeg, 0f) *
+                new Vector3(Mathf.Cos(deAngle) * DeimosOrbitRadius, 0f, Mathf.Sin(deAngle) * DeimosOrbitRadius);
 
             // Surface sky positions: clear open upper sky in front of CM_SurfaceFleetOverview
             // Phobos upper-center below Top Banner, Deimos upper-right cleanly LEFT of StatusPanel!
@@ -1400,13 +1813,14 @@ namespace MarsSentinel.NASA
 
             // Daytime Martian atmospheric airlight scatter + sunlit crescent bounce so moons never render as black cutouts
             Color skyAirlight = Color.Lerp(RenderSettings.fogColor, new Color(0.66f, 0.49f, 0.38f), 0.58f) * Mathf.Lerp(0.16f, 0.85f, dayFactor) * (1f - spaceBlend);
-            Color spaceBounce = new Color(0.08f, 0.06f, 0.055f) * spaceBlend;
+            Color spaceBounce = new Color(0.11f, 0.09f, 0.08f) * spaceBlend;
 
+            float phScale = Mathf.Lerp(26f, 64f, spaceBlend);
             if (phobosObj != null)
             {
                 phobosObj.transform.position = Vector3.Lerp(phSurfPos, phOrbPos, spaceBlend);
-                phobosObj.transform.localScale = Vector3.one * Mathf.Lerp(26f, 52f, spaceBlend);
-                phobosObj.transform.rotation = Quaternion.Euler(14f, t * 8f - 45f, 8f);
+                phobosObj.transform.localScale = Vector3.one * phScale;
+                phobosObj.transform.rotation = Quaternion.Euler(10f, t * 8f + 18f, 6f);
                 if (phobosMat != null)
                 {
                     phobosMat.EnableKeyword("_EMISSION");
@@ -1419,10 +1833,11 @@ namespace MarsSentinel.NASA
                 }
             }
 
+            float deScale = Mathf.Lerp(16f, 46f, spaceBlend);
             if (deimosObj != null)
             {
                 deimosObj.transform.position = Vector3.Lerp(deSurfPos, deOrbPos, spaceBlend);
-                deimosObj.transform.localScale = Vector3.one * Mathf.Lerp(16f, 34f, spaceBlend);
+                deimosObj.transform.localScale = Vector3.one * deScale;
                 deimosObj.transform.rotation = Quaternion.Euler(-8f, t * 5f + 20f, -10f);
                 if (deimosMat != null)
                 {
@@ -1456,30 +1871,32 @@ namespace MarsSentinel.NASA
                 orb.transform.rotation = Quaternion.LookRotation(vel, -nadir);
             }
 
-            // Strictly hide all orbital lines in Surface view & adapt line width to camera distance so lines are never stippled OR giant poles!
+            // Strictly hide all orbital lines in Surface view & update open moon arcs + uniform pixel-space width
             foreach (LineRenderer lr in legacyOrbitLines)
             {
                 if (lr != null) lr.enabled = false;
             }
-            float refDist = 3600f;
-            if (Camera.main != null)
+            if (showSpace)
             {
-                float dMars = Vector3.Distance(Camera.main.transform.position, marsCenter);
-                float dNearestMoon = dMars;
-                if (focusMode == 2 && phobosObj != null) dNearestMoon = Vector3.Distance(Camera.main.transform.position, phobosObj.transform.position);
-                else if (focusMode == 3 && deimosObj != null) dNearestMoon = Vector3.Distance(Camera.main.transform.position, deimosObj.transform.position);
-                refDist = Mathf.Min(dMars, dNearestMoon);
+                if (allOrbitLines.Count > 0)
+                {
+                    UpdateMoonArcOrbitLine(allOrbitLines[0], PhobosOrbitRadius, PhobosInclDeg, PhobosAscDeg, phAngle, phScale * 0.62f);
+                }
+                if (allOrbitLines.Count > 1)
+                {
+                    UpdateMoonArcOrbitLine(allOrbitLines[1], DeimosOrbitRadius, DeimosInclDeg, DeimosAscDeg, deAngle, deScale * 0.62f);
+                }
             }
-            float moonWidth = Mathf.Clamp(refDist * 0.0019f, 0.30f, 7.2f);
-            float satWidth = Mathf.Clamp(refDist * 0.0016f, 0.25f, 5.8f);
+            Camera activeCam = Camera.main;
             for (int i = 0; i < allOrbitLines.Count; i++)
             {
                 LineRenderer lr = allOrbitLines[i];
                 if (lr == null) continue;
                 lr.enabled = showSpace;
-                float w = (i < 2) ? moonWidth : satWidth;
-                lr.startWidth = w;
-                lr.endWidth = w;
+                if (showSpace)
+                {
+                    ApplyDistanceCompensatedWidthCurve(lr, activeCam, i < 2 ? 4.4f : 3.2f, 1.05f, 24f);
+                }
             }
             if (marsGlobe != null)
             {
@@ -1499,10 +1916,10 @@ namespace MarsSentinel.NASA
 
             if (forceOrbital && focusMode == 0)
             {
-                Vector3 baseOffset = new Vector3(1150f, 920f, -3350f);
+                Vector3 baseOffset = new Vector3(1200f, 680f, -3850f);
                 Vector3 rotated = Quaternion.Euler(orbitPitchOffset, orbitYawOffset, 0f) * baseOffset * orbitZoomMultiplier;
                 Vector3 camPos = marsCenter + rotated;
-                Vector3 target = marsCenter + new Vector3(-240f, 120f, 0f);
+                Vector3 target = marsCenter + new Vector3(-340f, 140f, 0f);
                 mainCam.transform.position = camPos;
                 mainCam.transform.LookAt(target, Vector3.up);
                 mainCam.fieldOfView = 52f;
@@ -1518,24 +1935,28 @@ namespace MarsSentinel.NASA
                 Vector3 camPos = marsCenter;
                 if (focusMode == 1 && spaceSunObj != null)
                 {
-                    // Side-angle view framing illuminated Mars limb + atmosphere alongside blazing 3D Sun + corona
+                    // Frame Sun centered at comfortable solar distance showing glowing photosphere, corona, spikes, and open starfield
                     Vector3 sunPos = spaceSunObj.transform.position;
-                    camPos = marsCenter + new Vector3(1650f, 420f, -1950f) * orbitZoomMultiplier;
-                    targetPos = Vector3.Lerp(marsCenter, sunPos, 0.46f);
+                    Vector3 toMars = (marsCenter - sunPos).normalized;
+                    Vector3 side = Vector3.Cross(Vector3.up, toMars).normalized;
+                    Vector3 viewDir = Quaternion.Euler(orbitPitchOffset, orbitYawOffset, 0f) *
+                        (toMars * 0.42f + side * 0.88f + Vector3.up * 0.20f).normalized;
+                    targetPos = sunPos;
+                    camPos = sunPos + viewDir * (2250f * orbitZoomMultiplier);
                 }
                 else if (focusMode == 2 && phobosObj != null)
                 {
                     targetPos = phobosObj.transform.position;
                     Vector3 sunlitViewDir = Quaternion.Euler(orbitPitchOffset, orbitYawOffset, 0f) *
-                        Vector3.Slerp(orbitSunDirection, (marsCenter - targetPos).normalized, 0.35f).normalized;
-                    camPos = targetPos + sunlitViewDir * (145f * orbitZoomMultiplier);
+                        Vector3.Slerp(orbitSunDirection, (marsCenter - targetPos).normalized, 0.25f).normalized;
+                    camPos = targetPos + sunlitViewDir * (165f * orbitZoomMultiplier);
                 }
                 else if (focusMode == 3 && deimosObj != null)
                 {
                     targetPos = deimosObj.transform.position;
                     Vector3 sunlitViewDir = Quaternion.Euler(orbitPitchOffset, orbitYawOffset, 0f) *
-                        Vector3.Slerp(orbitSunDirection, (marsCenter - targetPos).normalized, 0.35f).normalized;
-                    camPos = targetPos + sunlitViewDir * (105f * orbitZoomMultiplier);
+                        (Vector3.Slerp(orbitSunDirection, (marsCenter - targetPos).normalized, 0.20f) + Vector3.up * 0.16f).normalized;
+                    camPos = targetPos + sunlitViewDir * (120f * orbitZoomMultiplier);
                 }
                 mainCam.transform.position = camPos;
                 mainCam.transform.LookAt(targetPos, Vector3.up);
@@ -1737,35 +2158,161 @@ namespace MarsSentinel.NASA
             return m;
         }
 
+        private static float Hash2D(int ix, int iy, int seed)
+        {
+            unchecked
+            {
+                int h = ix * 374761393 + iy * 668265263 + seed * 1442695041;
+                h = (h ^ (h >> 13)) * 1274126177;
+                h ^= (h >> 16);
+                return (h & 0x00FFFFFF) / 16777215f;
+            }
+        }
+
+        private static float PeriodicValueNoise2D(float u01, float v01, int period, int seed)
+        {
+            float fx = u01 * period;
+            float fy = v01 * period;
+            int x0 = Mathf.FloorToInt(fx);
+            int y0 = Mathf.FloorToInt(fy);
+            float tx = fx - x0;
+            float ty = fy - y0;
+            float sx = tx * tx * tx * (tx * (tx * 6f - 15f) + 10f);
+            float sy = ty * ty * ty * (ty * (ty * 6f - 15f) + 10f);
+
+            int ix0 = ((x0 % period) + period) % period;
+            int iy0 = ((y0 % period) + period) % period;
+            int ix1 = (ix0 + 1) % period;
+            int iy1 = (iy0 + 1) % period;
+
+            float n00 = Hash2D(ix0, iy0, seed);
+            float n10 = Hash2D(ix1, iy0, seed);
+            float n01 = Hash2D(ix0, iy1, seed);
+            float n11 = Hash2D(ix1, iy1, seed);
+            return Mathf.Lerp(Mathf.Lerp(n00, n10, sx), Mathf.Lerp(n01, n11, sx), sy);
+        }
+
+        private static float PeriodicFbm2D(float u01, float v01, int basePeriod, int octaves, int seed)
+        {
+            float sum = 0f;
+            float amp = 0.5f;
+            float norm = 0f;
+            int period = basePeriod;
+            for (int o = 0; o < octaves; o++)
+            {
+                sum += PeriodicValueNoise2D(u01, v01, period, seed + o * 97) * amp;
+                norm += amp;
+                amp *= 0.5f;
+                period *= 2;
+            }
+            return sum / Mathf.Max(0.001f, norm);
+        }
+
+        private static float Hash3D(int ix, int iy, int iz, int seed)
+        {
+            unchecked
+            {
+                int h = ix * 374761393 + iy * 668265263 + iz * 2147483647 + seed * 1442695041;
+                h = (h ^ (h >> 13)) * 1274126177;
+                h ^= (h >> 16);
+                return (h & 0x00FFFFFF) / 16777215f;
+            }
+        }
+
+        private static float Noise3D(Vector3 p, int seed)
+        {
+            int x0 = Mathf.FloorToInt(p.x);
+            int y0 = Mathf.FloorToInt(p.y);
+            int z0 = Mathf.FloorToInt(p.z);
+            float tx = p.x - x0;
+            float ty = p.y - y0;
+            float tz = p.z - z0;
+            float sx = tx * tx * tx * (tx * (tx * 6f - 15f) + 10f);
+            float sy = ty * ty * ty * (ty * (ty * 6f - 15f) + 10f);
+            float sz = tz * tz * tz * (tz * (tz * 6f - 15f) + 10f);
+
+            float c000 = Hash3D(x0, y0, z0, seed);
+            float c100 = Hash3D(x0 + 1, y0, z0, seed);
+            float c010 = Hash3D(x0, y0 + 1, z0, seed);
+            float c110 = Hash3D(x0 + 1, y0 + 1, z0, seed);
+            float c001 = Hash3D(x0, y0, z0 + 1, seed);
+            float c101 = Hash3D(x0 + 1, y0, z0 + 1, seed);
+            float c011 = Hash3D(x0, y0 + 1, z0 + 1, seed);
+            float c111 = Hash3D(x0 + 1, y0 + 1, z0 + 1, seed);
+
+            float x00 = Mathf.Lerp(c000, c100, sx);
+            float x10 = Mathf.Lerp(c010, c110, sx);
+            float x01 = Mathf.Lerp(c001, c101, sx);
+            float x11 = Mathf.Lerp(c011, c111, sx);
+            return Mathf.Lerp(Mathf.Lerp(x00, x10, sy), Mathf.Lerp(x01, x11, sy), sz);
+        }
+
+        private static float Fbm3D(Vector3 p, int octaves, int seed)
+        {
+            float sum = 0f;
+            float amp = 0.5f;
+            float norm = 0f;
+            Vector3 q = p;
+            for (int o = 0; o < octaves; o++)
+            {
+                sum += Noise3D(q, seed + o * 131) * amp;
+                norm += amp;
+                amp *= 0.5f;
+                q *= 2.04f;
+            }
+            return sum / Mathf.Max(0.001f, norm);
+        }
+
+        private float EvaluateRegolithHeight(float u01, float v01)
+        {
+            float macroA = PeriodicFbm2D(u01, v01, 4, 4, 17);
+            float macroB = PeriodicFbm2D(u01 + v01, v01 - u01, 3, 4, 41);
+            float macro = macroA * 0.55f + macroB * 0.45f;
+
+            float warpU = PeriodicFbm2D(u01 + 0.17f, v01 + 0.31f, 3, 3, 53) * 0.18f;
+            float warpV = PeriodicFbm2D(u01 + 0.61f, v01 + 0.09f, 3, 3, 89) * 0.18f;
+            float twoPi = Mathf.PI * 2f;
+            float windStrength = SmoothStep01(0.32f, 0.72f, PeriodicFbm2D(u01 + 0.29f, v01 + 0.77f, 2, 2, 137));
+            float phase = (u01 * 3f + v01 * 1f) * twoPi + warpU * 22f + warpV * 14f;
+            float windDunes = (Mathf.Sin(phase) * 0.5f + 0.5f) * windStrength + 0.5f * (1f - windStrength);
+
+            float detailA = PeriodicFbm2D(u01, v01, 12, 3, 211);
+            float detailB = PeriodicFbm2D(2f * u01 + v01, -u01 + 2f * v01, 8, 3, 277);
+            float detail = detailA * 0.5f + detailB * 0.5f;
+            return macro * 0.56f + detail * 0.30f + windDunes * 0.14f;
+        }
+
         private Texture2D BuildRegolithSandTexture(int size)
         {
             var tex = new Texture2D(size, size, TextureFormat.RGBA32, true) { wrapMode = TextureWrapMode.Repeat };
             var cols = new Color[size * size];
-            float twoPi = Mathf.PI * 2f;
             for (int y = 0; y < size; y++)
             {
-                float v = (y / (float)size) * twoPi;
+                float v01 = y / (float)size;
                 for (int x = 0; x < size; x++)
                 {
-                    float u = (x / (float)size) * twoPi;
-                    // Continuous multi-angle eolian sand ripples + irregular mineral grain (zero repeating polka dots!)
-                    float warp = Mathf.Sin(u * 2f + v * 3f) * 0.35f + Mathf.Cos(u * 3f - v * 2f) * 0.25f;
-                    float ripple = Mathf.Sin(7f * u + 2f * v + warp) * 0.45f +
-                                   Mathf.Sin(13f * u - 5f * v - warp * 0.7f) * 0.22f +
-                                   Mathf.Cos(23f * u + 11f * v) * 0.12f;
-                    float fineGrain =
-                        Mathf.Sin(37f * u + 19f * v) * 0.08f +
-                        Mathf.Cos(43f * v - 29f * u) * 0.07f +
-                        Mathf.Sin(61f * u + 53f * v) * 0.05f;
-                    float patch = Mathf.Sin(u + 2f * v) * 0.28f + Mathf.Cos(3f * u - v) * 0.22f;
-                    float val = Mathf.Clamp01(0.52f + ripple * 0.18f + fineGrain * 0.45f + patch * 0.16f);
+                    float u01 = x / (float)size;
+                    float hVal = EvaluateRegolithHeight(u01, v01);
+                    float basaltPatch = PeriodicFbm2D(u01 + v01, v01 - u01 + 0.37f, 4, 3, 307);
+                    float siltPatch = PeriodicFbm2D(2f * u01 - v01 + 0.19f, u01 + 2f * v01 + 0.53f, 5, 3, 383);
+                    float organicTone = PeriodicFbm2D(3f * u01 - 2f * v01, 2f * u01 + 3f * v01, 6, 3, 521);
+                    float pebbleGrit = (Hash2D(x, y, 409) - 0.5f) * 0.05f;
+                    float val = Mathf.Clamp01(((hVal * 0.62f + basaltPatch * 0.20f + siltPatch * 0.18f) - 0.20f) * 1.44f + pebbleGrit);
 
-                    Color darkBasaltDust = new Color(0.54f, 0.28f, 0.18f, 1f);
-                    Color ochreDust = new Color(0.79f, 0.46f, 0.28f, 1f);
-                    Color brightSilt = new Color(0.86f, 0.57f, 0.37f, 1f);
-                    Color c = val < 0.55f
-                        ? Color.Lerp(darkBasaltDust, ochreDust, val / 0.55f)
-                        : Color.Lerp(ochreDust, brightSilt, (val - 0.55f) / 0.45f);
+                    Color darkBasaltDust = new Color(0.45f, 0.29f, 0.21f, 1f);
+                    Color midTerracotta = new Color(0.76f, 0.48f, 0.31f, 1f);
+                    Color warmOchre = new Color(0.89f, 0.62f, 0.41f, 1f);
+                    Color sunlitBuff = new Color(0.95f, 0.74f, 0.53f, 1f);
+
+                    Color c;
+                    if (val < 0.28f) c = Color.Lerp(darkBasaltDust, midTerracotta, val / 0.28f);
+                    else if (val < 0.66f) c = Color.Lerp(midTerracotta, warmOchre, (val - 0.28f) / 0.38f);
+                    else c = Color.Lerp(warmOchre, sunlitBuff, (val - 0.66f) / 0.34f);
+
+                    // Soft natural mineral dust streaks (zero axis-aligned threshold blocks)
+                    float dustMix = SmoothStep01(0.35f, 0.78f, organicTone);
+                    c = Color.Lerp(c, midTerracotta * 0.92f, (1f - dustMix) * 0.14f);
+                    c = Color.Lerp(c, sunlitBuff, dustMix * 0.12f);
                     cols[y * size + x] = c;
                 }
             }
@@ -1778,18 +2325,15 @@ namespace MarsSentinel.NASA
         {
             var tex = new Texture2D(size, size, TextureFormat.RGBA32, true, true) { wrapMode = TextureWrapMode.Repeat };
             var h = new float[size * size];
-            float twoPi = Mathf.PI * 2f;
             for (int y = 0; y < size; y++)
             {
-                float v = (y / (float)size) * twoPi;
+                float v01 = y / (float)size;
                 for (int x = 0; x < size; x++)
                 {
-                    float u = (x / (float)size) * twoPi;
-                    float warp = Mathf.Sin(u * 2f + v * 3f) * 0.35f;
-                    float sr = Mathf.Sin(7f * u + 2f * v + warp);
-                    h[y * size + x] = Mathf.Sign(sr) * Mathf.Pow(Mathf.Abs(sr), 0.78f) * 0.48f +
-                                      Mathf.Sin(13f * u - 5f * v) * 0.20f +
-                                      Mathf.Sin(29f * u + 17f * v) * 0.10f;
+                    float u01 = x / (float)size;
+                    float microRipple = (PeriodicFbm2D(2f * u01 + v01, -u01 + 2f * v01, 14, 2, 613) - 0.5f) * 0.08f;
+                    float fineSand = (Hash2D(x, y, 647) - 0.5f) * 0.015f;
+                    h[y * size + x] = EvaluateRegolithHeight(u01, v01) + microRipple + fineSand;
                 }
             }
             var cols = new Color[size * size];
@@ -1801,8 +2345,8 @@ namespace MarsSentinel.NASA
                 {
                     int xp = (x + 1) % size;
                     int xm = (x - 1 + size) % size;
-                    float dx = (h[y * size + xp] - h[y * size + xm]) * 2.0f;
-                    float dy = (h[yp * size + x] - h[ym * size + x]) * 2.0f;
+                    float dx = (h[y * size + xp] - h[y * size + xm]) * 1.6f;
+                    float dy = (h[yp * size + x] - h[ym * size + x]) * 1.6f;
                     Vector3 n = new Vector3(-dx, -dy, 1f).normalized;
                     cols[y * size + x] = new Color(n.x * 0.5f + 0.5f, n.y * 0.5f + 0.5f, n.z * 0.5f + 0.5f, 1f);
                 }
@@ -1819,39 +2363,40 @@ namespace MarsSentinel.NASA
             for (int y = 0; y < h; y++)
             {
                 float lat = (y / (float)h - 0.5f) * Mathf.PI;
+                float cosLat = Mathf.Cos(lat);
+                float sinLat = Mathf.Sin(lat);
                 for (int x = 0; x < w; x++)
                 {
                     float lon = (x / (float)w) * Mathf.PI * 2f;
-                    float n1 = Mathf.Sin(lon * 2f + 0.3f) * Mathf.Cos(lat * 2.2f) * 0.48f +
-                               Mathf.Sin(lon * 5f - lat * 3f + 1.2f) * 0.32f +
-                               Mathf.Cos(lon * 11f + lat * 7f) * 0.18f +
-                               Mathf.Sin(lon * 23f - lat * 15f) * 0.09f;
-                    float polar = SmoothStep01(1.16f, 1.38f, Mathf.Abs(lat) + Mathf.Sin(lon * 4f) * 0.05f);
+                    Vector3 spherePt = new Vector3(cosLat * Mathf.Cos(lon), sinLat, cosLat * Mathf.Sin(lon));
+                    float fbm = Fbm3D(spherePt * 3.1f + new Vector3(1.4f, 0.7f, -2.1f), 5, 77);
+                    float fine = Fbm3D(spherePt * 14f, 3, 193);
+                    float polar = SmoothStep01(1.16f, 1.38f, Mathf.Abs(lat) + (fbm - 0.5f) * 0.14f);
 
-                    Color basaltLowland = new Color(0.32f, 0.16f, 0.10f, 1f);
-                    Color ferricMid = new Color(0.68f, 0.33f, 0.17f, 1f);
-                    Color brightDust = new Color(0.88f, 0.56f, 0.34f, 1f);
+                    Color basaltLowland = new Color(0.42f, 0.21f, 0.13f, 1f);
+                    Color ferricMid = new Color(0.79f, 0.41f, 0.22f, 1f);
+                    Color brightDust = new Color(0.95f, 0.65f, 0.41f, 1f);
 
-                    float t = Mathf.Clamp01(0.52f + n1 * 0.58f);
+                    float t = Mathf.Clamp01((fbm * 0.82f + fine * 0.18f - 0.16f) * 1.38f);
                     Color c = t < 0.45f
                         ? Color.Lerp(basaltLowland, ferricMid, t / 0.45f)
                         : Color.Lerp(ferricMid, brightDust, (t - 0.45f) / 0.55f);
 
-                    // Valles Marineris equatorial canyon gash
-                    float valles = Mathf.Exp(-Mathf.Pow((lat + 0.22f) * 14f, 2f)) * Mathf.Exp(-Mathf.Pow((lon - 2.4f) * 3.0f, 2f));
-                    c = Color.Lerp(c, new Color(0.18f, 0.09f, 0.06f, 1f), valles * 0.88f);
+                    // Valles Marineris equatorial canyon gash & Olympus / Tharsis highland dust contrast
+                    float valles = Mathf.Exp(-Mathf.Pow((lat + 0.20f) * 12f, 2f)) * Mathf.Exp(-Mathf.Pow((lon - 2.4f) * 2.8f, 2f));
+                    c = Color.Lerp(c, new Color(0.24f, 0.12f, 0.08f, 1f), valles * 0.82f);
 
-                    // Syrtis Major dark volcanic shield & Hellas dust basin
-                    float syrtis = Mathf.Exp(-Mathf.Pow((lat - 0.18f) * 4.5f, 2f)) * Mathf.Exp(-Mathf.Pow((lon - 4.7f) * 4.0f, 2f));
-                    c = Color.Lerp(c, new Color(0.24f, 0.14f, 0.11f, 1f), syrtis * 0.72f);
+                    float syrtis = Mathf.Exp(-Mathf.Pow((lat - 0.16f) * 4.2f, 2f)) * Mathf.Exp(-Mathf.Pow((lon - 4.7f) * 3.8f, 2f));
+                    c = Color.Lerp(c, new Color(0.28f, 0.16f, 0.12f, 1f), syrtis * 0.68f);
 
-                    float hellas = Mathf.Exp(-Mathf.Pow((lat + 0.72f) * 4.2f, 2f)) * Mathf.Exp(-Mathf.Pow((lon - 4.4f) * 3.6f, 2f));
-                    c = Color.Lerp(c, new Color(0.92f, 0.68f, 0.48f, 1f), hellas * 0.55f);
+                    float hellas = Mathf.Exp(-Mathf.Pow((lat + 0.70f) * 4.0f, 2f)) * Mathf.Exp(-Mathf.Pow((lon - 4.4f) * 3.4f, 2f));
+                    c = Color.Lerp(c, new Color(0.95f, 0.72f, 0.52f, 1f), hellas * 0.55f);
 
                     // Subtle high-altitude CO2 ice cloud wisps & crisp CO2 polar ice caps
-                    float wisp = Mathf.Clamp01(Mathf.Sin(lon * 4f + lat * 6f) * Mathf.Cos(lon * 9f - lat * 8f) - 0.58f) * 0.45f;
-                    c = Color.Lerp(c, new Color(0.92f, 0.90f, 0.95f, 1f), wisp * (1f - polar));
-                    c = Color.Lerp(c, new Color(0.97f, 0.96f, 0.95f, 1f), polar);
+                    float wispFbm = Fbm3D(spherePt * 5.2f + new Vector3(-3f, 2f, 1f), 3, 333);
+                    float wisp = SmoothStep01(0.60f, 0.78f, wispFbm) * 0.42f;
+                    c = Color.Lerp(c, new Color(0.93f, 0.91f, 0.96f, 1f), wisp * (1f - polar));
+                    c = Color.Lerp(c, new Color(0.98f, 0.97f, 0.96f, 1f), polar);
                     cols[y * w + x] = c;
                 }
             }
@@ -1864,21 +2409,21 @@ namespace MarsSentinel.NASA
         {
             var tex = new Texture2D(w, h, TextureFormat.RGBA32, true) { wrapMode = TextureWrapMode.Repeat };
             var rng = new System.Random(seed);
-            var craterDirs = new Vector3[36];
-            var craterRadii = new float[36];
-            var craterDepths = new float[36];
+            var craterDirs = new Vector3[32];
+            var craterRadii = new float[32];
+            var craterDepths = new float[32];
             for (int i = 0; i < craterDirs.Length; i++)
             {
                 float u = (float)rng.NextDouble() * 2f - 1f;
                 float phi = (float)rng.NextDouble() * Mathf.PI * 2f;
                 float s = Mathf.Sqrt(1f - u * u);
                 craterDirs[i] = new Vector3(s * Mathf.Cos(phi), u, s * Mathf.Sin(phi));
-                craterRadii[i] = 0.07f + (float)rng.NextDouble() * 0.16f;
-                craterDepths[i] = 0.45f + (float)rng.NextDouble() * 0.45f;
+                craterRadii[i] = 0.08f + (float)rng.NextDouble() * 0.16f;
+                craterDepths[i] = 0.35f + (float)rng.NextDouble() * 0.45f;
             }
             craterDirs[0] = new Vector3(0.45f, 0.22f, -0.86f).normalized;
-            craterRadii[0] = 0.46f;
-            craterDepths[0] = 1.0f;
+            craterRadii[0] = 0.44f;
+            craterDepths[0] = 0.85f;
 
             var cols = new Color[w * h];
             for (int y = 0; y < h; y++)
@@ -1890,20 +2435,24 @@ namespace MarsSentinel.NASA
                 {
                     float phi = ((x + 0.5f) / w) * Mathf.PI * 2f;
                     Vector3 n = new Vector3(sinT * Mathf.Cos(phi), cosT, sinT * Mathf.Sin(phi));
-                    float shade = 0.66f + Mathf.Sin(n.x * 9f + n.y * 7f) * 0.06f + Mathf.Cos(n.z * 16f - n.y * 11f) * 0.04f;
+                    // Natural multi-octave chondrite asteroid dust & rocky regolith albedo (NO concentric white bullseye rings!)
+                    float macroFbm = Fbm3D(n * 3.4f, 4, seed + 19);
+                    float fineFbm = Fbm3D(n * 16.0f, 3, seed + 71);
+                    float shade = 0.48f + (macroFbm - 0.5f) * 0.34f + (fineFbm - 0.5f) * 0.16f;
                     for (int i = 0; i < craterDirs.Length; i++)
                     {
                         float dot = Mathf.Clamp(Vector3.Dot(n, craterDirs[i]), -1f, 1f);
-                        float ang = Mathf.Acos(dot);
-                        float d = ang / craterRadii[i];
-                        if (d < 1.38f)
+                        float d = Mathf.Acos(dot) / craterRadii[i];
+                        if (d < 0.92f)
                         {
-                            if (d < 0.86f) shade -= (1f - (d / 0.86f) * (d / 0.86f)) * 0.26f * craterDepths[i];
-                            else shade += Mathf.Exp(-Mathf.Pow((d - 1.0f) * 5.2f, 2f)) * 0.18f * craterDepths[i];
+                            // Subtle weathered floor shadow inside crater bowls only; real rim highlights come from 3D mesh + normal map
+                            float bowl = SmoothStep01(0.92f, 0.15f, d);
+                            shade -= bowl * 0.12f * craterDepths[i];
                         }
                     }
-                    shade = Mathf.Clamp(shade, 0.26f, 0.96f);
-                    cols[y * w + x] = new Color(shade * 0.86f, shade * 0.77f, shade * 0.69f, 1f);
+                    shade = Mathf.Clamp(shade, 0.24f, 0.86f);
+                    float warmTint = 0.88f + macroFbm * 0.12f;
+                    cols[y * w + x] = new Color(shade * warmTint, shade * 0.84f, shade * 0.76f, 1f);
                 }
             }
             tex.SetPixels(cols);
@@ -1915,21 +2464,21 @@ namespace MarsSentinel.NASA
         {
             var tex = new Texture2D(w, h, TextureFormat.RGBA32, true, true) { wrapMode = TextureWrapMode.Repeat };
             var rng = new System.Random(seed);
-            var craterDirs = new Vector3[36];
-            var craterRadii = new float[36];
-            var craterDepths = new float[36];
+            var craterDirs = new Vector3[32];
+            var craterRadii = new float[32];
+            var craterDepths = new float[32];
             for (int i = 0; i < craterDirs.Length; i++)
             {
                 float u = (float)rng.NextDouble() * 2f - 1f;
                 float phi = (float)rng.NextDouble() * Mathf.PI * 2f;
                 float s = Mathf.Sqrt(1f - u * u);
                 craterDirs[i] = new Vector3(s * Mathf.Cos(phi), u, s * Mathf.Sin(phi));
-                craterRadii[i] = 0.07f + (float)rng.NextDouble() * 0.16f;
-                craterDepths[i] = 0.45f + (float)rng.NextDouble() * 0.45f;
+                craterRadii[i] = 0.08f + (float)rng.NextDouble() * 0.16f;
+                craterDepths[i] = 0.35f + (float)rng.NextDouble() * 0.45f;
             }
             craterDirs[0] = new Vector3(0.45f, 0.22f, -0.86f).normalized;
-            craterRadii[0] = 0.46f;
-            craterDepths[0] = 1.0f;
+            craterRadii[0] = 0.44f;
+            craterDepths[0] = 0.85f;
 
             var hf = new float[w * h];
             for (int y = 0; y < h; y++)
@@ -1941,15 +2490,20 @@ namespace MarsSentinel.NASA
                 {
                     float phi = ((x + 0.5f) / w) * Mathf.PI * 2f;
                     Vector3 n = new Vector3(sinT * Mathf.Cos(phi), cosT, sinT * Mathf.Sin(phi));
-                    float val = Mathf.Sin(n.x * 22f + n.y * 17f) * 0.03f + Mathf.Cos(n.z * 31f - n.x * 19f) * 0.02f;
+                    float val = (Fbm3D(n * 11f, 3, seed + 151) - 0.5f) * 0.22f;
                     for (int i = 0; i < craterDirs.Length; i++)
                     {
                         float dot = Mathf.Clamp(Vector3.Dot(n, craterDirs[i]), -1f, 1f);
                         float d = Mathf.Acos(dot) / craterRadii[i];
-                        if (d < 1.38f)
+                        if (d < 1.32f)
                         {
-                            if (d < 0.88f) val -= (1f - d * d) * 0.55f * craterDepths[i];
-                            val += Mathf.Exp(-Mathf.Pow((d - 0.97f) * 5.8f, 2f)) * 0.30f * craterDepths[i];
+                            if (d < 0.90f)
+                            {
+                                float u = d / 0.90f;
+                                val -= (1f - u * u) * 0.42f * craterDepths[i];
+                            }
+                            float rim = Mathf.Exp(-Mathf.Pow((d - 0.98f) * 4.5f, 2f)) * 0.18f * craterDepths[i];
+                            val += rim;
                         }
                     }
                     hf[y * w + x] = val;
@@ -1964,8 +2518,8 @@ namespace MarsSentinel.NASA
                 {
                     int xp = (x + 1) % w;
                     int xm = (x - 1 + w) % w;
-                    float dx = (hf[y * w + xp] - hf[y * w + xm]) * 4.2f;
-                    float dy = (hf[yp * w + x] - hf[ym * w + x]) * 4.2f;
+                    float dx = (hf[y * w + xp] - hf[y * w + xm]) * 3.2f;
+                    float dy = (hf[yp * w + x] - hf[ym * w + x]) * 3.2f;
                     Vector3 n = new Vector3(-dx, -dy, 1f).normalized;
                     cols[y * w + x] = new Color(n.x * 0.5f + 0.5f, n.y * 0.5f + 0.5f, n.z * 0.5f + 0.5f, 1f);
                 }
@@ -1999,19 +2553,19 @@ namespace MarsSentinel.NASA
 
         private Mesh BuildCrateredMoonMesh(string name, Vector3 radii, bool stickney, int seed)
         {
-            const int latSegs = 44;
-            const int lonSegs = 64;
+            const int latSegs = 60;
+            const int lonSegs = 96;
             var rng = new System.Random(seed);
-            var craterDirs = new Vector3[20];
-            var craterRadii = new float[20];
+            var craterDirs = new Vector3[28];
+            var craterRadii = new float[28];
             for (int i = 0; i < craterDirs.Length; i++)
             {
                 // Keep large craters out of immediate UV polar cap for silky smooth poles
-                float u = ((float)rng.NextDouble() * 1.76f) - 0.88f;
+                float u = ((float)rng.NextDouble() * 1.74f) - 0.87f;
                 float phi = (float)rng.NextDouble() * Mathf.PI * 2f;
                 float s = Mathf.Sqrt(1f - u * u);
                 craterDirs[i] = new Vector3(s * Mathf.Cos(phi), u, s * Mathf.Sin(phi));
-                craterRadii[i] = 0.12f + (float)rng.NextDouble() * 0.16f;
+                craterRadii[i] = 0.10f + (float)rng.NextDouble() * 0.16f;
             }
             Vector3 stickneyDir = new Vector3(0.45f, 0.22f, -0.86f).normalized;
 
@@ -2032,25 +2586,36 @@ namespace MarsSentinel.NASA
                         Mathf.Cos(theta),
                         Mathf.Sin(theta) * Mathf.Sin(phi)
                     );
-                    float lump = 1.0f +
-                                 Mathf.Sin(n.x * 3.1f + n.y * 2.2f) * 0.065f +
-                                 Mathf.Cos(n.z * 4.5f - n.x * 2.8f) * 0.04f;
+                    float rockFbm = Fbm3D(n * 2.4f, 4, seed + 55);
+                    float lump = 0.93f + rockFbm * 0.16f +
+                                 Mathf.Sin(n.x * 3.1f + n.y * 2.2f) * 0.045f +
+                                 Mathf.Cos(n.z * 4.2f - n.x * 2.6f) * 0.035f;
                     if (stickney)
                     {
                         float sd = Vector3.Angle(n, stickneyDir) * Mathf.Deg2Rad;
-                        if (sd < 0.56f)
+                        float ds = sd / 0.48f;
+                        if (ds < 1.25f)
                         {
-                            float t = sd / 0.56f;
-                            lump -= (1f - t * t) * 0.20f;
+                            if (ds < 0.95f)
+                            {
+                                float ts = ds / 0.95f;
+                                lump -= (1f - ts * ts) * 0.20f;
+                            }
+                            lump += Mathf.Exp(-Mathf.Pow((ds - 0.98f) * 5.2f, 2f)) * 0.04f;
                         }
                     }
                     for (int c = 0; c < craterDirs.Length; c++)
                     {
                         float cd = Vector3.Angle(n, craterDirs[c]) * Mathf.Deg2Rad;
-                        if (cd < craterRadii[c])
+                        float dc = cd / craterRadii[c];
+                        if (dc < 1.25f)
                         {
-                            float t = cd / craterRadii[c];
-                            lump -= (1f - t * t) * 0.045f;
+                            if (dc < 0.92f)
+                            {
+                                float tc = dc / 0.92f;
+                                lump -= (1f - tc * tc) * 0.055f;
+                            }
+                            lump += Mathf.Exp(-Mathf.Pow((dc - 0.98f) * 5.0f, 2f)) * 0.018f;
                         }
                     }
                     verts.Add(new Vector3(n.x * radii.x, n.y * radii.y, n.z * radii.z) * (0.5f * lump));

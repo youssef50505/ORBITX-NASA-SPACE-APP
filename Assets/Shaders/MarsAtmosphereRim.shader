@@ -56,15 +56,15 @@ Shader "MarsSentinel/MarsAtmosphereRim"
                 float3 L = normalize(_SunDir.xyz);
 
                 float ndotv = saturate(dot(N, V));
-                float fresnel = pow(1.0 - ndotv, 3.6);
-                // Smooth outer falloff to eliminate hard shell outline
-                float outerFade = smoothstep(0.02, 0.32, ndotv);
+                float fresnel = pow(1.0 - ndotv, 2.8);
+                // Strictly fade to zero at outermost silhouette edge (ndotv -> 0) so no hard shell ring ever forms
+                float outerFade = smoothstep(0.0, 0.48, ndotv);
                 float sunTerm = dot(N, L);
-                float dayMask = smoothstep(-0.22, 0.45, sunTerm);
-                float terminator = exp(-pow((sunTerm - 0.05) * 3.8, 2.0));
+                float dayMask = smoothstep(-0.28, 0.42, sunTerm);
+                float terminator = exp(-pow((sunTerm - 0.02) * 3.2, 2.0));
 
-                float3 col = lerp(_DayRimColor.rgb, _TwilightRimColor.rgb, saturate(0.55 + terminator * 0.45));
-                float alpha = fresnel * (0.35 + 0.65 * outerFade) * (0.10 + 0.90 * dayMask) * _Intensity;
+                float3 col = lerp(_DayRimColor.rgb, _TwilightRimColor.rgb, saturate(0.50 + terminator * 0.50));
+                float alpha = fresnel * outerFade * (0.22 + 0.78 * dayMask) * _Intensity;
                 return half4(col * alpha, saturate(alpha));
             }
             ENDHLSL
