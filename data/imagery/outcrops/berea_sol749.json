@@ -1,0 +1,16 @@
+{
+  "key": "berea_sol749",
+  "sol": 749,
+  "outcrop": "Berea (Melyn)",
+  "filename": "berea_sol749.jpg",
+  "imageid": "FLF_0749_0733445725_069ECM_N0370000FHAZ00203_07_195J",
+  "instrument": "FRONT_HAZCAM_LEFT_A",
+  "title": "Mars Perseverance Sol 749: Front Left Hazard Avoidance Camera (Hazcam)",
+  "caption": "NASA's Mars Perseverance rover acquired this image of the area in front of it using its onboard Front Left Hazard Avoidance Camera A. \n\nThis image was acquired on March 30, 2023 (Sol 749) at the local mean solar time of 16:03:55.",
+  "date_taken_utc": "2023-03-30T11:05:41.216",
+  "credit": "NASA/JPL-Caltech",
+  "source_url": "https://mars.nasa.gov/mars2020/multimedia/raw-images/FLF_0749_0733445725_069ECM_N0370000FHAZ00203_07_195J",
+  "medium_url": "https://mars.nasa.gov/mars2020-raw-images/pub/ods/surface/sol/00749/ids/edr/browse/fcam/FLF_0749_0733445725_069ECM_N0370000FHAZ00203_07_195J01_800.jpg",
+  "sha256": "fd76d81245bd35ef78236c69d4dc050bd69cd5681fcbd345241106cc57b306fc",
+  "bytes": 49188
+}

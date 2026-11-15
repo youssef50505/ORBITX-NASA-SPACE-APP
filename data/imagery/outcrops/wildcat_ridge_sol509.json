@@ -1,0 +1,16 @@
+{
+  "key": "wildcat_ridge_sol509",
+  "sol": 509,
+  "outcrop": "Wildcat Ridge (Hazeltop / Bearwallow)",
+  "filename": "wildcat_ridge_sol509.jpg",
+  "imageid": "FLF_0509_0712138413_506ECM_N0261222FHAZ00203_13_195J",
+  "instrument": "FRONT_HAZCAM_LEFT_A",
+  "title": "Mars Perseverance Sol 509: Front Left Hazard Avoidance Camera (Hazcam)",
+  "caption": "NASA's Mars Perseverance rover acquired this image of the area in front of it using its onboard Front Left Hazard Avoidance Camera A. \n\nThis image was acquired on July 26, 2022 (Sol 509) at the local mean solar time of 15:40:53.",
+  "date_taken_utc": "2022-07-26T20:21:00.806",
+  "credit": "NASA/JPL-Caltech",
+  "source_url": "https://mars.nasa.gov/mars2020/multimedia/raw-images/FLF_0509_0712138413_506ECM_N0261222FHAZ00203_13_195J",
+  "medium_url": "https://mars.nasa.gov/mars2020-raw-images/pub/ods/surface/sol/00509/ids/edr/browse/fcam/FLF_0509_0712138413_506ECM_N0261222FHAZ00203_13_195J01_800.jpg",
+  "sha256": "7e1a21d1b184024363b131272b76a447f49bb5fdd736bf6a31206e34804c7838",
+  "bytes": 73277
+}

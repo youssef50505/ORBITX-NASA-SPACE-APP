@@ -1,8 +1,52 @@
-__pycache__/
-*.pyc
+# ==============================================================================
+# MARS SENTINEL — Git Ignore Configuration
+# ==============================================================================
 
-# GitHub rejects any file larger than 100 MB unless it is in Git LFS.
+# Python bytecode and execution caches
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+
+# Large 3D binaries & Blender auto-backups (exceeds GitHub 100MB limit)
 *.blend
 *.blend1
-!archive/Mars_backup_before_quality_pass.blend
-!MARS_SENTINEL_NASA_Terrain_Study_SURFACE_FOCUS.blend
+*.blend@
+*.blend[0-9]
+*.glb
+!unity_project/Assets/**/*.glb
+!unity_project/Assets/**/*.glb.meta
+!data/missions_3d/**/*.glb
+
+# Raw scientific GIS datasets and huge numerical grids (>100 MB)
+data/*.tif
+data/*.tiff
+data/*.JP2
+data/*.jp2
+data/*.npz
+data/jez_hirise_1m_detail_grid.json
+data/jez_hirise_site_detail_4m.json
+data/jez_hirise_1m_overview_grid.json
+data/jez_ctx_20m_grid.json
+
+# Stale / ephemeral preview renders & diagnostics
+previews/test_*.png
+previews/*thumb*.png
+
+# Temporary inspection dumps and untrusted text datablocks
+data/inspect_*.json
+data/*.untrusted.txt
+data/field_asset_bounds.json
+
+# OS and Editor metadata
+.DS_Store
+Thumbs.db
+desktop.ini
+*.tmp
+*.bak
+
+# Local workspace agent/test ephemera
+.agents/
+TEST_INFRA.md
+TEST_READY.md

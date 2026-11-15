@@ -1,0 +1,16 @@
+{
+  "key": "cheyava_falls_sol1215",
+  "sol": 1215,
+  "outcrop": "Cheyava Falls / Bright Angel (Sapphire Canyon)",
+  "filename": "cheyava_falls_sol1215.jpg",
+  "imageid": "FLF_1215_0774812639_097ECM_N0560000FHAZ00215_01_275J",
+  "instrument": "FRONT_HAZCAM_LEFT_A",
+  "title": "Mars Perseverance Sol 1215: Front Left Hazard Avoidance Camera (Hazcam)",
+  "caption": "NASA's Mars Perseverance rover acquired this image of the area in front of it using its onboard Front Left Hazard Avoidance Camera A. \n\nThis image was acquired on July 21, 2024 (Sol 1215) at the local mean solar time of 15:31:10.",
+  "date_taken_utc": "2024-07-21T05:59:45.764",
+  "credit": "NASA/JPL-Caltech",
+  "source_url": "https://mars.nasa.gov/mars2020/multimedia/raw-images/FLF_1215_0774812639_097ECM_N0560000FHAZ00215_01_275J",
+  "medium_url": "https://mars.nasa.gov/mars2020-raw-images/pub/ods/surface/sol/01215/ids/edr/browse/fcam/FLF_1215_0774812639_097ECM_N0560000FHAZ00215_01_275J01_800.jpg",
+  "sha256": "1e1959ba49b5da7e52381cbac256388b39468a52c6fec7f36642d46b427ec367",
+  "bytes": 63837
+}

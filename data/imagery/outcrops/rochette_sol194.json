@@ -1,0 +1,16 @@
+{
+  "key": "rochette_sol194",
+  "sol": 194,
+  "outcrop": "Rochette (Montdenier / Montagnac)",
+  "filename": "rochette_sol194.jpg",
+  "imageid": "ZL0_0194_0684157825_019EBY_N0070000ZCAM03218_1100LMJ",
+  "instrument": "MCZ_LEFT",
+  "title": "Mars Perseverance Sol 194: Left Mastcam-Z Camera",
+  "caption": "NASA's Mars Perseverance rover acquired this image using its Left Mastcam-Z camera. Mastcam-Z is a pair of cameras located high on the rover's mast.\n\nThis image was acquired on Sept. 5, 2021 (Sol 194) at the local mean solar time of 11:11:45.",
+  "date_taken_utc": "2021-09-05T23:54:26.899",
+  "credit": "NASA/JPL-Caltech/ASU",
+  "source_url": "https://mars.nasa.gov/mars2020/multimedia/raw-images/ZL0_0194_0684157825_019EBY_N0070000ZCAM03218_1100LMJ",
+  "medium_url": "https://mars.nasa.gov/mars2020-raw-images/pub/ods/surface/sol/00194/ids/edr/browse/zcam/ZL0_0194_0684157825_019EBY_N0070000ZCAM03218_1100LMJ01_800.jpg",
+  "sha256": "6648dd17fd1a461641d15cab08a3d1064791a7a0cd1bef5ade68a6606a27215f",
+  "bytes": 72092
+}

@@ -1,0 +1,236 @@
+{
+  "catalog_title": "NASA Space Apps Challenge — Verified Martian Datasets & API Manifest",
+  "generated_timestamp_utc": "2026-11-14 04:28:19Z",
+  "curator": "NASA Space Apps Datasets Fetcher & Pipeline Worker",
+  "challenge": "Interplanetary Survival Guide: Martian Map",
+  "reference_datums": {
+    "aeroid_zero_elevation": "MOLA 0.0m datum geoid",
+    "ellipsoid": "IAU2000 Mars Sphere (Radius: 3,396,190.0 m)",
+    "jezero_origin": {
+      "latitude_deg_north": 18.44215,
+      "longitude_deg_east": 77.44287,
+      "datum_elevation_m": -2569.0
+    },
+    "gale_origin": {
+      "latitude_deg_north": -4.5895,
+      "longitude_deg_east": 137.4417,
+      "datum_elevation_m": -4501.0
+    }
+  },
+  "official_resources": [
+    {
+      "id": "mars_trek",
+      "name": "JPL Mars Trek Portal",
+      "portal_url": "https://trek.nasa.gov/mars/",
+      "solr_search_api": "https://trek.nasa.gov/mars/TrekServices/ws/index/eq/searchItems",
+      "wmts_base": "https://trek.nasa.gov/tiles/Mars/EQ/",
+      "wmts_tile_pattern": "https://trek.nasa.gov/tiles/Mars/EQ/{LayerName}/1.0.0/default/default028mm/{TileMatrix}/{TileRow}/{TileCol}.jpg",
+      "arcgis_imageserver_dem": "https://trek.nasa.gov/mars/trekarcgis/rest/services/mola128_mola64_merge_90Nto90S_SimpleC_clon0/ImageServer",
+      "dem_export_url_pattern": "https://trek.nasa.gov/mars/trekarcgis/rest/services/{ServiceName}/ImageServer/exportImage?bbox={minLon},{minLat},{maxLon},{maxLat}&bboxSR=4326&size={w},{h}&format=tiff&f=image",
+      "stl_generator_url": "https://trek.nasa.gov/mars/TrekServices/ws/model/mars/trekSTL.stl",
+      "elevation_profile_calculator": "https://trek.nasa.gov/mars/TrekServices/ws/elevationProfile/calculate",
+      "cesium_quantized_mesh_s3": "https://marshub.s3.amazonaws.com/mars_v14/"
+    },
+    {
+      "id": "usgs_sim3292",
+      "name": "USGS Geologic Map of Mars (SIM 3292)",
+      "authors": "Tanaka et al. (2014)",
+      "scale": "1:20,000,000",
+      "publication_url": "https://pubs.usgs.gov/sim/3292/",
+      "gis_database_zip": "https://pubs.usgs.gov/sim/3292/downloads/sim3292_database.zip",
+      "map_pdf": "https://pubs.usgs.gov/sim/3292/pdf/sim3292_map.pdf",
+      "pamphlet_pdf": "https://pubs.usgs.gov/sim/3292/pdf/sim3292_pamphlet.pdf",
+      "stratigraphy_chart_pdf": "https://pubs.usgs.gov/sim/3292/pdf/sim3292_figure2.pdf",
+      "arcgis_live_mapserver": "https://trek.nasa.gov/mars/trekarcgis/rest/services/SIM3292_Global_Geology/MapServer/0",
+      "vector_query_geojson": "https://trek.nasa.gov/mars/trekarcgis/rest/services/SIM3292_Global_Geology/MapServer/0/query?where=1%3D1&outFields=*&f=geojson",
+      "map_export_png": "https://trek.nasa.gov/mars/trekarcgis/rest/services/SIM3292_Global_Geology/MapServer/export?bbox={minLon},{minLat},{maxLon},{maxLat}&bboxSR=4326&size={w},{h}&format=png32&f=image",
+      "total_units_defined": 44
+    },
+    {
+      "id": "curiosity_msl",
+      "name": "Curiosity Mount Sharp Route & Waypoints",
+      "landing_site": "Bradbury Landing, Gale Crater",
+      "pds_analysts_notebook": "https://an.rsl.wustl.edu/msl",
+      "mmgis_live_traverse_geojson": "https://mars.nasa.gov/mmgis-maps/MSL/Layers/json/MSL_traverse.json",
+      "mmgis_live_waypoints_geojson": "https://mars.nasa.gov/mmgis-maps/MSL/Layers/json/MSL_waypoints.json",
+      "arcgis_traverse_query": "https://trek.nasa.gov/mars/trekarcgis/rest/services/curiosity_path/MapServer/0/query?where=1%3D1&outFields=*&f=geojson",
+      "raw_images_api": "https://mars.nasa.gov/rss/api/?feed=raw_images&category=msl&feedtype=json"
+    },
+    {
+      "id": "perseverance_m20",
+      "name": "Mars 2020 Perseverance Rover & Ingenuity Helicopter",
+      "landing_site": "Octavia E. Butler Landing, Jezero Crater",
+      "mmgis_live_traverse_geojson": "https://mars.nasa.gov/mmgis-maps/M20/Layers/json/M20_traverse.json",
+      "mmgis_live_waypoints_geojson": "https://mars.nasa.gov/mmgis-maps/M20/Layers/json/M20_waypoints.json",
+      "mmgis_ingenuity_flights_geojson": "https://mars.nasa.gov/mmgis-maps/M20/Layers/json/m20_heli_flight_path.json",
+      "mmgis_sample_tubes_geojson": "https://mars.nasa.gov/mmgis-maps/M20/Layers/json/M20_SAMPLE_v3.json",
+      "arcgis_perseverance_traverse_query": "https://trek.nasa.gov/mars/trekarcgis/rest/services/Perseverance_Traverse_Path/MapServer/0/query?where=1%3D1&outFields=*&f=geojson",
+      "raw_images_api": "https://mars.nasa.gov/rss/api/?feed=raw_images&category=mars2020&feedtype=json",
+      "raw_images_cdn_pattern": "https://mars.nasa.gov/mars2020-raw-images/pub/ods/surface/sol/{sol:05d}/ids/edr/browse/{cam}/{imageid}_{resolution}.jpg",
+      "total_cataloged_images": 1055868
+    },
+    {
+      "id": "nasa_worldview_gibs",
+      "name": "NASA Worldview & Global Imagery Browse Services (GIBS)",
+      "portal_url": "https://worldview.earthdata.nasa.gov/",
+      "wmts_rest_endpoint": "https://gibs.earthdata.nasa.gov/wmts/epsg4326/best/wmts.cgi",
+      "wmts_tile_pattern": "https://gibs.earthdata.nasa.gov/wmts/epsg4326/best/{Layer}/default/{Time}/{TileMatrixSet}/{TileMatrix}/{TileRow}/{TileCol}.{format}",
+      "key_analogue_layers": [
+        "MODIS_Terra_CorrectedReflectance_TrueColor",
+        "VIIRS_SNPP_CorrectedReflectance_TrueColor",
+        "MODIS_Terra_Aerosol",
+        "MODIS_Terra_Land_Surface_Temp_Day",
+        "AIRS_Dust_Score"
+      ]
+    }
+  ],
+  "space_weather_and_eva_constants": {
+    "mars_solar_constant_w_m2": 586.2,
+    "jezero_equinox_noon_elevation_deg": 71.62,
+    "beer_lambert_baseline_tau": 0.45,
+    "dust_storm_tau_range": [
+      0.3,
+      3.5
+    ],
+    "background_gcr_msv_day": 0.67,
+    "eva_o2_reserve_kg": 1.36,
+    "eva_metabolic_rate_w_nominal": 290.0
+  },
+  "spaceapps_2026_challenge_url": "https://www.spaceappschallenge.org/2026/challenges/interplanetary-survival-guide-martian-map/?tab=resources",
+  "extended_nasa_apis": {
+    "mars2020_raw_images_rss": "https://mars.nasa.gov/rss/api/?feed=raw_images&category=mars2020&feedtype=json&num=20&sol={sol}",
+    "insight_weather_api": "https://api.nasa.gov/insight_weather/?api_key=DEMO_KEY&feedtype=json&ver=1.0",
+    "donki_sep_space_weather_api": "https://api.nasa.gov/DONKI/SEP?startDate={start}&endDate={end}&api_key=DEMO_KEY",
+    "mars_trek_config_json": "https://trek.nasa.gov/mars/jpl/config/config.json",
+    "mars_trek_mola_wmts": "https://trek.nasa.gov/tiles/Mars/EQ/Mars_MGS_MOLA_ClrShade_merge_global_463m/1.0.0/WMTSCapabilities.xml",
+    "earthdata_gibs_wmts": "https://gibs.earthdata.nasa.gov/wmts/epsg4326/best/1.0.0/WMTSCapabilities.xml",
+    "nasa_3d_resources_github": "https://github.com/nasa/NASA-3D-Resources"
+  },
+  "mars_trek_discovered_services": {
+    "_comment": "one that are being used or being implemented",
+    "elevationService": {
+      "northpole": "https://trek.nasa.gov/mars/TrekServices/ws/elevationProfileNP/calculate",
+      "southpole": "https://trek.nasa.gov/mars/TrekServices/ws/elevationProfileSP/calculate",
+      "equirect": "https://trek.nasa.gov/mars/TrekServices/ws/elevationProfile/calculate"
+    },
+    "distanceService": {
+      "northpole": "https://trek.nasa.gov/mars/TrekServices/ws/elevationProfileNP/distance",
+      "southpole": "https://trek.nasa.gov/mars/TrekServices/ws/elevationProfileSP/distance",
+      "equirect": "https://trek.nasa.gov/mars/TrekServices/ws/elevationProfile/distance"
+    },
+    "globalDEMService": {
+      "northpole": "https://trek.nasa.gov/mars/trekarcgis/rest/services/mola128_mola64_merge_90Nto90S_SimpleC_clon0_NP/ImageServer",
+      "southpole": "https://trek.nasa.gov/mars/trekarcgis/rest/services/mola128_mola64_merge_90Nto90S_SimpleC_clon0_SP/ImageServer",
+      "equirect": "https://trek.nasa.gov/mars/trekarcgis/rest/services/mola128_mola64_merge_90Nto90S_SimpleC_clon0/ImageServer"
+    },
+    "multiDEMService": {
+      "equirect": "https://trek.nasa.gov/mars/TrekServices/ws/elevationProfile/multiDEM/interpolated",
+      "southpole": "https://trek.nasa.gov/mars/TrekServices/ws/elevationProfileSP/multiDEM/interpolated",
+      "northpole": "https://trek.nasa.gov/mars/TrekServices/ws/elevationProfileNP/multiDEM/interpolated"
+    },
+    "multiDemNonInterp": {
+      "northpole": "https://trek.nasa.gov/mars/TrekServices/ws/elevationProfileNP/multiDEM",
+      "southpole": "https://trek.nasa.gov/mars/TrekServices/ws/elevationProfileSP/multiDEM",
+      "equirect": "https://trek.nasa.gov/mars/TrekServices/ws/elevationProfile/multiDEM"
+    },
+    "combinedDEMService": {
+      "equirect": "https://trek.nasa.gov/mars/TrekServices/ws/elevationProfile/combined"
+    },
+    "catalogRastersService": {
+      "northpole": "https://trek.nasa.gov/tiles/Mars/rasters/np/list.json",
+      "southpole": "https://trek.nasa.gov/tiles/Mars/rasters/sp/list.json",
+      "equirect": "https://trek.nasa.gov/tiles/Mars/rasters/eq/list.json"
+    },
+    "indexServiceBaseURL": "https://trek.nasa.gov/mars/TrekServices/ws/index",
+    "bookmarksService": "https://trek.nasa.gov/mars/TrekServices/ws/index/PROJECTION/item/update",
+    "bookmarkServiceUpdateUrl": "https://trek.nasa.gov/mars/TrekServices/ws/index/PROJECTION/item/update",
+    "bookmarkServiceGetItemsInCollectionUrl": "https://trek.nasa.gov/mars/TrekServices/ws/index/PROJECTION/collection/",
+    "bookmarkServiceGetItemsByUuidUrl": "https://trek.nasa.gov/mars/TrekServices/ws/index/PROJECTION/item/",
+    "bookmarkServiceGetShapesInCollectionUrl": "https://trek.nasa.gov/mars/TrekServices/ws/index/PROJECTION/collection/shape/",
+    "bookmarkServiceGetAnnotationsInCollectionUrl": "https://trek.nasa.gov/mars/TrekServices/ws/index/PROJECTION/collection/annotation/",
+    "bookmarkServiceDeleteUrl": "https://trek.nasa.gov/mars/TrekServices/ws/index/PROJECTION/item/",
+    "registerationUrl": "https://trek.nasa.gov/mars/TrekServices/ws/tm/submit",
+    "getLayerServicesUrl": "https://trek.nasa.gov/mars/TrekServices/ws/index/getLayerServices?uuid=",
+    "getAttachmentsUrl": "https://trek.nasa.gov/mars/TrekServices/ws/index/getAttachments?uuid=",
+    "getItemUrl": "https://trek.nasa.gov/mars/TrekServices/ws/index/PROJECTION/getItem?productLabel=&extID=",
+    "searchItemsUrl": "https://trek.nasa.gov/mars/TrekServices/ws/index/PROJECTION/searchItems?serviceType=&bbox=&shape=&point=&radius=&key=&proj=&start=&rows=&facetKeys=&facetValues=&intersects=&resolutionMin=&resolutionMax=",
+    "searchCoveredDEMUrl": "https://trek.nasa.gov/mars/TrekServices/ws/index/PROJECTION/searchDEM?bbox=",
+    "basemapService": "jpl/config/basemapList.json",
+    "layersService": "jpl/config/staticLayers.json",
+    "terrainEndpoint": "https://marshub.s3.amazonaws.com/mars_v14/",
+    "stlService": "https://trek.nasa.gov/mars/TrekServices/ws/model/mars/trekSTL.stl",
+    "objService": "https://trek.nasa.gov/mars/TrekServices/ws/model/mars/trekOBJ.zip",
+    "getLayerAbstractUrl": "https://trek.nasa.gov/mars/TrekWS/rest/cat/abstract?label=",
+    "getLayerMetadataUrl": "https://trek.nasa.gov/mars/TrekWS/rest/cat/metadata/fgdc/html?label=",
+    "downloadLayerMetadataUrl": "https://trek.nasa.gov/mars/TrekWS/rest/cat/metadata/stream?label=",
+    "getLayerDataUrl": "https://trek.nasa.gov/mars/TrekWS/rest/cat/data/stream?label=",
+    "getLayerLegendUrl": "https://trek.nasa.gov/mars/TrekWS/rest/cat/legend/stream?label=",
+    "sunAngleService": "https://trek.nasa.gov/getAzElfromT1",
+    "sunAngleInput": "LTD002=Mars",
+    "ldapService": "https://trek.nasa.gov/openam/json",
+    "lightingService": "https://trek.nasa.gov/mars/TrekWS/rest/light",
+    "slopeService": "https://trek.nasa.gov/mars/TrekWS/rest/slope",
+    "pathService": "https://trek.nasa.gov/mars/TrekWS/rest/path",
+    "rockService": "https://trek.nasa.gov/mars/TrekWS/rest/rock/detect",
+    "craterService": "https://trek.nasa.gov/mars/TrekWS/rest/crater/detect",
+    "_espService": "https://trek.nasa.gov/mars/TrekWS/rest/esp",
+    "subsetService": "https://trek.nasa.gov/mars/TrekWS/rest/transform/latlon/subset/stream/tiff",
+    "vrViewer": "https://trek.nasa.gov/VRViewer/marsVR.html",
+    "qrCodeCreationService": "https://trek.nasa.gov/mars/TrekServices/ws/qrcode/gen?url=",
+    "trekVR": "https://trek.nasa.gov/TrekVR/VRViewer/TrekVR.html",
+    "autoLayers": "https://trek.nasa.gov/mars/TrekServices/ws/index/PROJECTION/collections?ids=&bbox=",
+    "searchCraterInput": "https://trek.nasa.gov/moon/DSBservice/webapi/hirise/EDR/labels?bbox=",
+    "searchCraterInputPoles": "https://trek.nasa.gov/moon/DSBservice/webapi/hirise/EDR/poles/intersect?lon=&lat=&meters=",
+    "searchRockInput": "https://trek.nasa.gov/moon/DSBservice/webapi/hirise/EDR/labels?bbox=",
+    "trekNotificationURL": "https://trek.nasa.gov/mars/TrekServices/ws/tm/trekNotification"
+  },
+  "nasa_3d_resources_catalog": [
+    {
+      "filename": "Mark III Spacesuit.glb",
+      "source_url": "https://raw.githubusercontent.com/nasa/NASA-3D-Resources/master/3D%20Models/Mark%20III%20Spacesuit/Mark%20III%20Spacesuit.glb",
+      "bytes": 894092,
+      "sha256": "885a4a83bd9d18f3886c8201845e384c0a9acb0cb487fb2897846d9f0438ab51"
+    },
+    {
+      "filename": "Astronaut.glb",
+      "source_url": "https://raw.githubusercontent.com/nasa/NASA-3D-Resources/master/3D%20Models/Astronaut/Astronaut.glb",
+      "bytes": 762988,
+      "sha256": "d18c141410542b935113d1c25a9271d90c40d44015a64295b7b68a30f0ce2820"
+    },
+    {
+      "filename": "Habitat Demonstration Unit (part 1).glb",
+      "source_url": "https://raw.githubusercontent.com/nasa/NASA-3D-Resources/master/3D%20Models/Habitat%20Demonstration%20Unit/Habitat%20Demonstration%20Unit%20(part%201).glb",
+      "bytes": 516748,
+      "sha256": "3106557bea24c9ba012556ddbecf3740c39276dc369cf359b77225de97458cfe"
+    },
+    {
+      "filename": "Habitat Demonstration Unit (part 2).glb",
+      "source_url": "https://raw.githubusercontent.com/nasa/NASA-3D-Resources/master/3D%20Models/Habitat%20Demonstration%20Unit/Habitat%20Demonstration%20Unit%20(part%202).glb",
+      "bytes": 710988,
+      "sha256": "616226ee31094ae1d71d1a4f974d6c7421c0227bca28b118de4dd97ce0495649"
+    },
+    {
+      "filename": "Ares 1 (A).glb",
+      "source_url": "https://raw.githubusercontent.com/nasa/NASA-3D-Resources/master/3D%20Models/Ares%201%20(A)/Ares%201%20(A).glb",
+      "bytes": 98128,
+      "sha256": "9f6854d88df542db40c70c51bbee1eb0bd8c2bef9e500e1fd72e70ebeb68743a"
+    },
+    {
+      "filename": "Mobile Launcher (assembled).glb",
+      "source_url": "https://raw.githubusercontent.com/nasa/NASA-3D-Resources/master/3D%20Models/Mobile%20Launcher/Mobile%20Launcher%20(assembled).glb",
+      "bytes": 198480,
+      "sha256": "411ad36727a4290123431e77ca7a4622dcd534e2e76eb1134dc19fc07dd5be65"
+    },
+    {
+      "filename": "Saturn V.glb",
+      "source_url": "https://raw.githubusercontent.com/nasa/NASA-3D-Resources/master/3D%20Models/Saturn%20V/Saturn%20V.glb",
+      "bytes": 927212,
+      "sha256": "6c44497bce54ee0b09d0edb8e33a6f484762a320dab1c54b383e434f5bba06b5"
+    }
+  ],
+  "media_usage_compliance": {
+    "agency_insignia_policy": "14 CFR 1221",
+    "summary": "Public-domain NASA imagery, DTM/DEM elevation, and NASA-3D-Resources models are used for educational/scientific visualization with NASA/JPL-Caltech/USGS attribution. Official NASA Meatball/Worm insignia are NOT used to imply endorsement; ORBITX Space Apps mission markings are used cleanly.",
+    "reference_url": "https://www.nasa.gov/nasa-brand-center/images-and-media/"
+  }
+}

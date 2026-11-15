@@ -1,0 +1,46 @@
+# ==============================================================================
+# MARS SENTINEL — Cursor / Agent Token Protection Rules
+# ==============================================================================
+
+# 1. 3D Binaries & Auto-saves (prevents binary read token waste)
+*.blend
+*.blend1
+*.blend@
+*.blend[0-9]
+*.glb
+*.obj
+*.fbx
+
+# 2. Raw Scientific GIS Rasters & Compressed Archives
+data/*.tif
+data/*.tiff
+data/*.JP2
+data/*.jp2
+data/*.npz
+data/*.lbl
+data/*.LBL
+
+# 3. Massive Numerical Arrays & Intermediate Grids (>1 MB)
+data/jez_hirise_1m_detail_grid.json
+data/jez_hirise_site_detail_4m.json
+data/jez_hirise_1m_overview_grid.json
+data/jez_ctx_20m_grid.json
+
+# 4. Heavy Textures & All Raster Image Renders
+data/*.png
+data/*.jpg
+data/*.jpeg
+previews/
+
+# 5. Ephemeral Inspection Dumps & Untrusted Text Dumps
+data/inspect_*.json
+data/*.untrusted.txt
+data/field_asset_bounds.json
+
+# 6. Python Bytecode & Cache Directories
+__pycache__/
+*.pyc
+*.pyo
+
+# 7. Archives
+archive/

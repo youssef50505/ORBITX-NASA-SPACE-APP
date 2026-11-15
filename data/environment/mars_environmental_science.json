@@ -1,0 +1,442 @@
+{
+  "schema_version": "1.0",
+  "generated_utc": "2026-11-14T20:35:49Z",
+  "site": {
+    "name": "Jezero Crater Field Site (Octavia E. Butler Landing)",
+    "lat_deg": 18.4447,
+    "lon_deg": 77.4508,
+    "elevation_m_mola": -2569.9,
+    "gravity_ms2": 3.72076,
+    "solar_constant_mars_wm2": 589.0,
+    "sol_duration_sec": 88775.244
+  },
+  "atmospheric_conditions": {
+    "source": "NASA Perseverance MEDA (Jezero Crater, Rodriguez-Manfredi et al. Nature Geoscience 2023) & PDS Atmospheres Node",
+    "source_url": "https://pds-atmospheres.nmsu.edu/data_and_services/atmospheres_data/MARS/perseverance.html",
+    "surface_pressure_pa": {
+      "min": 610.0,
+      "annual_mean": 715.0,
+      "max": 785.0
+    },
+    "air_temperature_c": {
+      "night_min": -83.0,
+      "diurnal_mean": -56.0,
+      "day_max": -14.0
+    },
+    "ground_skin_temperature_c": {
+      "night_min": -85.0,
+      "day_max": 5.0
+    },
+    "wind_speed_ms": {
+      "typical_day": 4.8,
+      "dust_devil_gust_max": 22.4
+    },
+    "dust_optical_depth_tau": {
+      "clear_sol": 0.35,
+      "nominal": 0.45,
+      "regional_storm": 1.8,
+      "planet_encircling_storm": 3.8
+    },
+    "gas_composition_pct": {
+      "CO2": 95.32,
+      "N2": 2.7,
+      "Ar": 1.6,
+      "O2": 0.13,
+      "CO": 0.08
+    },
+    "moxie_isru_benchmark": "MOXIE demonstrated 12 g/hr O2 production (>98% purity) from Martian CO2 atmosphere across 16 runs (2021-2023)."
+  },
+  "radiation_environment": {
+    "source": "NASA MSL Curiosity RAD (Gale Crater Surface Measurements, Hassler et al. Science 2014 / NASA PDS)",
+    "source_url": "https://science.nasa.gov/mission/msl-curiosity/science-instruments/rad/",
+    "gcr_surface_dose_msv_per_day": 0.67,
+    "gcr_range_msv_per_day": [
+      0.64,
+      0.7
+    ],
+    "annual_background_msv": 244.6,
+    "sep_storm_peak_msv_event": 50.0,
+    "nasa_career_limit_msv": 600.0,
+    "regolith_shielding_note": "0.5 m compacted regolith or 15 cm water/polyethylene wall attenuates secondary neutrons & SEP protons below triage alert thresholds.",
+    "donki_sep_live_sample": {
+      "source_url": "https://api.nasa.gov/DONKI/SEP?startDate=2024-05-01&endDate=2024-06-01&api_key=DEMO_KEY",
+      "events": [
+        {
+          "sepID": "2024-05-09T13:59:00-SEP-001",
+          "eventTime": "2024-05-09T13:59Z",
+          "instruments": [
+            "MODEL: REleASE:ACE/EPAM 15.8-39.8 MeV"
+          ],
+          "link": "https://ccmc.gsfc.nasa.gov/DONKI/view/SEP/30609/-1"
+        },
+        {
+          "sepID": "2024-05-09T14:25:00-SEP-001",
+          "eventTime": "2024-05-09T14:25Z",
+          "instruments": [
+            "MODEL: REleASE:SOHO/EPHIN 15.8-39.8 MeV"
+          ],
+          "link": "https://ccmc.gsfc.nasa.gov/DONKI/view/SEP/30610/-1"
+        },
+        {
+          "sepID": "2024-05-10T12:59:00-SEP-001",
+          "eventTime": "2024-05-10T12:59Z",
+          "instruments": [
+            "SOHO: COSTEP 15.8-39.8 MeV"
+          ],
+          "link": "https://ccmc.gsfc.nasa.gov/DONKI/view/SEP/30675/-1"
+        },
+        {
+          "sepID": "2024-05-10T13:02:00-SEP-001",
+          "eventTime": "2024-05-10T13:02Z",
+          "instruments": [
+            "SOHO: COSTEP 28.2-50.1 MeV"
+          ],
+          "link": "https://ccmc.gsfc.nasa.gov/DONKI/view/SEP/30676/-1"
+        },
+        {
+          "sepID": "2024-05-10T13:35:00-SEP-001",
+          "eventTime": "2024-05-10T13:35Z",
+          "instruments": [
+            "GOES-P: SEISS >10 MeV"
+          ],
+          "link": "https://ccmc.gsfc.nasa.gov/DONKI/view/SEP/30677/-1"
+        },
+        {
+          "sepID": "2024-05-10T14:50:00-SEP-001",
+          "eventTime": "2024-05-10T14:50Z",
+          "instruments": [
+            "STEREO A: IMPACT 13-100 MeV"
+          ],
+          "link": "https://ccmc.gsfc.nasa.gov/DONKI/view/SEP/30684/-1"
+        }
+      ]
+    }
+  },
+  "thermal_and_spectral": {
+    "source": "Mars Odyssey THEMIS Thermal Inertia & MRO CRISM Jezero Mineralogy (Goudge et al. 2015 / Horgan et al. 2020)",
+    "source_url": "https://trek.nasa.gov/mars/",
+    "themis_thermal_inertia_tiu": {
+      "dust_mantled_dunes": 180.0,
+      "delta_mudstone": 380.0,
+      "bedrock_maaz_seitah": 580.0
+    },
+    "crism_diagnostic_bands_um": [
+      {
+        "band_um": "1.0 / 2.0",
+        "mineral_phase": "Olivine & Low-Ca Pyroxene (Séítah cumulate / Máaz basalt)"
+      },
+      {
+        "band_um": "1.9 / 2.3",
+        "mineral_phase": "Fe/Mg-Smectite Phyllosilicates (Neretva delta clays)"
+      },
+      {
+        "band_um": "2.31 / 2.51",
+        "mineral_phase": "Mg-Carbonate Margin Unit (Bunsen Peak / Turquoise Bay)"
+      },
+      {
+        "band_um": "2.1 / 2.4",
+        "mineral_phase": "Hydrated Sulfates (Hogwallow Flats / Wildcat Ridge / Bright Angel)"
+      }
+    ]
+  },
+  "insight_live_weather_snapshot": {
+    "source_url": "https://api.nasa.gov/insight_weather/?api_key=DEMO_KEY&feedtype=json&ver=1.0",
+    "sols": [
+      {
+        "sol": 675,
+        "first_utc": "2020-10-19T18:32:20Z",
+        "last_utc": "2020-10-20T19:11:55Z",
+        "season": "fall",
+        "air_temp_c": {
+          "av": -62.314,
+          "ct": 177556,
+          "mn": -96.872,
+          "mx": -15.908
+        },
+        "wind_speed_ms": {
+          "av": 7.233,
+          "ct": 88628,
+          "mn": 1.051,
+          "mx": 22.455
+        },
+        "pressure_pa": {
+          "av": 750.563,
+          "ct": 887776,
+          "mn": 722.0901,
+          "mx": 768.791
+        },
+        "dominant_wind": {
+          "compass_degrees": 292.5,
+          "compass_point": "WNW",
+          "compass_right": -0.923879532511,
+          "compass_up": 0.382683432365,
+          "ct": 30283
+        }
+      },
+      {
+        "sol": 676,
+        "first_utc": "2020-10-20T19:11:55Z",
+        "last_utc": "2020-10-21T19:51:31Z",
+        "season": "fall",
+        "air_temp_c": {
+          "av": -62.812,
+          "ct": 177554,
+          "mn": -96.912,
+          "mx": -16.499
+        },
+        "wind_speed_ms": {
+          "av": 8.526,
+          "ct": 88250,
+          "mn": 1.11,
+          "mx": 26.905
+        },
+        "pressure_pa": {
+          "av": 749.09,
+          "ct": 887777,
+          "mn": 722.473,
+          "mx": 767.1426
+        },
+        "dominant_wind": {
+          "compass_degrees": 292.5,
+          "compass_point": "WNW",
+          "compass_right": -0.923879532511,
+          "compass_up": 0.382683432365,
+          "ct": 31167
+        }
+      },
+      {
+        "sol": 677,
+        "first_utc": "2020-10-21T19:51:31Z",
+        "last_utc": "2020-10-22T20:31:06Z",
+        "season": "fall",
+        "air_temp_c": {
+          "av": -63.056,
+          "ct": 177556,
+          "mn": -97.249,
+          "mx": -16.853
+        },
+        "wind_speed_ms": {
+          "av": 7.887,
+          "ct": 88610,
+          "mn": 0.511,
+          "mx": 23.197
+        },
+        "pressure_pa": {
+          "av": 748.698,
+          "ct": 887776,
+          "mn": 720.5873,
+          "mx": 767.4249
+        },
+        "dominant_wind": {
+          "compass_degrees": 292.5,
+          "compass_point": "WNW",
+          "compass_right": -0.923879532511,
+          "compass_up": 0.382683432365,
+          "ct": 34749
+        }
+      },
+      {
+        "sol": 678,
+        "first_utc": "2020-10-22T20:31:06Z",
+        "last_utc": "2020-10-23T21:10:41Z",
+        "season": "fall",
+        "air_temp_c": {
+          "av": -62.562,
+          "ct": 177556,
+          "mn": -97.728,
+          "mx": -9.055
+        },
+        "wind_speed_ms": {
+          "av": 5.246,
+          "ct": 86963,
+          "mn": 0.244,
+          "mx": 18.399
+        },
+        "pressure_pa": {
+          "av": 743.741,
+          "ct": 887777,
+          "mn": 717.7254,
+          "mx": 760.2834
+        },
+        "dominant_wind": {
+          "compass_degrees": 292.5,
+          "compass_point": "WNW",
+          "compass_right": -0.923879532511,
+          "compass_up": 0.382683432365,
+          "ct": 26617
+        }
+      },
+      {
+        "sol": 679,
+        "first_utc": "2020-10-23T21:10:41Z",
+        "last_utc": "2020-10-24T21:50:16Z",
+        "season": "fall",
+        "air_temp_c": {
+          "av": -62.551,
+          "ct": 177554,
+          "mn": -96.644,
+          "mx": -11.561
+        },
+        "wind_speed_ms": {
+          "av": 5.565,
+          "ct": 87171,
+          "mn": 0.231,
+          "mx": 19.409000000000002
+        },
+        "pressure_pa": {
+          "av": 744.529,
+          "ct": 887776,
+          "mn": 719.4178,
+          "mx": 763.2724
+        },
+        "dominant_wind": {
+          "compass_degrees": 292.5,
+          "compass_point": "WNW",
+          "compass_right": -0.923879532511,
+          "compass_up": 0.382683432365,
+          "ct": 28774
+        }
+      },
+      {
+        "sol": 680,
+        "first_utc": "2020-10-24T21:50:16Z",
+        "last_utc": "2020-10-25T22:29:51Z",
+        "season": "fall",
+        "air_temp_c": {
+          "av": -61.789,
+          "ct": 168902,
+          "mn": -96.811,
+          "mx": -15.298
+        },
+        "wind_speed_ms": {
+          "av": 6.517,
+          "ct": 88478,
+          "mn": 0.275,
+          "mx": 24.235
+        },
+        "pressure_pa": {
+          "av": 743.99,
+          "ct": 887767,
+          "mn": 717.1398,
+          "mx": 764.0093
+        },
+        "dominant_wind": {
+          "compass_degrees": 292.5,
+          "compass_point": "WNW",
+          "compass_right": -0.923879532511,
+          "compass_up": 0.382683432365,
+          "ct": 34787
+        }
+      },
+      {
+        "sol": 681,
+        "first_utc": "2020-10-25T22:29:51Z",
+        "last_utc": "2020-10-26T23:09:26Z",
+        "season": "fall",
+        "air_temp_c": {
+          "av": -62.434,
+          "ct": 88778,
+          "mn": -95.447,
+          "mx": -4.444
+        },
+        "wind_speed_ms": {
+          "av": 5.632,
+          "ct": 87184,
+          "mn": 0.228,
+          "mx": 18.577
+        },
+        "pressure_pa": {
+          "av": 743.55,
+          "ct": 887777,
+          "mn": 718.463,
+          "mx": 760.2244
+        },
+        "dominant_wind": {
+          "compass_degrees": 292.5,
+          "compass_point": "WNW",
+          "compass_right": -0.923879532511,
+          "compass_up": 0.382683432365,
+          "ct": 27816
+        }
+      }
+    ]
+  },
+  "mars_trek_discovered_services": {
+    "_comment": "one that are being used or being implemented",
+    "elevationService": {
+      "northpole": "https://trek.nasa.gov/mars/TrekServices/ws/elevationProfileNP/calculate",
+      "southpole": "https://trek.nasa.gov/mars/TrekServices/ws/elevationProfileSP/calculate",
+      "equirect": "https://trek.nasa.gov/mars/TrekServices/ws/elevationProfile/calculate"
+    },
+    "distanceService": {
+      "northpole": "https://trek.nasa.gov/mars/TrekServices/ws/elevationProfileNP/distance",
+      "southpole": "https://trek.nasa.gov/mars/TrekServices/ws/elevationProfileSP/distance",
+      "equirect": "https://trek.nasa.gov/mars/TrekServices/ws/elevationProfile/distance"
+    },
+    "globalDEMService": {
+      "northpole": "https://trek.nasa.gov/mars/trekarcgis/rest/services/mola128_mola64_merge_90Nto90S_SimpleC_clon0_NP/ImageServer",
+      "southpole": "https://trek.nasa.gov/mars/trekarcgis/rest/services/mola128_mola64_merge_90Nto90S_SimpleC_clon0_SP/ImageServer",
+      "equirect": "https://trek.nasa.gov/mars/trekarcgis/rest/services/mola128_mola64_merge_90Nto90S_SimpleC_clon0/ImageServer"
+    },
+    "multiDEMService": {
+      "equirect": "https://trek.nasa.gov/mars/TrekServices/ws/elevationProfile/multiDEM/interpolated",
+      "southpole": "https://trek.nasa.gov/mars/TrekServices/ws/elevationProfileSP/multiDEM/interpolated",
+      "northpole": "https://trek.nasa.gov/mars/TrekServices/ws/elevationProfileNP/multiDEM/interpolated"
+    },
+    "multiDemNonInterp": {
+      "northpole": "https://trek.nasa.gov/mars/TrekServices/ws/elevationProfileNP/multiDEM",
+      "southpole": "https://trek.nasa.gov/mars/TrekServices/ws/elevationProfileSP/multiDEM",
+      "equirect": "https://trek.nasa.gov/mars/TrekServices/ws/elevationProfile/multiDEM"
+    },
+    "combinedDEMService": {
+      "equirect": "https://trek.nasa.gov/mars/TrekServices/ws/elevationProfile/combined"
+    },
+    "catalogRastersService": {
+      "northpole": "https://trek.nasa.gov/tiles/Mars/rasters/np/list.json",
+      "southpole": "https://trek.nasa.gov/tiles/Mars/rasters/sp/list.json",
+      "equirect": "https://trek.nasa.gov/tiles/Mars/rasters/eq/list.json"
+    },
+    "indexServiceBaseURL": "https://trek.nasa.gov/mars/TrekServices/ws/index",
+    "bookmarksService": "https://trek.nasa.gov/mars/TrekServices/ws/index/PROJECTION/item/update",
+    "bookmarkServiceUpdateUrl": "https://trek.nasa.gov/mars/TrekServices/ws/index/PROJECTION/item/update",
+    "bookmarkServiceGetItemsInCollectionUrl": "https://trek.nasa.gov/mars/TrekServices/ws/index/PROJECTION/collection/",
+    "bookmarkServiceGetItemsByUuidUrl": "https://trek.nasa.gov/mars/TrekServices/ws/index/PROJECTION/item/",
+    "bookmarkServiceGetShapesInCollectionUrl": "https://trek.nasa.gov/mars/TrekServices/ws/index/PROJECTION/collection/shape/",
+    "bookmarkServiceGetAnnotationsInCollectionUrl": "https://trek.nasa.gov/mars/TrekServices/ws/index/PROJECTION/collection/annotation/",
+    "bookmarkServiceDeleteUrl": "https://trek.nasa.gov/mars/TrekServices/ws/index/PROJECTION/item/",
+    "registerationUrl": "https://trek.nasa.gov/mars/TrekServices/ws/tm/submit",
+    "getLayerServicesUrl": "https://trek.nasa.gov/mars/TrekServices/ws/index/getLayerServices?uuid=",
+    "getAttachmentsUrl": "https://trek.nasa.gov/mars/TrekServices/ws/index/getAttachments?uuid=",
+    "getItemUrl": "https://trek.nasa.gov/mars/TrekServices/ws/index/PROJECTION/getItem?productLabel=&extID=",
+    "searchItemsUrl": "https://trek.nasa.gov/mars/TrekServices/ws/index/PROJECTION/searchItems?serviceType=&bbox=&shape=&point=&radius=&key=&proj=&start=&rows=&facetKeys=&facetValues=&intersects=&resolutionMin=&resolutionMax=",
+    "searchCoveredDEMUrl": "https://trek.nasa.gov/mars/TrekServices/ws/index/PROJECTION/searchDEM?bbox=",
+    "basemapService": "jpl/config/basemapList.json",
+    "layersService": "jpl/config/staticLayers.json",
+    "terrainEndpoint": "https://marshub.s3.amazonaws.com/mars_v14/",
+    "stlService": "https://trek.nasa.gov/mars/TrekServices/ws/model/mars/trekSTL.stl",
+    "objService": "https://trek.nasa.gov/mars/TrekServices/ws/model/mars/trekOBJ.zip",
+    "getLayerAbstractUrl": "https://trek.nasa.gov/mars/TrekWS/rest/cat/abstract?label=",
+    "getLayerMetadataUrl": "https://trek.nasa.gov/mars/TrekWS/rest/cat/metadata/fgdc/html?label=",
+    "downloadLayerMetadataUrl": "https://trek.nasa.gov/mars/TrekWS/rest/cat/metadata/stream?label=",
+    "getLayerDataUrl": "https://trek.nasa.gov/mars/TrekWS/rest/cat/data/stream?label=",
+    "getLayerLegendUrl": "https://trek.nasa.gov/mars/TrekWS/rest/cat/legend/stream?label=",
+    "sunAngleService": "https://trek.nasa.gov/getAzElfromT1",
+    "sunAngleInput": "LTD002=Mars",
+    "ldapService": "https://trek.nasa.gov/openam/json",
+    "lightingService": "https://trek.nasa.gov/mars/TrekWS/rest/light",
+    "slopeService": "https://trek.nasa.gov/mars/TrekWS/rest/slope",
+    "pathService": "https://trek.nasa.gov/mars/TrekWS/rest/path",
+    "rockService": "https://trek.nasa.gov/mars/TrekWS/rest/rock/detect",
+    "craterService": "https://trek.nasa.gov/mars/TrekWS/rest/crater/detect",
+    "_espService": "https://trek.nasa.gov/mars/TrekWS/rest/esp",
+    "subsetService": "https://trek.nasa.gov/mars/TrekWS/rest/transform/latlon/subset/stream/tiff",
+    "vrViewer": "https://trek.nasa.gov/VRViewer/marsVR.html",
+    "qrCodeCreationService": "https://trek.nasa.gov/mars/TrekServices/ws/qrcode/gen?url=",
+    "trekVR": "https://trek.nasa.gov/TrekVR/VRViewer/TrekVR.html",
+    "autoLayers": "https://trek.nasa.gov/mars/TrekServices/ws/index/PROJECTION/collections?ids=&bbox=",
+    "searchCraterInput": "https://trek.nasa.gov/moon/DSBservice/webapi/hirise/EDR/labels?bbox=",
+    "searchCraterInputPoles": "https://trek.nasa.gov/moon/DSBservice/webapi/hirise/EDR/poles/intersect?lon=&lat=&meters=",
+    "searchRockInput": "https://trek.nasa.gov/moon/DSBservice/webapi/hirise/EDR/labels?bbox=",
+    "trekNotificationURL": "https://trek.nasa.gov/mars/TrekServices/ws/tm/trekNotification"
+  }
+}

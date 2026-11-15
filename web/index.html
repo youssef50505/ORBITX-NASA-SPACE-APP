@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MARS SENTINEL — Jezero Crater Exploration & Habitation Twin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body>
+  <!-- FULL-VIEWPORT INTERACTIVE 3D CANVAS -->
+  <div id="viewport-container">
+    <canvas id="mars-canvas"></canvas>
+    <div id="vignette-overlay"></div>
+  </div>
+
+  <!-- TOP MISSION CONTROL TELEMETRY BAR -->
+  <header class="hud-topbar">
+    <div class="brand-cluster">
+      <div class="status-dot"></div>
+      <div>
+        <div class="brand-title">MARS SENTINEL <span class="badge-tag">NASA DTE_EC_0488_0002</span></div>
+        <div class="brand-subtitle">Jezero Crater Digital Twin · Exploration, Habitation & Closed-Loop Agriculture</div>
+      </div>
+    </div>
+
+    <!-- CAMERA & ZONE PRESET SELECTOR (KEYS 1-4) -->
+    <nav class="zone-nav" aria-label="Mission Camera Zones">
+      <button class="zone-btn active" data-zone="surface" title="Shortcut: Key 1">
+        <span class="key-hint">1</span>
+        <span>Surface Base & Crew</span>
+      </button>
+      <button class="zone-btn" data-zone="orbit" title="Shortcut: Key 2">
+        <span class="key-hint">2</span>
+        <span>Planet & Starfield</span>
+      </button>
+      <button class="zone-btn" data-zone="agriculture" title="Shortcut: Key 3">
+        <span class="key-hint">3</span>
+        <span>Agriculture & Hydroponics</span>
+      </button>
+      <button class="zone-btn" data-zone="habitat" title="Shortcut: Key 4">
+        <span class="key-hint">4</span>
+        <span>Habitat & Rovers</span>
+      </button>
+      <button class="zone-btn" data-zone="tactical" title="Shortcut: Key 6">
+        <span class="key-hint">6</span>
+        <span>A* Route Tactical</span>
+      </button>
+    </nav>
+
+    <!-- SOLAR CYCLE & PROVENANCE -->
+    <div class="topbar-actions">
+      <div class="celestial-pill" id="celestial-status-pill" title="Martian Moon & Constellation Status">
+        <span class="celestial-icon" id="celestial-icon">🛰</span>
+        <div>
+          <div class="solar-label">CONSTELLATION · 4 ACTIVE</div>
+          <div class="solar-phase" id="celestial-phase-text">PHOBOS / DEIMOS IN ORBIT</div>
+        </div>
+      </div>
+      <div class="solar-pill" id="solar-status-pill" title="Press 5 to cycle Martian Time of Day">
+        <span class="solar-icon" id="solar-icon">☀</span>
+        <div>
+          <div class="solar-label">SOL 1042 · JEZERO</div>
+          <div class="solar-phase" id="solar-phase-text">DAYTIME (13:20 LMST)</div>
+        </div>
+      </div>
+      <button class="action-btn audio-btn" id="btn-web-audio" title="Toggle Procedural Martian Wind & Scan Audio">Audio: OFF</button>
+      <button class="action-btn" id="btn-provenance">NASA Data Provenance</button>
+    </div>
+  </header>
+
+  <!-- LEFT DOCK: A* ROUTE PLANNER & DETERMINISTIC SAFETY TELEMETRY -->
+  <aside class="hud-panel hud-left">
+    <div class="panel-header">
+      <span class="panel-kicker">PHASE 01 · TRAVERSE INTELLIGENCE</span>
+      <h2 class="panel-title">A* Route & Safety Engine</h2>
+    </div>
+
+    <div class="route-cards">
+      <div class="route-card active" data-route="safest">
+        <div class="route-card-top">
+          <span class="route-dot safest"></span>
+          <span class="route-name">Safest Route (Recommended)</span>
+          <span class="route-score safe-badge">88.4 / 100</span>
+        </div>
+        <div class="route-metrics">
+          <div><span>Distance</span><strong id="route-safest-dist">1,159.95 m</strong></div>
+          <div><span>Max Slope</span><strong id="route-safest-slope">6.49°</strong></div>
+          <div><span>Est. Time</span><strong>24.1 min</strong></div>
+        </div>
+      </div>
+
+      <div class="route-card" data-route="shortest">
+        <div class="route-card-top">
+          <span class="route-dot shortest"></span>
+          <span class="route-name">Shortest Geodesic Path</span>
+          <span class="route-score warn-badge">64.1 / 100</span>
+        </div>
+        <div class="route-metrics">
+          <div><span>Distance</span><strong id="route-shortest-dist">1,113.50 m</strong></div>
+          <div><span>Max Slope</span><strong id="route-shortest-slope">7.08°</strong></div>
+          <div><span>Est. Time</span><strong>23.2 min</strong></div>
+        </div>
+      </div>
+
+      <div class="route-card" data-route="science">
+        <div class="route-card-top">
+          <span class="route-dot science"></span>
+          <span class="route-name">Science Return Traverse</span>
+          <span class="route-score sci-badge">82.7 / 100</span>
+        </div>
+        <div class="route-metrics">
+          <div><span>Distance</span><strong id="route-science-dist">1,203.21 m</strong></div>
+          <div><span>Max Slope</span><strong id="route-science-slope">6.80°</strong></div>
+          <div><span>Tubes</span><strong id="route-science-tubes">22 Sites</strong></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SAFETY SCORE FORMULA BREAKDOWN -->
+    <div class="telemetry-section">
+      <div class="section-subtitle">DETERMINISTIC SAFETY BREAKDOWN</div>
+      <div class="bar-group">
+        <div class="bar-label"><span>Slope Risk (40% Weight)</span><span id="val-slope">11.2%</span></div>
+        <div class="bar-track"><div class="bar-fill safe" id="bar-slope" style="width: 88.8%"></div></div>
+      </div>
+      <div class="bar-group">
+        <div class="bar-label"><span>Surface Roughness (35% Weight)</span><span id="val-rough">12.4%</span></div>
+        <div class="bar-track"><div class="bar-fill safe" id="bar-rough" style="width: 87.6%"></div></div>
+      </div>
+      <div class="bar-group">
+        <div class="bar-label"><span>Boulder / Scarp Proximity (25%)</span><span id="val-prox">10.8%</span></div>
+        <div class="bar-track"><div class="bar-fill safe" id="bar-prox" style="width: 89.2%"></div></div>
+      </div>
+    </div>
+
+    <!-- MARTIAN DAY & NIGHT CYCLE CONTROLLER -->
+    <div class="telemetry-section">
+      <div class="section-subtitle">MARTIAN SOLAR & ATMOSPHERIC CYCLE (KEY 5)</div>
+      <div class="time-preset-row">
+        <button class="time-btn" data-time="SUNRISE">Sunrise</button>
+        <button class="time-btn active" data-time="DAY">Day</button>
+        <button class="time-btn" data-time="SUNSET">Sunset</button>
+        <button class="time-btn" data-time="TWILIGHT">Twilight</button>
+        <button class="time-btn" data-time="NIGHT">Night</button>
+      </div>
+      <div class="slider-row">
+        <label for="solar-slider">Solar Elevation Angle</label>
+        <input type="range" id="solar-slider" min="0" max="100" value="35" />
+      </div>
+      <div class="sky-readout">
+        <div><span>Sky Scattering</span><strong id="readout-sky">Butterscotch Mie Dust</strong></div>
+        <div><span>Star Visibility</span><strong id="readout-stars">0% (Daytime Surface)</strong></div>
+        <div><span>Solar Elevation</span><strong id="readout-solar-elev">71.6° (Jezero Noon)</strong></div>
+        <div><span>Active Moons</span><strong id="readout-moons">Phobos (+3.97x) · Deimos (+0.81x)</strong></div>
+      </div>
+    </div>
+
+    <!-- DUST OPTICAL DEPTH (BEER-LAMBERT) & EVA LIFE SUPPORT -->
+    <div class="telemetry-section">
+      <div class="section-subtitle">SPACE WEATHER &amp; EVA SURVIVAL TELEMETRY</div>
+      <div class="slider-row">
+        <label for="dust-tau-slider">Atmospheric Dust Optical Depth (τ): <strong id="readout-dust-tau">0.45 (Nominal)</strong></label>
+        <input type="range" id="dust-tau-slider" min="30" max="350" value="45" />
+      </div>
+      <div class="eva-grid">
+        <div class="eva-cell"><span>Beer-Lambert Flux</span><strong id="readout-solar-flux">374 W/m²</strong></div>
+        <div class="eva-cell"><span>Suit O₂ / PNR Radius</span><strong id="readout-eva-o2">94% · 1,692 m</strong></div>
+        <div class="eva-cell"><span>Surface Radiation</span><strong id="readout-gcr-rad">0.67 mSv/day GCR</strong></div>
+        <div class="eva-cell"><span>Mastcam-Z POV</span><strong id="readout-pov-meta">Sol 100 · Az 82.5°</strong></div>
+      </div>
+    </div>
+
+    <!-- NASA MULTI-MISSION JEZERO DATA OVERLAYS -->
+    <div class="telemetry-section">
+      <div class="section-subtitle">NASA MISSION GEOJSON OVERLAYS</div>
+      <div class="overlay-toggles">
+        <label class="toggle-chip"><input type="checkbox" id="chk-sample-tubes" checked /> <span>22 Perseverance Sample Tubes (M20)</span></label>
+        <label class="toggle-chip"><input type="checkbox" id="chk-ingenuity-flights" checked /> <span>72 Ingenuity Flight Tracks (2D->ENU)</span></label>
+        <label class="toggle-chip"><input type="checkbox" id="chk-persev-traverse" checked /> <span>Perseverance Drive Legs (Dropouts Filtered)</span></label>
+      </div>
+      <div class="mono-mini" id="telemetry-overlay-summary">559 Drive Legs · 15 Altitude Dropouts Clamped</div>
+    </div>
+  </aside>
+
+  <!-- RIGHT DOCK: MARS AGRICULTURE, HYDROPONICS & HABITAT TELEMETRY -->
+  <aside class="hud-panel hud-right">
+    <div class="panel-header">
+      <span class="panel-kicker">PHASE 02 · CLOSED-LOOP SUSTAINABILITY</span>
+      <h2 class="panel-title">Agriculture & Life Support</h2>
+    </div>
+
+    <div class="agri-highlight-box">
+      <div class="agri-status-header">
+        <span class="pulse-green"></span>
+        <strong>MS_Agriculture_Zone · Bioregenerative Active</strong>
+      </div>
+      <p class="agri-desc">
+        Pressurized vaulted hydroponics & geodesic aeroponics complex providing O₂ revitalization, 98.4% greywater recycling, and fresh caloric supplementation.
+      </p>
+    </div>
+
+    <div class="kpi-grid">
+      <div class="kpi-box">
+        <span class="kpi-label">WATER RECYCLING</span>
+        <strong class="kpi-val cyan">98.4%</strong>
+        <span class="kpi-sub">3 Pressurized Tanks (4,200 L)</span>
+      </div>
+      <div class="kpi-box">
+        <span class="kpi-label">O₂ GENERATION</span>
+        <strong class="kpi-val green">2.84 kg/Sol</strong>
+        <span class="kpi-sub">4-Crew Metabolic Target</span>
+      </div>
+      <div class="kpi-box">
+        <span class="kpi-label">PAR LED SPECTRUM</span>
+        <strong class="kpi-val magenta">450 / 660 nm</strong>
+        <span class="kpi-sub">Photosynthetic Flux 420 μmol</span>
+      </div>
+      <div class="kpi-box">
+        <span class="kpi-label">REGOLITH LEACHING</span>
+        <strong class="kpi-val amber">ClO₄⁻ &lt; 0.02%</strong>
+        <span class="kpi-sub">Perchlorate Remediation</span>
+      </div>
+    </div>
+
+    <div class="telemetry-section">
+      <div class="section-subtitle">HYDROPONIC & AEROPONIC CROP BAYS</div>
+      <div class="crop-list">
+        <div class="crop-item">
+          <div>
+            <strong>Vault GH-01 · Multi-Tier Hydroponics</strong>
+            <span>Dwarf Wheat, Red Romaine Lettuce, Mizuna</span>
+          </div>
+          <span class="crop-tag optimal">Optimal · 21.5°C</span>
+        </div>
+        <div class="crop-item">
+          <div>
+            <strong>Dome GH-02 · Rotary Aeroponic Towers</strong>
+            <span>Sweet Potato Tubers, Soybean, Spirulina Core</span>
+          </div>
+          <span class="crop-tag optimal">Mist Cycle · 94% RH</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="telemetry-section">
+      <div class="section-subtitle">USGS SIM 3292 GEOLOGY &amp; CURIOSITY MSL</div>
+      <select id="geology-unit-select" class="geo-select" aria-label="Select USGS SIM 3292 Geologic Unit"></select>
+      <div class="geo-meta-row">
+        <span class="geo-swatch" id="geo-unit-swatch" style="background:#FFF100"></span>
+        <strong id="geo-unit-epoch">Amazonian-Hesperian</strong>
+        <span class="mono-mini" id="geo-unit-traffic">Trafficability: 2/5</span>
+        <span class="mono-mini" id="geo-unit-ice">H₂O: Low</span>
+      </div>
+      <p class="geo-desc" id="geo-unit-desc">Select a USGS planetary geologic unit to inspect trafficability and ISRU ice potential.</p>
+      <div class="mono-mini" id="curiosity-msl-summary">Curiosity MSL (Gale Crater / Mt Sharp): 1,316 traverse segments</div>
+    </div>
+
+    <div class="telemetry-section" id="outcrop-explorer-section">
+      <div class="section-subtitle">JEZERO ROCK OUTCROPS, MEDA WEATHER &amp; FACILITIES</div>
+      <div class="facility-chip-row">
+        <button class="facility-chip" data-fly="agri">Agri Dome</button>
+        <button class="facility-chip" data-fly="medical">Med Bay</button>
+        <button class="facility-chip" data-fly="edl">EDL Craft</button>
+        <button class="facility-chip" data-fly="rocket">Rocket Pad</button>
+      </div>
+      <select id="outcrop-select" class="geo-select" aria-label="Inspect Jezero Geological Outcrop"></select>
+      <div class="outcrop-card" id="outcrop-inspector-card">
+        <div class="outcrop-card-top">
+          <img id="outcrop-preview-img" class="outcrop-preview" src="assets/nasa_imagery/perseverance_sample_raw.jpg" alt="NASA Outcrop Mastcam-Z" />
+          <div class="outcrop-meta-col">
+            <strong id="outcrop-title">Octavia E. Butler Landing Pad</strong>
+            <span class="mono-mini" id="outcrop-formation">Maaz Formation · Sol 0</span>
+            <span class="mono-mini" id="outcrop-coords">18.4447°N, 77.4508°E · -2569.9m</span>
+            <a id="outcrop-nasa-link" class="outcrop-link" href="https://mars.nasa.gov/mars2020/mission/where-is-the-rover/" target="_blank" rel="noopener">NASA Source ↗</a>
+          </div>
+        </div>
+        <p class="geo-desc" id="outcrop-chemistry">Click any glowing outcrop beacon in 3D or choose above to inspect CRISM mineralogy, PIXL geochemistry, and Mastcam-Z imagery.</p>
+      </div>
+      <div class="env-telemetry-row">
+        <div class="mono-mini" id="env-meda-readout">MEDA: 715 Pa · -56°C mean · UV 22 W/m²</div>
+        <div class="mono-mini" id="env-rad-readout">RAD GCR: 0.67 mSv/day · DONKI SEP Nominal</div>
+        <div class="mono-mini" id="msl-waypoint-readout">Mount Sharp: 7 stratigraphic stops loaded</div>
+      </div>
+    </div>
+
+    <div class="telemetry-section">
+      <div class="section-subtitle">BLENDER 5.2 &amp; MASTCAM-Z POV GALLERY</div>
+      <div class="render-thumbs">
+        <button class="thumb-btn" data-img="../previews/final_key1_surface_day.png" data-caption="Key 1 — Surface Base Camp, Astronauts, Perseverance Rover &amp; Greenhouse (Martian Daytime)">
+          <img src="../previews/final_key1_surface_day.png" alt="Key 1 Surface Day" />
+          <span>Key 1: Surface Day</span>
+        </button>
+        <button class="thumb-btn" data-img="../previews/final_key2_planet_starfield.png" data-caption="Key 2 — Mars Globe, Jezero Pin, Satellite &amp; Original 90-Node Milky Way Starfield">
+          <img src="../previews/final_key2_planet_starfield.png" alt="Key 2 Planet Orbit" />
+          <span>Key 2: Planet &amp; Stars</span>
+        </button>
+        <button class="thumb-btn" data-img="../previews/final_key3_agriculture_zone.png" data-caption="Key 3 — Mars Agriculture, Hydroponics &amp; Geodesic Aeroponics Sustainability Zone">
+          <img src="../previews/final_key3_agriculture_zone.png" alt="Key 3 Agriculture" />
+          <span>Key 3: Agriculture</span>
+        </button>
+        <button class="thumb-btn" data-img="../previews/final_day_night_night.png" data-caption="Key 5 — Martian Night Mode with Starfield &amp; Illuminated Greenhouse / Habitat Base">
+          <img src="../previews/final_day_night_night.png" alt="Key 5 Night Mode" />
+          <span>Key 5: Night &amp; Stars</span>
+        </button>
+        <button class="pov-thumb-btn" id="btn-mastcam-pov" data-caption="NASA Perseverance Mastcam-Z Right (Sol 100) — Real In-Situ Jezero Surface POV (82.5° Az, 19.1° El)">
+          <img id="mastcam-pov-thumb" alt="Perseverance Mastcam-Z Sol 100" />
+          <span>Mastcam-Z Sol 100 POV</span>
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- BOTTOM TELEMETRY FOOTER -->
+  <footer class="hud-footer">
+    <div class="footer-item">
+      <span class="footer-label">TERRAIN ASSET</span>
+      <strong>NASA_HiRISE_DTM_Jezero_FieldSite_4m (1,132,096 Vertices)</strong>
+    </div>
+    <div class="footer-item">
+      <span class="footer-label">SHA-256 INTEGRITY</span>
+      <strong class="mono-hash">ed5e2c9e0d23cb45...b354dd (VERIFIED)</strong>
+    </div>
+    <div class="footer-item">
+      <span class="footer-label">CONTROLS &amp; ATTRIBUTION</span>
+      <strong>Drag Orbit · WASD Pan · Click Rocks · Keys 1–6 | NASA Public Data (Not NASA-Endorsed, 14 CFR 1221)</strong>
+    </div>
+  </footer>
+
+  <!-- MODAL FOR NASA DATA PROVENANCE & RENDER INSPECTION -->
+  <div class="modal-backdrop hidden" id="modal-backdrop">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 id="modal-title">NASA Scientific Data Provenance & Integrity</h3>
+        <button class="modal-close" id="modal-close">✕</button>
+      </div>
+      <div class="modal-body" id="modal-body">
+        <img id="modal-preview-img" class="hidden" src="" alt="Render Preview" />
+        <div id="modal-provenance-content">
+          <p><strong>MARS SENTINEL</strong> strictly separates authentic, measured NASA orbital/rover datasets from illustrative habitat and engineering models:</p>
+          <table class="prov-table">
+            <thead>
+              <tr>
+                <th>Layer / System</th>
+                <th>Classification</th>
+                <th>Source Product / Specification</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Jezero Surface Elevation (DEM)</td>
+                <td><span class="tag-measured">MEASURED NASA DATA</span></td>
+                <td>PDS4 HiRISE DTM <code>DTEEC_048842_1985_048908_1985_A01</code> (1,132,096 vertices, 4 m grid)</td>
+              </tr>
+              <tr>
+                <td>Surface Color & Albedo</td>
+                <td><span class="tag-measured">MEASURED + CALIBRATED</span></td>
+                <td><code>jez_hirise_site_nasa_color_1m.png</code> (Viking/Perseverance Natural Rusty Regolith)</td>
+              </tr>
+              <tr>
+                <td>Named Landmarks</td>
+                <td><span class="tag-measured">OFFICIAL IAU / NASA</span></td>
+                <td>Octavia E. Butler Landing & Wright Brothers Field (Ingenuity Airfield)</td>
+              </tr>
+              <tr>
+                <td>A* Traverse Paths</td>
+                <td><span class="tag-derived">ALGORITHMICALLY DERIVED</span></td>
+                <td>Computed directly from HiRISE DEM slope & roughness cost grid</td>
+              </tr>
+              <tr>
+                <td>Habitat & Agriculture Zone</td>
+                <td><span class="tag-illustrative">ENGINEERING SIMULATION</span></td>
+                <td>Pressurized Hydroponics/Aeroponics Domes, Water Recycling Tanks, Perseverance & Crew</td>
+              </tr>
+            </tbody>
+          </table>
+          <div id="modal-live-manifest"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="nasa_data_bundle.js"></script>
+  <script src="app.js"></script>
+  <script src="mars_realism_upgrade.js"></script>
+</body>
+</html>

@@ -1,0 +1,77 @@
+{
+  "mission": "Mars Science Laboratory (Curiosity Rover)",
+  "site": "Gale Crater & Mount Sharp (Aeolis Mons)",
+  "reference_url": "https://science.nasa.gov/resource/curiositys-proposed-path-up-mount-sharp/",
+  "waypoints": [
+    {
+      "stop": 1,
+      "name": "Bradbury Landing",
+      "sol": 0,
+      "lat": -4.5895,
+      "lon": 137.4417,
+      "elev_m": -4501,
+      "unit": "Aeolis Palus",
+      "finding": "Fluvial pebble conglomerates proving ancient fast-flowing stream."
+    },
+    {
+      "stop": 2,
+      "name": "Yellowknife Bay (Sheepbed Mudstone)",
+      "sol": 182,
+      "lat": -4.59,
+      "lon": 137.448,
+      "elev_m": -4520,
+      "unit": "Sheepbed Mb.",
+      "finding": "Neutral-pH habitable ancient lake with clay minerals & sulfur redox energy."
+    },
+    {
+      "stop": 3,
+      "name": "Pahrump Hills (Murray Base)",
+      "sol": 753,
+      "lat": -4.658,
+      "lon": 137.392,
+      "elev_m": -4460,
+      "unit": "Murray Fm.",
+      "finding": "Base of Mount Sharp; laminated lacustrine mudstones."
+    },
+    {
+      "stop": 4,
+      "name": "Vera Rubin Ridge",
+      "sol": 1800,
+      "lat": -4.696,
+      "lon": 137.375,
+      "elev_m": -4160,
+      "unit": "Hematite Ridge",
+      "finding": "Crystalline hematite diagenesis traced from MRO CRISM orbital spectra."
+    },
+    {
+      "stop": 5,
+      "name": "Glen Torridon Clay Trough",
+      "sol": 2300,
+      "lat": -4.712,
+      "lon": 137.369,
+      "elev_m": -4115,
+      "unit": "Phyllosilicate Unit",
+      "finding": "Highest clay mineral abundance on Mount Sharp; organic sulfur molecules."
+    },
+    {
+      "stop": 6,
+      "name": "Sulfate-Bearing Transition Unit",
+      "sol": 3450,
+      "lat": -4.738,
+      "lon": 137.361,
+      "elev_m": -3920,
+      "unit": "Evaporite / Mirador",
+      "finding": "Major ancient climate drying transition from clay lakes to briny sulfates."
+    },
+    {
+      "stop": 7,
+      "name": "Gediz Vallis Ridge & Channel",
+      "sol": 4080,
+      "lat": -4.756,
+      "lon": 137.358,
+      "elev_m": -3770,
+      "unit": "Debris Flow / S8",
+      "finding": "Pure elemental sulfur rocks discovered inside late debris-flow channel (2024)."
+    }
+  ]
+}

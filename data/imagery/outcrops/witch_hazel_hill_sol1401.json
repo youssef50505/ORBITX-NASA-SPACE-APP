@@ -1,0 +1,16 @@
+{
+  "key": "witch_hazel_hill_sol1401",
+  "sol": 1401,
+  "outcrop": "Witch Hazel Hill / Shallow Bay (Silver Mountain)",
+  "filename": "witch_hazel_hill_sol1401.jpg",
+  "imageid": "FLF_1401_0791325318_425ECM_N0660000FHAZ00215_01_275J",
+  "instrument": "FRONT_HAZCAM_LEFT_A",
+  "title": "Mars Perseverance Sol 1401: Front Left Hazard Avoidance Camera (Hazcam)",
+  "caption": "NASA's Mars Perseverance rover acquired this image of the area in front of it using its onboard Front Left Hazard Avoidance Camera A. \n\nThis image was acquired on Jan. 28, 2025 (Sol 1401) at the local mean solar time of 15:41:09.",
+  "date_taken_utc": "2025-01-28T08:53:16.435",
+  "credit": "NASA/JPL-Caltech",
+  "source_url": "https://mars.nasa.gov/mars2020/multimedia/raw-images/FLF_1401_0791325318_425ECM_N0660000FHAZ00215_01_275J",
+  "medium_url": "https://mars.nasa.gov/mars2020-raw-images/pub/ods/surface/sol/01401/ids/edr/browse/fcam/FLF_1401_0791325318_425ECM_N0660000FHAZ00215_01_275J01_800.jpg",
+  "sha256": "f4808dca6487cdf403c9b4eb59cde27f25e11654d4e1a6eddba7719da41af688",
+  "bytes": 58723
+}
