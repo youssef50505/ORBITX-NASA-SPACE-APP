@@ -43,6 +43,7 @@ namespace MarsSentinel.NASA
         private Text inspSourceUrlText;
         private Button inspSourceBtn;
         private string currentSourceUrl;
+        private GameObject cachedGeologyPanel;
 
         private readonly Dictionary<string, Texture2D> imageCache = new Dictionary<string, Texture2D>();
         private Coroutine imageLoadCoroutine;
@@ -179,6 +180,8 @@ namespace MarsSentinel.NASA
             if (inspectorPanel == null) return;
 
             inspectorPanel.SetActive(true);
+            if (cachedGeologyPanel == null) cachedGeologyPanel = GameObject.Find("GeologyPanel");
+            if (cachedGeologyPanel != null) cachedGeologyPanel.SetActive(false);
             string badge = isNew ? "NEW DISCOVERY LOGGED" : "NASA SCIENCE LOGGED";
             inspCategory.text = $"{target.category.ToUpperInvariant()}  ·  [{badge}]";
             inspTitle.text = target.title;
@@ -201,6 +204,7 @@ namespace MarsSentinel.NASA
         public void CloseInspector()
         {
             if (inspectorPanel != null) inspectorPanel.SetActive(false);
+            if (cachedGeologyPanel != null) cachedGeologyPanel.SetActive(true);
             MarsAudioManager.Instance?.PlayUiClick();
         }
 
@@ -376,8 +380,8 @@ namespace MarsSentinel.NASA
             dRt.anchorMin = new Vector2(1f, 0.5f);
             dRt.anchorMax = new Vector2(1f, 0.5f);
             dRt.pivot = new Vector2(1f, 0.5f);
-            dRt.anchoredPosition = new Vector2(-18f, -34f);
-            dRt.sizeDelta = new Vector2(455f, 616f);
+            dRt.anchoredPosition = new Vector2(-18f, -52f);
+            dRt.sizeDelta = new Vector2(455f, 576f);
 
             // Category Banner
             inspCategory = CreateText("InspCategory", inspectorPanel.transform, 12, TextAnchor.MiddleLeft, new Color(0.45f, 0.92f, 1f), FontStyle.Bold);
@@ -412,16 +416,16 @@ namespace MarsSentinel.NASA
             imgGo.transform.SetParent(inspectorPanel.transform, false);
             inspImage = imgGo.AddComponent<RawImage>();
             inspImage.color = new Color(0.12f, 0.14f, 0.18f);
-            SetAnchorPos(inspImage.rectTransform, 18f, -100f, 418f, 138f);
+            SetAnchorPos(inspImage.rectTransform, 18f, -100f, 418f, 132f);
 
             inspImageCaption = CreateText("InspImageCaption", inspectorPanel.transform, 11, TextAnchor.MiddleLeft, new Color(0.60f, 0.72f, 0.84f), FontStyle.Normal);
-            SetAnchorPos(inspImageCaption.rectTransform, 18f, -240f, 418f, 18f);
+            SetAnchorPos(inspImageCaption.rectTransform, 18f, -234f, 418f, 18f);
 
             // Rich Multi-Section Scientific Text (strict vertical bounds above Reference button)
             inspBody = CreateText("InspBody", inspectorPanel.transform, 11, TextAnchor.UpperLeft, new Color(0.92f, 0.95f, 0.98f), FontStyle.Normal);
             inspBody.supportRichText = true;
             inspBody.verticalOverflow = VerticalWrapMode.Truncate;
-            SetAnchorPos(inspBody.rectTransform, 18f, -262f, 418f, 298f);
+            SetAnchorPos(inspBody.rectTransform, 18f, -254f, 418f, 268f);
 
             // Citation Link Bar
             inspSourceBtn = CreateButton(inspectorPanel.transform, "SourceUrlBtn", "Open Official NASA Reference", new Color(0.10f, 0.42f, 0.62f, 0.92f), () =>

@@ -482,8 +482,9 @@ namespace MarsSentinel.NASA
             }
         }
 
-        private void RefreshLiveExplorationHud()
+        public void RefreshLiveExplorationHud()
         {
+            hudRefreshTimer = 0f;
             if (telemetryController != null)
             {
                 UpdateTelemetryDisplay(telemetryController.CurrentTelemetry);
@@ -669,6 +670,7 @@ namespace MarsSentinel.NASA
             {
                 MarsVisualRealismPolish.Instance?.EnterExploreMode();
                 MarsRoverVehicleController.Instance?.ToggleBoardOrDismount();
+                RefreshLiveExplorationHud();
             });
 
             AddNavButton(navBar.transform, font, "Agri Dome", new Color(0.14f, 0.52f, 0.36f, 0.92f), () =>
@@ -715,6 +717,7 @@ namespace MarsSentinel.NASA
             txtMuteBtnLabel = AddNavButton(navBar.transform, font, "Audio: ON", new Color(0.20f, 0.24f, 0.30f, 0.92f), () =>
             {
                 MarsAudioManager.Instance?.ToggleMute();
+                RefreshLiveExplorationHud();
             });
         }
 

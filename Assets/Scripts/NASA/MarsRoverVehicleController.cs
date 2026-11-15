@@ -236,6 +236,7 @@ namespace MarsSentinel.NASA
             if (inspectTarget != null) inspectTarget.MarkDiscovered();
             MarsAudioManager.Instance?.PlayUiClick();
             MarsAudioManager.Instance?.SetInteriorState(true, "Pressurized Rover Cabin");
+            MarsSceneManager.Instance?.RefreshLiveExplorationHud();
         }
 
         public void DismountDriver()
@@ -254,6 +255,7 @@ namespace MarsSentinel.NASA
             {
                 MarsAstronautController.Instance.SetBoardedInRover(false, exitPos);
             }
+            MarsSceneManager.Instance?.RefreshLiveExplorationHud();
         }
 
         private void Update()

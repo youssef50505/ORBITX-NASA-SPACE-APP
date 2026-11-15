@@ -1056,22 +1056,26 @@ namespace MarsSentinel.NASA
         {
             if (curiosity == null) return;
 
-            // Deploy mast upright & pitch front rocker-bogie arms down smoothly so all 6 wheels touch evenly
+            // Keep mast upright and preserve level rover wheels without suspension camber tilt
             Transform mastPivot = null;
-            Transform frontArmL = null;
-            Transform frontArmR = null;
-            Transform midWheelRef = null;
-            Transform frontWheelRefL = null;
-            Transform frontWheelRefR = null;
+            var wheels = new List<Transform>();
+            var wheelRenderers = new List<Renderer>();
 
             foreach (Transform t in curiosity.GetComponentsInChildren<Transform>(true))
             {
-                if (t.name == "mast_p") mastPivot = t;
-                else if (t.name == "suspension_arm_F_L_p") frontArmL = t;
-                else if (t.name == "suspension_arm_F_R_p") frontArmR = t;
-                else if (t.name == "wheel_02_L") midWheelRef = t;
-                else if (t.name == "wheel_01_L") frontWheelRefL = t;
-                else if (t.name == "wheel_01_R") frontWheelRefR = t;
+                if (t.name == "mast_p")
+                {
+                    mastPivot = t;
+                }
+                else if (t.name.StartsWith("wheel_0", StringComparison.OrdinalIgnoreCase))
+                {
+                    Renderer r = t.GetComponent<Renderer>();
+                    if (r != null && r.enabled)
+                    {
+                        wheels.Add(t);
+                        wheelRenderers.Add(r);
+                    }
+                }
             }
 
             if (mastPivot != null)
@@ -1079,58 +1083,38 @@ namespace MarsSentinel.NASA
                 mastPivot.localRotation = Quaternion.identity;
             }
 
-            if (midWheelRef != null)
+            Vector3 euler = curiosity.transform.rotation.eulerAngles;
+            Quaternion uprightRot = Quaternion.Euler(0f, euler.y, 0f);
+            curiosity.transform.rotation = uprightRot;
+
+            for (int i = 0; i < wheels.Count; i++)
             {
-                float targetY = midWheelRef.position.y;
-                if (frontArmL != null && frontWheelRefL != null)
+                Transform w = wheels[i];
+                if (w.parent != null && w.parent.name.StartsWith("suspension_steer_", StringComparison.OrdinalIgnoreCase))
                 {
-                    Quaternion orig = frontArmL.localRotation;
-                    Quaternion plus = orig * Quaternion.Euler(16f, 0f, 0f);
-                    Quaternion minus = orig * Quaternion.Euler(-16f, 0f, 0f);
-                    frontArmL.localRotation = plus;
-                    float dPlus = Mathf.Abs(frontWheelRefL.position.y - targetY);
-                    frontArmL.localRotation = minus;
-                    float dMinus = Mathf.Abs(frontWheelRefL.position.y - targetY);
-                    frontArmL.localRotation = dPlus < dMinus ? plus : minus;
+                    w.parent.rotation = uprightRot;
                 }
-                if (frontArmR != null && frontWheelRefR != null)
-                {
-                    Quaternion orig = frontArmR.localRotation;
-                    Quaternion plus = orig * Quaternion.Euler(16f, 0f, 0f);
-                    Quaternion minus = orig * Quaternion.Euler(-16f, 0f, 0f);
-                    frontArmR.localRotation = plus;
-                    float dPlus = Mathf.Abs(frontWheelRefR.position.y - targetY);
-                    frontArmR.localRotation = minus;
-                    float dMinus = Mathf.Abs(frontWheelRefR.position.y - targetY);
-                    frontArmR.localRotation = dPlus < dMinus ? plus : minus;
-                }
+                w.rotation = uprightRot;
             }
 
-            // Level front/mid/rear wheel groups so all 6 wheels sit evenly on flat regolith
-            var wheels = new List<Transform>();
             float minWheelY = float.MaxValue;
-            foreach (Transform t in curiosity.GetComponentsInChildren<Transform>(true))
+            for (int i = 0; i < wheelRenderers.Count; i++)
             {
-                string ln = t.name.ToLowerInvariant();
-                if (ln.StartsWith("wheel_0"))
-                {
-                    Renderer r = t.GetComponent<Renderer>();
-                    if (r != null && r.enabled)
-                    {
-                        wheels.Add(t);
-                        if (r.bounds.min.y < minWheelY) minWheelY = r.bounds.min.y;
-                    }
-                }
+                float wy = wheelRenderers[i].bounds.min.y;
+                if (wy < minWheelY) minWheelY = wy;
             }
             if (wheels.Count == 0 || minWheelY > 1e6f) return;
-            foreach (Transform w in wheels)
+
+            for (int i = 0; i < wheels.Count; i++)
             {
-                Renderer r = w.GetComponent<Renderer>();
-                if (r == null) continue;
-                float dy = minWheelY - r.bounds.min.y;
-                if (Mathf.Abs(dy) > 0.01f && Mathf.Abs(dy) < 0.25f)
+                float dy = minWheelY - wheelRenderers[i].bounds.min.y;
+                if (Mathf.Abs(dy) > 0.001f && Mathf.Abs(dy) < 0.80f)
                 {
-                    w.position += new Vector3(0f, dy, 0f);
+                    Transform target = (wheels[i].parent != null &&
+                        wheels[i].parent.name.StartsWith("suspension_steer_", StringComparison.OrdinalIgnoreCase))
+                        ? wheels[i].parent
+                        : wheels[i];
+                    target.position += new Vector3(0f, dy, 0f);
                 }
             }
         }
