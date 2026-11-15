@@ -76,12 +76,14 @@ namespace MarsSentinel.NASA
         private bool step4HydroponicsO2 = false;
         private bool step5StormShelter = false;
 
-        // [P] 60-Second Presentation Auto-Director state
+        // [P] 60-Second & [N] 28-Second Presentation Auto-Director state
         private bool isPresentationDirectorActive = false;
+        private bool isNasa30SecMode = false;
         private float directorElapsed = 0f;
         private int lastDirectorAct = -1;
         private int directorSubStep = -1;
         public bool IsPresentationDirectorActive => isPresentationDirectorActive;
+        public bool IsNasa30SecMode => isPresentationDirectorActive && isNasa30SecMode;
 
         [Header("UI References (uGUI)")]
         [SerializeField] private Canvas hudCanvas;
@@ -117,6 +119,7 @@ namespace MarsSentinel.NASA
         private Text txtMuteBtnLabel;
         private Text txtRoverBtnLabel;
         private Text txtDemoBtnLabel;
+        private Text txtNasaDemoBtnLabel;
 
         private void Update()
         {
@@ -145,6 +148,7 @@ namespace MarsSentinel.NASA
             bool pressedD = false;
             bool pressedH = false;
             bool pressedP = false;
+            bool pressedN = false;
 
             bool exploreActive = MarsVisualRealismPolish.Instance != null && MarsVisualRealismPolish.Instance.IsExploreModeActive;
 
@@ -158,10 +162,12 @@ namespace MarsSentinel.NASA
                 if (kb.cKey.wasPressedThisFrame || (!exploreActive && kb.dKey.wasPressedThisFrame)) pressedD = true;
                 if (kb.hKey.wasPressedThisFrame) pressedH = true;
                 if (kb.pKey.wasPressedThisFrame) pressedP = true;
+                if (kb.nKey.wasPressedThisFrame) pressedN = true;
             }
 #endif
 #if ENABLE_LEGACY_INPUT_MANAGER
             if (Input.GetKeyDown(KeyCode.P)) pressedP = true;
+            if (Input.GetKeyDown(KeyCode.N)) pressedN = true;
 #endif
 
             if (pressedL)
@@ -199,6 +205,10 @@ namespace MarsSentinel.NASA
             {
                 TogglePresentationDirector();
             }
+            else if (pressedN)
+            {
+                ToggleNasa30SecDemo();
+            }
         }
 
         public void CycleDataLayerMode()
@@ -224,20 +234,34 @@ namespace MarsSentinel.NASA
 
         public void TogglePresentationDirector()
         {
-            if (isPresentationDirectorActive)
+            if (isPresentationDirectorActive && !isNasa30SecMode)
             {
                 StopPresentationDirector();
             }
             else
             {
-                StartPresentationDirector();
+                StartPresentationDirector(nasa30SecMode: false);
             }
             MarsAudioManager.Instance?.PlayUiClick();
         }
 
-        public void StartPresentationDirector()
+        public void ToggleNasa30SecDemo()
+        {
+            if (isPresentationDirectorActive && isNasa30SecMode)
+            {
+                StopPresentationDirector();
+            }
+            else
+            {
+                StartPresentationDirector(nasa30SecMode: true);
+            }
+            MarsAudioManager.Instance?.PlayUiClick();
+        }
+
+        public void StartPresentationDirector(bool nasa30SecMode = false)
         {
             isPresentationDirectorActive = true;
+            isNasa30SecMode = nasa30SecMode;
             directorElapsed = 0f;
             lastDirectorAct = -1;
             directorSubStep = -1;
@@ -248,6 +272,7 @@ namespace MarsSentinel.NASA
         public void StopPresentationDirector()
         {
             isPresentationDirectorActive = false;
+            isNasa30SecMode = false;
             directorElapsed = 0f;
             lastDirectorAct = -1;
             directorSubStep = -1;
@@ -267,7 +292,11 @@ namespace MarsSentinel.NASA
         {
             if (txtDemoBtnLabel != null)
             {
-                txtDemoBtnLabel.text = isPresentationDirectorActive ? "Stop [P]" : "[P] 1m Demo";
+                txtDemoBtnLabel.text = (isPresentationDirectorActive && !isNasa30SecMode) ? "Stop [P]" : "[P] 1m Demo";
+            }
+            if (txtNasaDemoBtnLabel != null)
+            {
+                txtNasaDemoBtnLabel.text = (isPresentationDirectorActive && isNasa30SecMode) ? "Stop [N]" : "[N] 30s NASA";
             }
         }
 
@@ -280,6 +309,87 @@ namespace MarsSentinel.NASA
 
             float t = directorElapsed;
             directorElapsed += Time.deltaTime;
+
+            if (isNasa30SecMode)
+            {
+                // Strictly <= 28.0 seconds for NASA Space Apps Global 30-Second Video Limit!
+                if (t >= 28.0f)
+                {
+                    StopPresentationDirector();
+                    return;
+                }
+                if (t < 5.5f)
+                {
+                    if (lastDirectorAct != 1)
+                    {
+                        lastDirectorAct = 1;
+                        interaction?.CloseInspector();
+                        if (rover != null && rover.IsDriverSeated) rover.DismountDriver();
+                        polish?.SetOrbitView(true);
+                    }
+                    DirectorHudLabel = $"NASA 30s DEMO ({t:F1}/28s): ORBITAL SUN, PHOBOS, DEIMOS & JEZERO";
+                }
+                else if (t < 11.0f)
+                {
+                    if (lastDirectorAct != 2)
+                    {
+                        lastDirectorAct = 2;
+                        polish?.TriggerViewMode(4);
+                        ApplyLayerModeSelection(NasaDataLayerMode.AllThreeAStarRoutes);
+                    }
+                    DirectorHudLabel = $"NASA 30s DEMO ({t:F1}/28s): HIRISE 4m DTM & 3 A* SAFE ROUTES";
+                }
+                else if (t < 17.5f)
+                {
+                    if (lastDirectorAct != 3)
+                    {
+                        lastDirectorAct = 3;
+                        directorSubStep = 0;
+                        polish?.EnterExploreMode();
+                        interaction?.InspectPointUnderPlayer();
+                        step2OutcropScan = true;
+                    }
+                    if (t >= 14.5f && directorSubStep < 1)
+                    {
+                        directorSubStep = 1;
+                        MarsInspectableTarget meteorite = FindInspectableByKeyword("cacao") ?? FindInspectableByKeyword("cheyava");
+                        if (meteorite != null) interaction?.OpenInspector(meteorite);
+                    }
+                    DirectorHudLabel = $"NASA 30s DEMO ({t:F1}/28s): OMNI-PROBE RIMFAX X-RAY & METEORITE";
+                }
+                else if (t < 23.0f)
+                {
+                    if (lastDirectorAct != 4)
+                    {
+                        lastDirectorAct = 4;
+                        interaction?.CloseInspector();
+                        polish?.EnterExploreMode();
+                        if (rover != null && !rover.IsDriverSeated) rover.BoardDriver();
+                        step3RoverDrive = true;
+                        dustOpticalDepthTau = 1.65f;
+                        ApplyMartianLighting();
+                        MarsAudioManager.Instance?.SetDustOpticalDepth(dustOpticalDepthTau);
+                        step5StormShelter = true;
+                    }
+                    DirectorHudLabel = $"NASA 30s DEMO ({t:F1}/28s): 6x6 ROVER DRIVE & BEER-LAMBERT DUST";
+                }
+                else
+                {
+                    if (lastDirectorAct != 5)
+                    {
+                        lastDirectorAct = 5;
+                        dustOpticalDepthTau = 0.45f;
+                        ApplyMartianLighting();
+                        if (rover != null && rover.IsDriverSeated) rover.DismountDriver();
+                        polish?.EnterExploreMode();
+                        astro?.TeleportToFacility("Agri");
+                        step4HydroponicsO2 = true;
+                    }
+                    DirectorHudLabel = $"NASA 30s DEMO ({t:F1}/28s): AGRI O2/H2O + MED SHELTER · READY";
+                }
+                if (txtActiveCamera != null) txtActiveCamera.text = DirectorHudLabel;
+                return;
+            }
 
             if (t >= 60.0f)
             {
@@ -876,10 +986,12 @@ namespace MarsSentinel.NASA
                     int idx = Mathf.Clamp(currentGeologyUnitIndex, 0, datasetLoader.GeologyUnits.Count - 1);
                     var g = datasetLoader.GeologyUnits[idx];
                     string modeTag = manualGeologyOverride ? "Manual [G]" : "Spatial Live";
+                    string probeLine = MarsInteractionSystem.Instance != null ? MarsInteractionSystem.Instance.LastOmniProbeOneLiner : "RIMFAX X-Ray [X]";
                     txtGeology.text = $"USGS SIM 3292 [{idx + 1}/{datasetLoader.GeologyUnits.Count}] ({modeTag}) ([G] Next)\n" +
                                       $"Unit: {g.symbol} ({g.name})\n" +
                                       $"Trafficability: {g.trafficability}/5 | H2O Ice: {g.water_ice_potential}\n" +
-                                      $"{liveMountSharpNote}";
+                                      $"{liveMountSharpNote}\n" +
+                                      $"{probeLine}";
                 }
                 else if (datasetLoader != null && !datasetLoader.IsLoaded)
                 {
@@ -1064,8 +1176,8 @@ namespace MarsSentinel.NASA
                 13, FontStyle.Bold, new Color(1.0f, 0.95f, 0.2f), TextAnchor.UpperLeft, defaultFont);
             SetTopTextSlot(txtActiveCamera.rectTransform, 58f, 42f);
 
-            txtControlsLegend = CreateText("TxtControlsLegend", statusPanel.transform,
-                "CAMERAS: [1]-[5] | [L] Solar | [T] +1h | [D/C] Dust τ | [G] Geo\n[H] Data Layers | [P] 1m Auto-Director Demo | [F] Explore",
+                txtControlsLegend = CreateText("TxtControlsLegend", statusPanel.transform,
+                "CAMERAS: [1]-[5] | [X] Omni-Probe X-Ray | [L] Solar | [D/C] Dust τ | [G] Geo\n[H] Data Layers | [N] 30s NASA Demo | [P] 1m Demo | [F] Explore",
                 12, FontStyle.Normal, new Color(0.85f, 0.85f, 0.9f), TextAnchor.UpperLeft, defaultFont);
             SetTopTextSlot(txtControlsLegend.rectTransform, 106f, 110f);
 
@@ -1076,7 +1188,7 @@ namespace MarsSentinel.NASA
         {
             GameObject navBar = CreatePanel("ORBITX_QuickNavBar", canvasTransform,
                 new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0.5f, 0f),
-                new Vector2(0f, 22f), new Vector2(970f, 44f));
+                new Vector2(0f, 22f), new Vector2(1060f, 44f));
 
             HorizontalLayoutGroup hlg = navBar.AddComponent<HorizontalLayoutGroup>();
             hlg.padding = new RectOffset(8, 8, 5, 5);
@@ -1135,9 +1247,19 @@ namespace MarsSentinel.NASA
                 MarsVisualRealismPolish.Instance?.TriggerViewMode(5);
             });
 
+            AddNavButton(navBar.transform, font, "X-Ray [X]", new Color(0.08f, 0.48f, 0.44f, 0.92f), () =>
+            {
+                MarsInteractionSystem.Instance?.InspectPointUnderPlayer();
+            });
+
             AddNavButton(navBar.transform, font, "Scan Next", new Color(0.16f, 0.44f, 0.52f, 0.92f), () =>
             {
                 MarsInteractionSystem.Instance?.InspectNextTarget();
+            });
+
+            txtNasaDemoBtnLabel = AddNavButton(navBar.transform, font, "[N] 30s NASA", new Color(0.09f, 0.42f, 0.62f, 0.92f), () =>
+            {
+                ToggleNasa30SecDemo();
             });
 
             txtDemoBtnLabel = AddNavButton(navBar.transform, font, "[P] 1m Demo", new Color(0.32f, 0.22f, 0.54f, 0.92f), () =>

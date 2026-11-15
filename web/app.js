@@ -1869,27 +1869,70 @@
       ingenuity.upperRotor.rotation.y += rotorSpeed;
       ingenuity.lowerRotor.rotation.y -= rotorSpeed; // Counter-rotating blades
 
-      // Subtle flight readiness / hover oscillation
-      ingenuity.group.position.y = ingenuity.baseY + 0.08 + Math.sin(elapsedTime * 2.8) * 0.04;
-      ingenuity.group.rotation.z = Math.sin(elapsedTime * 3.2) * 0.012;
-      ingenuity.group.rotation.x = Math.cos(elapsedTime * 2.6) * 0.012;
+      // Subtle flight readiness / hover oscillation (or v10 Drone Fleet flight patrol)
+      const droneOvr = window.__MarsDroneOverride;
+      if (droneOvr && droneOvr.deployed) {
+        const dp = droneOvr.phase = (droneOvr.phase || 0) + delta * 0.55;
+        const fx = 13.8 + Math.cos(dp) * 14.0;
+        const fz = 6.2 + Math.sin(dp * 1.3) * 11.5;
+        ingenuity.group.position.set(fx, sampleHeight(fx, fz) + 5.8 + Math.sin(dp * 2.5) * 0.45, fz);
+        ingenuity.group.rotation.y = -dp;
+      } else {
+        ingenuity.group.position.set(13.8, ingenuity.baseY + 0.08 + Math.sin(elapsedTime * 2.8) * 0.04, 6.2);
+        ingenuity.group.rotation.z = Math.sin(elapsedTime * 3.2) * 0.012;
+        ingenuity.group.rotation.x = Math.cos(elapsedTime * 2.6) * 0.012;
+      }
 
-      // (b) Subtle Perseverance Rover Exploration Movement
-      // Scientific mast head (Mastcam-Z / SuperCam) panning scan
+      // (b) Perseverance Rover Exploration Movement (Auto-Patrol, Manual v10 Drive, or A* Route Autopilot)
       rHead.rotation.y = Math.sin(elapsedTime * 0.45) * 0.40;
       rHead.rotation.x = Math.sin(elapsedTime * 0.28) * 0.08;
 
-      // Subtle traverse translation & suspension breathing along survey path
-      const roverDisp = Math.sin(elapsedTime * 0.22) * 0.55;
-      const roverSpeed = Math.cos(elapsedTime * 0.22) * 0.22 * 0.55;
-      roverGroup.position.z = rBaseZ + roverDisp;
-      roverGroup.position.y = sampleHeight(rBaseX, roverGroup.position.z);
-      roverGroup.rotation.x = Math.sin(elapsedTime * 0.22) * 0.025; // Rocker-bogie pitch
-
-      // Wheel rotation coupled to surface displacement
-      roverWheels.forEach(w => {
-        w.rotation.x += roverSpeed * 0.45;
-      });
+      const rOvr = window.__MarsRoverOverride;
+      if (rOvr && (rOvr.mode === 'manual' || rOvr.mode === 'autopilot')) {
+        if (rOvr.mode === 'manual' && rOvr.dir) {
+          const spd = 4.2 * delta;
+          let moveX = 0;
+          let moveZ = 0;
+          if (rOvr.dir === 'forward') moveZ = -spd;
+          else if (rOvr.dir === 'backward') moveZ = spd;
+          else if (rOvr.dir === 'left') moveX = -spd;
+          else if (rOvr.dir === 'right') moveX = spd;
+          roverGroup.position.x = Math.max(-140, Math.min(140, roverGroup.position.x + moveX));
+          roverGroup.position.z = Math.max(-140, Math.min(140, roverGroup.position.z + moveZ));
+          roverGroup.position.y = sampleHeight(roverGroup.position.x, roverGroup.position.z);
+          if (moveX !== 0 || moveZ !== 0) {
+            roverGroup.rotation.y = Math.atan2(-moveX, -moveZ);
+          }
+          roverWheels.forEach(w => { w.rotation.x += spd * 0.9; });
+        } else if (rOvr.mode === 'autopilot' && Array.isArray(rOvr.waypoints) && rOvr.waypoints.length >= 2) {
+          rOvr.progress = Math.min(1.0, (rOvr.progress || 0) + delta * 0.045);
+          const idxF = rOvr.progress * (rOvr.waypoints.length - 1);
+          const i0 = Math.min(rOvr.waypoints.length - 2, Math.floor(idxF));
+          const frac = idxF - i0;
+          const p0 = rOvr.waypoints[i0];
+          const p1 = rOvr.waypoints[i0 + 1];
+          const nx = p0[0] + (p1[0] - p0[0]) * frac;
+          const nz = p0[1] + (p1[1] - p0[1]) * frac;
+          const dx = nx - roverGroup.position.x;
+          const dz = nz - roverGroup.position.z;
+          roverGroup.position.set(nx, sampleHeight(nx, nz), nz);
+          if (Math.hypot(dx, dz) > 0.001) roverGroup.rotation.y = Math.atan2(dx, dz);
+          roverWheels.forEach(w => { w.rotation.x += delta * 2.4; });
+          if (rOvr.progress >= 0.999 && typeof rOvr.onArrived === 'function') {
+            const cb = rOvr.onArrived;
+            rOvr.onArrived = null;
+            rOvr.mode = 'standby';
+            cb();
+          }
+        }
+      } else if (!rOvr || rOvr.mode !== 'standby') {
+        const roverDisp = Math.sin(elapsedTime * 0.22) * 0.55;
+        const roverSpeed = Math.cos(elapsedTime * 0.22) * 0.22 * 0.55;
+        roverGroup.position.z = rBaseZ + roverDisp;
+        roverGroup.position.y = sampleHeight(rBaseX, roverGroup.position.z);
+        roverGroup.rotation.x = Math.sin(elapsedTime * 0.22) * 0.025;
+        roverWheels.forEach(w => { w.rotation.x += roverSpeed * 0.45; });
+      }
     }
 
     // 4. Dynamic Sun billboard facing camera
@@ -1900,5 +1943,35 @@
 
     renderer.render(scene, camera);
   }
+
+  window.__MARS_WEB_BRIDGE.api = {
+    scene: scene,
+    camera: camera,
+    renderer: renderer,
+    camState: camState,
+    setZone: setZone,
+    applyTimeOfDay: applyTimeOfDay,
+    sampleHeight: sampleHeight,
+    terrainMesh: terrainMesh,
+    surfaceGroup: surfaceGroup,
+    orbitGroup: orbitGroup,
+    sunGroup: sunGroup,
+    sunLight: sunLight,
+    starField: starField,
+    routeMeshes: routeMeshes,
+    routesPts: { safest: safestPts, shortest: shortestPts, science: sciencePts },
+    roverGroup: roverGroup,
+    ingenuity: ingenuity,
+    webOutcropEntries: webOutcropEntries,
+    clickableTargets: clickableTargets,
+    phobosMesh: phobosMesh,
+    deimosMesh: deimosMesh,
+    activeSatellites: activeSatellites,
+    playScanChime: playScanChime,
+    tubesOverlayGroup: tubesOverlayGroup,
+    ingenuityOverlayGroup: ingenuityOverlayGroup,
+    persevHistoryGroup: persevHistoryGroup
+  };
+
   animate();
 })();

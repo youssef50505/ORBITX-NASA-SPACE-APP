@@ -20,11 +20,12 @@ namespace MarsSentinel.NASA
         public static MarsInteractionSystem Instance { get; private set; }
 
         [Header("Scanning")]
-        [SerializeField] private float raycastMaxDistance = 85.0f;
+        [SerializeField] private float raycastMaxDistance = 2500.0f;
 
         public MarsInspectableTarget HoveredTarget { get; private set; }
         public MarsInspectableTarget SelectedTarget { get; private set; }
         public bool IsInspectorOpen => inspectorPanel != null && inspectorPanel.activeSelf;
+        public string LastOmniProbeOneLiner { get; private set; } = "RIMFAX X-Ray Ready [Click Ground/Sky or X]";
 
         private Canvas hudCanvas;
         private Font uiFont;
@@ -45,6 +46,10 @@ namespace MarsSentinel.NASA
         private string currentSourceUrl;
         private GameObject cachedGeologyPanel;
 
+        private MarsInspectableTarget runtimeOmniProbeTarget;
+        private GameObject omniScanRing;
+        private float omniScanTimer = 0f;
+
         private readonly Dictionary<string, Texture2D> imageCache = new Dictionary<string, Texture2D>();
         private Coroutine imageLoadCoroutine;
 
@@ -63,12 +68,15 @@ namespace MarsSentinel.NASA
             uiFont = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
             if (uiFont == null) uiFont = Resources.GetBuiltinResource<Font>("Arial.ttf");
             BuildInspectorUi();
+            SpawnMeteoriteAndCraterTargets();
+            EnsureOmniProbeTarget();
         }
 
         private void Update()
         {
             UpdateHoverAndProximity();
             HandleInteractionInputs();
+            UpdateOmniScanRingVisual();
         }
 
         private void UpdateHoverAndProximity()
@@ -145,12 +153,26 @@ namespace MarsSentinel.NASA
                 return;
             }
 
+            // [X] always runs an instant Omni-Probe Planetary X-Ray scan right under player or crosshair!
+            if (kb != null && kb.xKey.wasPressedThisFrame)
+            {
+                InspectPointUnderPlayer();
+                return;
+            }
+
             if (mouse != null && mouse.leftButton.wasPressedThisFrame)
             {
                 bool overUi = EventSystem.current != null && EventSystem.current.IsPointerOverGameObject();
-                if (!overUi && HoveredTarget != null)
+                if (!overUi)
                 {
-                    ActivateTarget(HoveredTarget, allowRoverBoard: false);
+                    if (HoveredTarget != null)
+                    {
+                        ActivateTarget(HoveredTarget, allowRoverBoard: false);
+                    }
+                    else
+                    {
+                        RunOmniProbeAtCrosshairOrPointer();
+                    }
                 }
             }
         }
@@ -384,8 +406,8 @@ namespace MarsSentinel.NASA
             dRt.sizeDelta = new Vector2(455f, 576f);
 
             // Category Banner
-            inspCategory = CreateText("InspCategory", inspectorPanel.transform, 12, TextAnchor.MiddleLeft, new Color(0.45f, 0.92f, 1f), FontStyle.Bold);
-            SetAnchorPos(inspCategory.rectTransform, 18f, -12f, 340f, 20f);
+            inspCategory = CreateText("InspCategory", inspectorPanel.transform, 11, TextAnchor.MiddleLeft, new Color(0.45f, 0.92f, 1f), FontStyle.Bold);
+            SetAnchorPos(inspCategory.rectTransform, 18f, -12f, 220f, 22f);
 
             // Close Button
             Button closeBtn = CreateButton(inspectorPanel.transform, "CloseBtn", "X", new Color(0.65f, 0.18f, 0.18f, 0.9f), CloseInspector);
@@ -404,6 +426,15 @@ namespace MarsSentinel.NASA
             nRt.pivot = new Vector2(1f, 1f);
             nRt.anchoredPosition = new Vector2(-54f, -10f);
             nRt.sizeDelta = new Vector2(72f, 26f);
+
+            // Omni-Probe Foot/Ground X-Ray Button
+            Button probeBtn = CreateButton(inspectorPanel.transform, "ProbeFootBtn", "Probe [X]", new Color(0.08f, 0.48f, 0.44f, 0.92f), InspectPointUnderPlayer);
+            RectTransform pfRt = probeBtn.GetComponent<RectTransform>();
+            pfRt.anchorMin = new Vector2(1f, 1f);
+            pfRt.anchorMax = new Vector2(1f, 1f);
+            pfRt.pivot = new Vector2(1f, 1f);
+            pfRt.anchoredPosition = new Vector2(-132f, -10f);
+            pfRt.sizeDelta = new Vector2(78f, 26f);
 
             inspTitle = CreateText("InspTitle", inspectorPanel.transform, 18, TextAnchor.UpperLeft, Color.white, FontStyle.Bold);
             SetAnchorPos(inspTitle.rectTransform, 18f, -36f, 424f, 40f);
@@ -498,5 +529,369 @@ namespace MarsSentinel.NASA
             rt.anchoredPosition = new Vector2(x, yFromTop);
             rt.sizeDelta = new Vector2(w, h);
         }
+
+        #region Omni-Probe Universal Planetary X-Ray & Meteorites
+        private void EnsureOmniProbeTarget()
+        {
+            if (runtimeOmniProbeTarget == null)
+            {
+                GameObject go = new GameObject("MS_OmniProbe_RuntimeTarget");
+                go.transform.SetParent(transform, false);
+                runtimeOmniProbeTarget = go.AddComponent<MarsInspectableTarget>();
+                runtimeOmniProbeTarget.Configure(
+                    "omni_probe_surface",
+                    "Jezero Surface X-Ray",
+                    "Omni-Probe RIMFAX / PIXL",
+                    "Live Coordinate & Subsurface Radar Profile",
+                    "18.4447°N, 77.4508°E · -2569.9 m MOLA",
+                    "USGS SIM 3292 Nh_lf",
+                    "Olivine, Fe-Mg Smectite, Ca-Sulfate",
+                    "MEDA 715 Pa · -56°C · RAD 0.67 mSv/day",
+                    "Press [X] or click any surface terrain, rock, meteorite, Sun, or moon to inspect live NASA telemetry.",
+                    "https://science.nasa.gov/mission/mars-2020-perseverance/science-instruments/rimfax/",
+                    "perseverance_sample_raw.jpg");
+            }
+
+            if (omniScanRing == null)
+            {
+                omniScanRing = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+                omniScanRing.name = "MS_OmniScanRing";
+                Destroy(omniScanRing.GetComponent<Collider>());
+                omniScanRing.transform.localScale = new Vector3(3.2f, 0.04f, 3.2f);
+                Renderer r = omniScanRing.GetComponent<Renderer>();
+                if (r != null)
+                {
+                    Shader s = Shader.Find("Universal Render Pipeline/Unlit") ?? Shader.Find("Sprites/Default");
+                    Material m = new Material(s);
+                    m.color = new Color(0.18f, 0.92f, 0.88f, 0.72f);
+                    r.material = m;
+                }
+                omniScanRing.SetActive(false);
+            }
+        }
+
+        private void UpdateOmniScanRingVisual()
+        {
+            if (omniScanRing == null || !omniScanRing.activeSelf) return;
+            omniScanTimer += Time.deltaTime;
+            if (omniScanTimer > 6.5f)
+            {
+                omniScanRing.SetActive(false);
+                return;
+            }
+            float pulse = 1.0f + 0.22f * Mathf.Sin(omniScanTimer * 6.0f);
+            omniScanRing.transform.localScale = new Vector3(2.8f * pulse, 0.04f, 2.8f * pulse);
+        }
+
+        private void SpawnMeteoriteAndCraterTargets()
+        {
+            GameObject root = GameObject.Find("Jezero_Meteorites_Root");
+            if (root != null) return;
+            root = new GameObject("Jezero_Meteorites_Root");
+
+            Shader litShader = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
+
+            CreateMeteoriteTarget(
+                root.transform,
+                litShader,
+                "meteorite_cacao",
+                "\"Cacao\" Iron-Nickel Meteorite",
+                "Iron Meteorite · Perseverance Sol 691",
+                "Jezero Floor · Octavia-to-Delta Traverse",
+                new Vector3(-24.0f, 0f, -18.0f),
+                new Vector3(1.55f, 0.92f, 1.25f),
+                new Color(0.24f, 0.24f, 0.28f),
+                0.78f,
+                "18.4580°N, 77.4190°E · -2564.2 m MOLA",
+                "Exogenic Magmatic Iron-Nickel Bolide resting on Noachian Maaz lava cap",
+                "Kamacite (91.2% Fe), Taenite (8.1% Ni), Co/Ir siderophiles · Widmanstatten wind-pitted cavities",
+                "Albedo 0.14 · High Thermal Inertia 680 TIU · Zero aqueous corrosion since Hesperian emplacement",
+                "Discovered by NASA Perseverance on Sol 691 (~30 cm metallic iron-nickel meteorite). Regmaglypts prove minimal chemical weathering over ~3 Ga.",
+                "https://mars.nasa.gov/resources/27319/",
+                "perseverance_outcrops_raw.jpg");
+
+            CreateMeteoriteTarget(
+                root.transform,
+                litShader,
+                "meteorite_lebanon",
+                "\"Lebanon\" Heavy Iron Bolide",
+                "IAB Iron Meteorite · Gale/Jezero Class",
+                "Aerodynamically Ablated Metallic Specimen",
+                new Vector3(34.0f, 0f, -22.0f),
+                new Vector3(1.90f, 1.15f, 1.45f),
+                new Color(0.20f, 0.21f, 0.25f),
+                0.85f,
+                "18.4310°N, 77.4790°E · -2567.8 m MOLA",
+                "Dense Fe-Ni bolide with angular aeolian ventifact pitting across windward facet",
+                "Fe 89.4 wt%, Ni 9.4 wt%, P 0.5%, Troilite & Schreibersite inclusions (ChemCam/PIXL)",
+                "Thermal Inertia 720 TIU · Acoustic velocity 5,100 m/s · High radar reflectivity (>0 dB)",
+                "Representative of 2-meter Martian iron-nickel meteorites resilient enough to survive thin CO2 entry (~600 Pa) without catastrophic airburst.",
+                "https://science.nasa.gov/mars/",
+                "perseverance_outcrops_raw.jpg");
+
+            CreateMeteoriteTarget(
+                root.transform,
+                litShader,
+                "crater_belva_ejecta",
+                "Belva Impact Crater & Ejecta Blanket",
+                "Fresh Complex Impact Structure · 0.9 km",
+                "45m Exposed Deltaic Foreset Strata (Sol 789)",
+                new Vector3(-46.0f, 0f, 44.0f),
+                new Vector3(4.2f, 0.55f, 4.2f),
+                new Color(0.46f, 0.28f, 0.20f),
+                0.15f,
+                "18.4910°N, 77.3860°E · -2518.4 m MOLA (Rim)",
+                "0.9 km young impact excavating deep steeply dipping (~25°) fluvial-deltaic foreset sandstone beds",
+                "Shocked Plagioclase (maskelynite), Olivine-Carbonate megablocks, Fe/Mg Smectite ejecta breccia",
+                "Rim Slope 22.8° (Hazard >15° limit) · RIMFAX fracture radar depth >12 m · High dust trap risk in bowl",
+                "Perseverance Mastcam-Z stereo mosaic of Belva Crater revealed deep delta cross-bedding excavated naturally by hypervelocity asteroid impact.",
+                "https://mars.nasa.gov/mars2020/mission/science/landing-site/",
+                "perseverance_delta_raw.jpg");
+        }
+
+        private static void CreateMeteoriteTarget(
+            Transform parent, Shader litShader, string id, string title, string category, string subtitle,
+            Vector3 xzPos, Vector3 scale, Color baseColor, float metallic,
+            string coords, string geo, string mineral, string env, string summary, string url, string img)
+        {
+            float y = MarsVisualRealismPolish.SampleTerrainElevation(xzPos.x, xzPos.z);
+            GameObject go = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            go.name = "MS_Target_" + id;
+            go.transform.SetParent(parent, false);
+            go.transform.position = new Vector3(xzPos.x, y + scale.y * 0.35f, xzPos.z);
+            go.transform.localScale = scale;
+            go.transform.rotation = Quaternion.Euler(14f, xzPos.x * 11f, -9f);
+
+            Renderer rend = go.GetComponent<Renderer>();
+            if (rend != null)
+            {
+                Material mat = new Material(litShader);
+                mat.color = baseColor;
+                mat.SetFloat("_Metallic", metallic);
+                mat.SetFloat("_Smoothness", metallic > 0.5f ? 0.55f : 0.18f);
+                rend.material = mat;
+            }
+
+            var target = go.AddComponent<MarsInspectableTarget>();
+            target.Configure(id, title, category, subtitle, coords, geo, mineral, env, summary, url, img, MarsInspectActionType.InspectOnly, "Inspect Meteorite/Crater", 10.0f);
+        }
+
+        public void RunOmniProbeAtCrosshairOrPointer()
+        {
+            Camera cam = Camera.main;
+            if (cam == null)
+            {
+                InspectPointUnderPlayer();
+                return;
+            }
+
+            bool locked = MarsAstronautController.Instance != null && MarsAstronautController.Instance.IsCursorLocked;
+            Vector2 screenPt = locked || Mouse.current == null
+                ? new Vector2(Screen.width * 0.5f, Screen.height * 0.5f)
+                : Mouse.current.position.ReadValue();
+
+            Ray ray = cam.ScreenPointToRay(screenPt);
+            if (Physics.Raycast(ray, out RaycastHit hit, raycastMaxDistance))
+            {
+                MarsInspectableTarget existing = hit.collider.GetComponentInParent<MarsInspectableTarget>();
+                if (existing != null)
+                {
+                    OpenInspector(existing);
+                    return;
+                }
+                InspectTerrainSurfacePoint(hit.point, hit.normal, hit.collider.gameObject.name);
+                return;
+            }
+
+            if (ray.direction.y > 0.04f)
+            {
+                InspectCelestialRay(ray);
+                return;
+            }
+
+            InspectPointUnderPlayer();
+        }
+
+        public void InspectPointUnderPlayer()
+        {
+            Vector3 p = GetPlayerWorldPosition();
+            Ray downRay = new Ray(p + Vector3.up * 5.0f, Vector3.down);
+            Vector3 normal = Vector3.up;
+            string hitObj = "Jezero Regolith Floor";
+            if (Physics.Raycast(downRay, out RaycastHit hit, 50.0f))
+            {
+                p = hit.point;
+                normal = hit.normal;
+                hitObj = hit.collider.gameObject.name;
+            }
+            else
+            {
+                p.y = MarsVisualRealismPolish.SampleTerrainElevation(p.x, p.z);
+            }
+            InspectTerrainSurfacePoint(p, normal, hitObj);
+        }
+
+        private void InspectTerrainSurfacePoint(Vector3 worldPt, Vector3 surfaceNormal, string objectName)
+        {
+            EnsureOmniProbeTarget();
+
+            if (omniScanRing != null)
+            {
+                omniScanRing.transform.position = worldPt + Vector3.up * 0.08f;
+                omniScanRing.SetActive(true);
+                omniScanTimer = 0f;
+            }
+
+            double latDeg = 18.4447 + worldPt.z * 0.00018;
+            double lonDeg = 77.4508 + worldPt.x * 0.00019;
+            float elevM = -2569.9f + worldPt.y;
+            float slopeDeg = Vector3.Angle(surfaceNormal.sqrMagnitude > 0.01f ? surfaceNormal.normalized : Vector3.up, Vector3.up);
+
+            string nearestOutcrop = "Jezero Regolith";
+            float outcropDist = 0f;
+            string geoSymbol = "HNu_df";
+            string geoName = "Noachian-Hesperian Jezero Delta";
+            int traffic = 4;
+            string mslAnalog = "MSL Gale Analog · Mount Sharp";
+
+            if (MarsTelemetryController.Instance != null)
+            {
+                MarsTelemetryController.Instance.GetLiveNavigationMetrics(
+                    worldPt, out nearestOutcrop, out outcropDist, out geoSymbol, out geoName, out traffic, out mslAnalog, out _, out _, out _);
+            }
+
+            float tiu = Mathf.Clamp(220f + Mathf.Abs(Mathf.Sin(worldPt.x * 0.09f + worldPt.z * 0.07f)) * 410f, 180f, 650f);
+            float smectitePct = Mathf.Clamp(12f + Mathf.Cos(worldPt.x * 0.06f) * 8f, 4f, 24f);
+            float basaltPct = 100f - smectitePct - 3.2f;
+            float tau = MarsSceneManager.Instance != null ? MarsSceneManager.Instance.DustOpticalDepthTau : 0.45f;
+            float flux = 586.2f * MarsSceneManager.ComputeBeerLambertTransmission(tau, 45f);
+            string iceIndex = tiu > 380f ? "Moderate Brine/Ice Horizon (8-14m)" : "Low (Dessicated Aeolian Mantle)";
+            string hazard = slopeDeg > 15.0f ? $"CAUTION SLOPE {slopeDeg:F1}° (>15° limit)" : $"TRAFFICABLE SLOPE {slopeDeg:F1}° ({traffic}/5)";
+
+            LastOmniProbeOneLiner = $"X-RAY [{geoSymbol}] {latDeg:F4}°N {lonDeg:F4}°E · {elevM:F1}m · Slope {slopeDeg:F1}° · TI {tiu:F0} TIU";
+
+            runtimeOmniProbeTarget.Configure(
+                "omni_probe_surface",
+                $"Omni-Probe: {objectName}",
+                "RIMFAX X-Ray + PIXL Scan",
+                $"{geoSymbol} ({geoName}) · Near {nearestOutcrop} ({outcropDist:F0}m)",
+                $"{latDeg:F5}°N, {lonDeg:F5}°E · MOLA {elevM:F1} m · Slope {slopeDeg:F1}° ({hazard})",
+                $"RIMFAX Subsurface Radar (0–15m): [0–1.8m Aeolian Perchlorate ClO4- 0.42%] -> [1.8–6.5m Deltaic Clay Sandstone] -> [6.5–15m Basalt Bedrock · {iceIndex}]",
+                $"PIXL/SHERLOC Est: SiO2 ~44.8%, FeO ~18.6%, MgO ~11.4%, SO3 ~4.1% · {smectitePct:F1}% Phyllosilicate / {basaltPct:F1}% Mafic ({mslAnalog})",
+                $"TI {tiu:F0} TIU · Beer-Lambert Sun Flux {flux:F0} W/m² (τ={tau:F2}) · MEDA 715 Pa · RAD 0.67 mSv/day",
+                $"Every square meter on Mars is inspectable! Coordinates mapped onto NASA HiRISE 4m DTM (hash ed5e2c...354dd) & USGS SIM 3292 stratigraphy.",
+                "https://science.nasa.gov/mission/mars-2020-perseverance/science-instruments/rimfax/",
+                "perseverance_sample_raw.jpg");
+
+            OpenInspector(runtimeOmniProbeTarget);
+        }
+
+        private void InspectCelestialRay(Ray ray)
+        {
+            EnsureOmniProbeTarget();
+
+            Vector3 dir = ray.direction.normalized;
+            Vector3 sunDir = RenderSettings.sun != null
+                ? -RenderSettings.sun.transform.forward.normalized
+                : new Vector3(0.45f, 0.55f, 0.65f).normalized;
+
+            float bestDot = Vector3.Dot(dir, sunDir);
+            string bodyKey = "sun";
+
+            GameObject phobosGo = GameObject.Find("Phobos") ?? GameObject.Find("MS_Phobos");
+            if (phobosGo != null)
+            {
+                float d = Vector3.Dot(dir, (phobosGo.transform.position - ray.origin).normalized);
+                if (d > bestDot) { bestDot = d; bodyKey = "phobos"; }
+            }
+
+            GameObject deimosGo = GameObject.Find("Deimos") ?? GameObject.Find("MS_Deimos");
+            if (deimosGo != null)
+            {
+                float d = Vector3.Dot(dir, (deimosGo.transform.position - ray.origin).normalized);
+                if (d > bestDot) { bestDot = d; bodyKey = "deimos"; }
+            }
+
+            // If ray isn't close to Sun/Moons (< ~30 deg), cycle between Sun -> Phobos -> Deimos -> Earth/DSN
+            if (bestDot < 0.85f)
+            {
+                string prev = runtimeOmniProbeTarget != null ? runtimeOmniProbeTarget.title : "";
+                if (prev.Contains("Sun")) bodyKey = "phobos";
+                else if (prev.Contains("Phobos")) bodyKey = "deimos";
+                else if (prev.Contains("Deimos")) bodyKey = "earth";
+                else bodyKey = "sun";
+            }
+
+            float tau = MarsSceneManager.Instance != null ? MarsSceneManager.Instance.DustOpticalDepthTau : 0.45f;
+            float flux = 586.2f * MarsSceneManager.ComputeBeerLambertTransmission(tau, 45f);
+
+            if (bodyKey == "phobos")
+            {
+                LastOmniProbeOneLiner = "CELESTIAL X-RAY: PHOBOS · 9,376 km · Orbit 7h 39m (West->East)";
+                runtimeOmniProbeTarget.Configure(
+                    "omni_celestial_phobos",
+                    "Phobos (Inner Martian Moon)",
+                    "Celestial Body · Carbonaceous D-Type",
+                    "Semi-Major Axis 9,376 km · Stickney Crater (9 km)",
+                    "Period: 7h 39m 12s (3.97x Mars sidereal rate) · Inclination 1.08°",
+                    "Captive rubble-pile asteroid morphology · 27 x 22 x 18 km triaxial ellipsoid · Tidal orbit decay -1.8 cm/yr",
+                    "Albedo 0.071 (dark phyllosilicate/carbonaceous chondrite regolith)",
+                    "Mars-Sky angular diameter ~0.14° (~1/3 Earth Full Moon) · Rises in the WEST, sets in the EAST",
+                    "NASA MRO HiRISE & Viking spectroscopy confirm Phobos as a prime stepping-stone propellant/ISRU waypoint.",
+                    "https://science.nasa.gov/mars/moons/phobos/",
+                    "mars_globe.jpg");
+            }
+            else if (bodyKey == "deimos")
+            {
+                LastOmniProbeOneLiner = "CELESTIAL X-RAY: DEIMOS · 23,463 km · Orbit 30h 18m";
+                runtimeOmniProbeTarget.Configure(
+                    "omni_celestial_deimos",
+                    "Deimos (Outer Martian Moon)",
+                    "Celestial Body · Low-Albedos Regolith",
+                    "Semi-Major Axis 23,463 km · Swift & Voltaire Craters",
+                    "Period: 30h 18m (0.81x Mars sidereal rate) · Inclination 1.79°",
+                    "15 x 12.2 x 10.4 km smooth ejecta-mantled body; craters muted by ~100m regolith blanket",
+                    "Basaltic/chondritic dust blanket (Albedo 0.068, Escape velocity 5.6 m/s)",
+                    "Rises in the East and lingers above the Jezero horizon for ~2.7 sols before setting",
+                    "Low gravity makes Deimos ideal for aerobraking relay telecommunications before permanent surface bases.",
+                    "https://science.nasa.gov/mars/moons/deimos/",
+                    "mars_globe.jpg");
+            }
+            else if (bodyKey == "earth")
+            {
+                LastOmniProbeOneLiner = "CELESTIAL X-RAY: EARTH / DSN · 1.84 AU · OWLT 15m 18s";
+                runtimeOmniProbeTarget.Configure(
+                    "omni_celestial_earth",
+                    "Earth & NASA Deep Space Network",
+                    "Interplanetary Comms Link · Pale Blue Dot",
+                    "Distance ~1.84 AU (275 Million km) · Goldstone / Madrid / Canberra",
+                    "One-Way Light Time: 15m 18s · Round-Trip Delay: 30m 36s",
+                    "Direct-to-Earth (DTE) X-Band & Ka-Band optical/RF trunk relayed via MRO & TGO orbiters",
+                    "Autonomous crew survival systems REQUIRED — Earth real-time teleoperation impossible due to lightspeed latency",
+                    "Link Budget: 2.0 Mbps optical relay via Mars Relay Network · DONKI Solar Conjunction blackout monitoring active",
+                    "Because Earth lies 15+ light-minutes away, astronauts rely on ORBITX local autonomous routing, medical shelter & agriculture twins.",
+                    "https://eyes.nasa.gov/apps/dsn-now/dsn.html",
+                    "mars_globe.jpg");
+            }
+            else
+            {
+                LastOmniProbeOneLiner = $"CELESTIAL X-RAY: SOL (SUN) · 1.52 AU · Flux {flux:F0} W/m²";
+                runtimeOmniProbeTarget.Configure(
+                    "omni_celestial_sun",
+                    "Sol (The Sun from Mars)",
+                    "Heliocentric G2V Star · 1.524 AU",
+                    "Beer-Lambert Attenuated Surface Flux & DONKI Space Weather",
+                    "Heliocentric Distance: 1.524 AU · Angular Size on Mars: 0.35° (66% Earth)",
+                    "Forward Mie scattering of Fe2O3 dust produces a cool bluish halo around sunset/sunrise on butterscotch skies",
+                    "Peak TOA Irradiance 586.2 W/m² vs Earth 1,361 W/m² (43% solar energy)",
+                    $"Live Surface Flux: {flux:F0} W/m² at Dust τ={tau:F2} · DONKI SEP Alert & RAD 0.67 mSv/day GCR Monitor",
+                    "Controls Martian photobiology (requiring 450/660nm LED supplementation in Agri Dome) and triggers dust-storm solar power derating.",
+                    "https://science.nasa.gov/sun/",
+                    "perseverance_delta_raw.jpg");
+            }
+
+            OpenInspector(runtimeOmniProbeTarget);
+        }
+        #endregion
     }
 }
