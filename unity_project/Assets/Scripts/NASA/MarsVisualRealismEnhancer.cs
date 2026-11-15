@@ -803,7 +803,7 @@ namespace MarsSentinel.NASA
             {
                 focusTargetMode = (focusTargetMode == 1) ? 0 : 1;
             }
-            else if (kb.digit7Key.wasPressedThisFrame || kb.pKey.wasPressedThisFrame)
+            else if (kb.digit7Key.wasPressedThisFrame)
             {
                 focusTargetMode = (focusTargetMode == 2) ? 0 : 2;
             }

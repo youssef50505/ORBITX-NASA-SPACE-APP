@@ -357,7 +357,7 @@ namespace MarsSentinel.NASA
             }
 
             // Center Top Title Banner
-            GameObject topGo = GameObject.Find("TopBannerPanel");
+            GameObject topGo = GameObject.Find("VisorHeaderPanel") ?? GameObject.Find("TopBannerPanel");
             if (topGo != null)
             {
                 RectTransform rt = topGo.GetComponent<RectTransform>();
@@ -367,7 +367,7 @@ namespace MarsSentinel.NASA
                     rt.anchorMax = new Vector2(0.5f, 1f);
                     rt.pivot = new Vector2(0.5f, 1f);
                     rt.anchoredPosition = new Vector2(0f, -18f);
-                    rt.sizeDelta = new Vector2(720f, 94f);
+                    rt.sizeDelta = new Vector2(830f, 90f);
                 }
             }
 
@@ -1892,18 +1892,23 @@ namespace MarsSentinel.NASA
             float elev = sunDir.y;
             float dayFactor = SmoothStep01(-0.08f, 0.32f, elev);
             float goldenFactor = Mathf.Exp(-Mathf.Pow((elev - 0.14f) / 0.16f, 2f));
+            float activeTau = MarsSceneManager.Instance != null ? MarsSceneManager.Instance.DustOpticalDepthTau : 0.45f;
+            float stormFactor = Mathf.Clamp01((activeTau - 0.45f) / 2.35f);
 
             if (sunLight != null)
             {
                 sunLight.transform.rotation = Quaternion.LookRotation(-sunDir, Vector3.up);
-                sunLight.intensity = spaceBlend > 0.5f ? 3.25f : Mathf.Lerp(0.24f, 2.45f, dayFactor);
+                float surfaceIntensity = Mathf.Lerp(0.24f, 2.45f, dayFactor) * Mathf.Lerp(1.0f, 0.48f, stormFactor);
+                Color surfaceColor = Color.Lerp(
+                    new Color(1.0f, 0.52f, 0.28f, 1f),
+                    new Color(1.0f, 0.92f, 0.80f, 1f),
+                    SmoothStep01(0.06f, 0.45f, elev)
+                );
+                surfaceColor = Color.Lerp(surfaceColor, new Color(0.92f, 0.44f, 0.20f, 1f), stormFactor * 0.65f);
+                sunLight.intensity = spaceBlend > 0.5f ? 3.25f : surfaceIntensity;
                 sunLight.color = spaceBlend > 0.5f
                     ? new Color(1.0f, 0.96f, 0.90f, 1f)
-                    : Color.Lerp(
-                        new Color(1.0f, 0.52f, 0.28f, 1f),
-                        new Color(1.0f, 0.92f, 0.80f, 1f),
-                        SmoothStep01(0.06f, 0.45f, elev)
-                    );
+                    : surfaceColor;
             }
 
             if (spaceFillLight != null)
@@ -1924,6 +1929,7 @@ namespace MarsSentinel.NASA
 
             Color zenith = Color.Lerp(zenithNight, zenithDay, dayFactor);
             Color horizon = Color.Lerp(horizonNight, horizonDay, Mathf.Max(dayFactor, goldenFactor * 0.68f));
+            horizon = Color.Lerp(horizon, new Color(0.78f, 0.36f, 0.18f, 1f), stormFactor * 0.60f);
             Color haloCol = Color.Lerp(new Color(0.62f, 0.80f, 1.0f, 1f), new Color(0.48f, 0.72f, 0.98f, 1f), goldenFactor);
 
             if (skyboxMat != null)
@@ -1935,7 +1941,7 @@ namespace MarsSentinel.NASA
                 skyboxMat.SetColor("_SunDiscColor", new Color(3.2f, 2.75f, 2.2f, 1f));
                 skyboxMat.SetFloat("_SpaceBlend", spaceBlend);
                 skyboxMat.SetFloat("_StarIntensity", Mathf.Lerp(1.6f, 2.5f, spaceBlend));
-                skyboxMat.SetFloat("_DustTau", 0.42f);
+                skyboxMat.SetFloat("_DustTau", activeTau);
             }
 
             if (rimMat != null)
@@ -1947,7 +1953,7 @@ namespace MarsSentinel.NASA
             RenderSettings.fog = spaceBlend < 0.45f;
             RenderSettings.fogMode = FogMode.ExponentialSquared;
             RenderSettings.fogColor = horizon;
-            RenderSettings.fogDensity = Mathf.Lerp(0.00050f, 0.0f, spaceBlend);
+            RenderSettings.fogDensity = Mathf.Lerp(Mathf.Lerp(0.00050f, 0.0042f, stormFactor), 0.0f, spaceBlend);
             RenderSettings.ambientLight = Color.Lerp(
                 Color.Lerp(new Color(0.06f, 0.045f, 0.055f, 1f), new Color(0.54f, 0.36f, 0.28f, 1f), dayFactor),
                 new Color(0.22f, 0.17f, 0.16f, 1f),

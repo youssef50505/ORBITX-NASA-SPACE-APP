@@ -46,7 +46,8 @@ desktop.ini
 *.tmp
 *.bak
 
-# Local workspace agent/test ephemera
+# Local workspace agent/test ephemera and archives
 .agents/
+archive/
 TEST_INFRA.md
 TEST_READY.md

@@ -42,6 +42,7 @@ namespace MarsSentinel.NASA
         [SerializeField] private float sunIntensity = 1.3f;
         [SerializeField] private Color ambientColor = new Color(0.769f, 0.478f, 0.322f, 1.0f); // #C47A52
         [Range(0.3f, 3.5f)] [SerializeField] private float dustOpticalDepthTau = 0.45f;
+        public float DustOpticalDepthTau => dustOpticalDepthTau;
 
         public static string DirectorHudLabel { get; private set; } = string.Empty;
 
@@ -382,7 +383,7 @@ namespace MarsSentinel.NASA
                     ApplyMartianLighting();
                     MarsAudioManager.Instance?.SetDustOpticalDepth(dustOpticalDepthTau);
                 }
-                DirectorHudLabel = $"1m DEMO ACT 4/6 ({t:F0}s): 6x6 ROVER DRIVE + DUST / RAD STORM [D]";
+                DirectorHudLabel = $"1m DEMO ACT 4/6 ({t:F0}s): 6x6 ROVER DRIVE + RAD STORM [D/C] Dust τ";
             }
             else if (t < 50.0f)
             {
@@ -1060,7 +1061,7 @@ namespace MarsSentinel.NASA
             SetTopTextSlot(txtActiveCamera.rectTransform, 58f, 42f);
 
             txtControlsLegend = CreateText("TxtControlsLegend", statusPanel.transform,
-                "CAMERAS: [1]-[5] | [L] Solar | [T] +1h | [D] Dust τ | [G] Geo\n[H] Data Layers | [P] 1m Auto-Director Demo | [F] Explore",
+                "CAMERAS: [1]-[5] | [L] Solar | [T] +1h | [D/C] Dust τ | [G] Geo\n[H] Data Layers | [P] 1m Auto-Director Demo | [F] Explore",
                 12, FontStyle.Normal, new Color(0.85f, 0.85f, 0.9f), TextAnchor.UpperLeft, defaultFont);
             SetTopTextSlot(txtControlsLegend.rectTransform, 106f, 110f);
 
