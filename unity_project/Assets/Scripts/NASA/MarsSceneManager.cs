@@ -43,8 +43,44 @@ namespace MarsSentinel.NASA
         [SerializeField] private Color ambientColor = new Color(0.769f, 0.478f, 0.322f, 1.0f); // #C47A52
         [Range(0.3f, 3.5f)] [SerializeField] private float dustOpticalDepthTau = 0.45f;
 
+        public static string DirectorHudLabel { get; private set; } = string.Empty;
+
         private int currentGeologyUnitIndex = 0;
-        private bool showHistoricalOverlays = true;
+        private bool showHistoricalOverlays = false;
+        private int currentLayerCycleIdx = 0;
+        private static readonly NasaDataLayerMode[] HCycleOrder =
+        {
+            NasaDataLayerMode.SafestRouteFocus,
+            NasaDataLayerMode.AllThreeAStarRoutes,
+            NasaDataLayerMode.HistoricalM20AndIngenuity,
+            NasaDataLayerMode.CleanCinemaView
+        };
+
+        // Live spatial NASA lookup & manual [G] override tracking
+        private bool manualGeologyOverride = false;
+        private Vector3 manualGeologyAnchorPos = Vector3.zero;
+        private string liveNearestOutcrop = "Octavia E. Butler";
+        private float liveNearestOutcropDistM = 0f;
+        private string liveGeoSymbol = "Nh_lf";
+        private string liveGeoName = "Noachian Jezero Layered Delta";
+        private int liveGeoTrafficability = 4;
+        private string liveMountSharpNote = "MSL Gale Analog · Mount Sharp";
+        private float liveDistToRouteM = 0f;
+        private float liveDistToGoalM = 0f;
+
+        // 5-Step Marswalk Mission Checklist state
+        private bool step1EvaMeda = false;
+        private bool step2OutcropScan = false;
+        private bool step3RoverDrive = false;
+        private bool step4HydroponicsO2 = false;
+        private bool step5StormShelter = false;
+
+        // [P] 60-Second Presentation Auto-Director state
+        private bool isPresentationDirectorActive = false;
+        private float directorElapsed = 0f;
+        private int lastDirectorAct = -1;
+        private int directorSubStep = -1;
+        public bool IsPresentationDirectorActive => isPresentationDirectorActive;
 
         [Header("UI References (uGUI)")]
         [SerializeField] private Canvas hudCanvas;
@@ -79,10 +115,18 @@ namespace MarsSentinel.NASA
         private float hudRefreshTimer = 0f;
         private Text txtMuteBtnLabel;
         private Text txtRoverBtnLabel;
+        private Text txtDemoBtnLabel;
 
         private void Update()
         {
+            if (Instance == null) Instance = this;
+
             HandleInputHotkeys();
+
+            if (isPresentationDirectorActive)
+            {
+                UpdatePresentationDirector();
+            }
 
             hudRefreshTimer += Time.deltaTime;
             if (hudRefreshTimer >= 0.25f)
@@ -99,6 +143,7 @@ namespace MarsSentinel.NASA
             bool pressedG = false;
             bool pressedD = false;
             bool pressedH = false;
+            bool pressedP = false;
 
             bool exploreActive = MarsVisualRealismPolish.Instance != null && MarsVisualRealismPolish.Instance.IsExploreModeActive;
 
@@ -111,7 +156,11 @@ namespace MarsSentinel.NASA
                 if (kb.gKey.wasPressedThisFrame) pressedG = true;
                 if (kb.cKey.wasPressedThisFrame || (!exploreActive && kb.dKey.wasPressedThisFrame)) pressedD = true;
                 if (kb.hKey.wasPressedThisFrame) pressedH = true;
+                if (kb.pKey.wasPressedThisFrame) pressedP = true;
             }
+#endif
+#if ENABLE_LEGACY_INPUT_MANAGER
+            if (Input.GetKeyDown(KeyCode.P)) pressedP = true;
 #endif
 
             if (pressedL)
@@ -143,13 +192,259 @@ namespace MarsSentinel.NASA
             }
             else if (pressedH)
             {
-                showHistoricalOverlays = !showHistoricalOverlays;
-                if (telemetryController != null)
-                {
-                    telemetryController.SetHistoricalOverlaysVisibility(showHistoricalOverlays, showHistoricalOverlays);
-                    RefreshRoutesHudText();
-                }
+                CycleDataLayerMode();
             }
+            else if (pressedP)
+            {
+                TogglePresentationDirector();
+            }
+        }
+
+        public void CycleDataLayerMode()
+        {
+            currentLayerCycleIdx = (currentLayerCycleIdx + 1) % HCycleOrder.Length;
+            ApplyLayerModeSelection(HCycleOrder[currentLayerCycleIdx]);
+            MarsAudioManager.Instance?.PlayUiClick();
+        }
+
+        private void ApplyLayerModeSelection(NasaDataLayerMode mode)
+        {
+            showHistoricalOverlays = mode == NasaDataLayerMode.HistoricalM20AndIngenuity
+                || mode == NasaDataLayerMode.FullLayeredMap;
+
+            if (telemetryController != null)
+            {
+                telemetryController.ApplyDataLayerMode(mode);
+                telemetryController.SetHistoricalOverlaysVisibility(showHistoricalOverlays, showHistoricalOverlays);
+            }
+            RefreshRoutesHudText();
+            RefreshLiveExplorationHud();
+        }
+
+        public void TogglePresentationDirector()
+        {
+            if (isPresentationDirectorActive)
+            {
+                StopPresentationDirector();
+            }
+            else
+            {
+                StartPresentationDirector();
+            }
+            MarsAudioManager.Instance?.PlayUiClick();
+        }
+
+        public void StartPresentationDirector()
+        {
+            isPresentationDirectorActive = true;
+            directorElapsed = 0f;
+            lastDirectorAct = -1;
+            directorSubStep = -1;
+            UpdateDirectorButtonLabel();
+            UpdatePresentationDirector();
+        }
+
+        public void StopPresentationDirector()
+        {
+            isPresentationDirectorActive = false;
+            directorElapsed = 0f;
+            lastDirectorAct = -1;
+            directorSubStep = -1;
+            DirectorHudLabel = string.Empty;
+            MarsInteractionSystem.Instance?.CloseInspector();
+            dustOpticalDepthTau = 0.45f;
+            ApplyMartianLighting();
+            MarsAudioManager.Instance?.SetDustOpticalDepth(dustOpticalDepthTau);
+            currentLayerCycleIdx = 0;
+            ApplyLayerModeSelection(NasaDataLayerMode.SafestRouteFocus);
+            MarsVisualRealismPolish.Instance?.TriggerViewMode(1);
+            UpdateDirectorButtonLabel();
+            RefreshLiveExplorationHud();
+        }
+
+        private void UpdateDirectorButtonLabel()
+        {
+            if (txtDemoBtnLabel != null)
+            {
+                txtDemoBtnLabel.text = isPresentationDirectorActive ? "Stop [P]" : "[P] 1m Demo";
+            }
+        }
+
+        private void UpdatePresentationDirector()
+        {
+            var polish = MarsVisualRealismPolish.Instance;
+            var astro = MarsAstronautController.Instance;
+            var rover = MarsRoverVehicleController.Instance;
+            var interaction = MarsInteractionSystem.Instance;
+
+            float t = directorElapsed;
+            directorElapsed += Time.deltaTime;
+
+            if (t >= 60.0f)
+            {
+                StopPresentationDirector();
+                return;
+            }
+
+            if (t < 10.0f)
+            {
+                // Act 1 (0-10s): Orbital Constellation [5] showing Sun, Phobos, Deimos & NASA orbiters
+                if (lastDirectorAct != 1)
+                {
+                    lastDirectorAct = 1;
+                    directorSubStep = 0;
+                    interaction?.CloseInspector();
+                    if (rover != null && rover.IsDriverSeated) rover.DismountDriver();
+                    polish?.SetOrbitView(true);
+                }
+                DirectorHudLabel = $"1m DEMO ACT 1/6 ({t:F0}s): JEZERO ORBITAL CONSTELLATION [5]";
+            }
+            else if (t < 20.0f)
+            {
+                // Act 2 (10-20s): Route Orbit [4] (All 3 A* corridors) -> Surface Fleet [1]
+                if (lastDirectorAct != 2)
+                {
+                    lastDirectorAct = 2;
+                    directorSubStep = 0;
+                    polish?.TriggerViewMode(4);
+                    ApplyLayerModeSelection(NasaDataLayerMode.AllThreeAStarRoutes);
+                }
+                if (t >= 15.0f && directorSubStep < 1)
+                {
+                    directorSubStep = 1;
+                    polish?.TriggerViewMode(1);
+                    ApplyLayerModeSelection(NasaDataLayerMode.SafestRouteFocus);
+                }
+                DirectorHudLabel = t < 15.0f
+                    ? $"1m DEMO ACT 2/6 ({t:F0}s): ALL 3 A* TRAVERSE ROUTES [4]"
+                    : $"1m DEMO ACT 2/6 ({t:F0}s): JEZERO BASE & NASA FLEET [1]";
+            }
+            else if (t < 30.0f)
+            {
+                // Act 3 (20-30s): EVA Explore [F] + Cheyava Falls Biosignature Science Inspector
+                if (lastDirectorAct != 3)
+                {
+                    lastDirectorAct = 3;
+                    directorSubStep = 0;
+                    if (rover != null && rover.IsDriverSeated) rover.DismountDriver();
+                    polish?.EnterExploreMode();
+                    MarsInspectableTarget cheyava = FindInspectableByKeyword("cheyava");
+                    if (astro != null)
+                    {
+                        if (cheyava != null)
+                        {
+                            Vector3 tp = cheyava.transform.position;
+                            astro.SnapToSurfaceAt(tp.x - 4.2f, tp.z - 4.2f);
+                            astro.SetCameraAngles(45f, 8f);
+                        }
+                        else
+                        {
+                            astro.TeleportToFacility("Spawn");
+                        }
+                    }
+                }
+                if (t >= 22.0f && directorSubStep < 1)
+                {
+                    directorSubStep = 1;
+                    MarsInspectableTarget cheyava = FindInspectableByKeyword("cheyava");
+                    if (cheyava != null)
+                    {
+                        interaction?.OpenInspector(cheyava);
+                        step2OutcropScan = true;
+                    }
+                }
+                DirectorHudLabel = $"1m DEMO ACT 3/6 ({t:F0}s): EVA [F] + CHEYAVA FALLS INSPECTOR";
+            }
+            else if (t < 40.0f)
+            {
+                // Act 4 (30-40s): Close drawer + Board/Drive 6x6 Rover + Dust/Radiation demo
+                if (lastDirectorAct != 4)
+                {
+                    lastDirectorAct = 4;
+                    directorSubStep = 0;
+                    interaction?.CloseInspector();
+                    polish?.EnterExploreMode();
+                    if (rover != null && !rover.IsDriverSeated) rover.BoardDriver();
+                    step3RoverDrive = true;
+                }
+                if (t >= 34.0f && directorSubStep < 1)
+                {
+                    directorSubStep = 1;
+                    dustOpticalDepthTau = 1.65f;
+                    ApplyMartianLighting();
+                    MarsAudioManager.Instance?.SetDustOpticalDepth(dustOpticalDepthTau);
+                    step5StormShelter = true;
+                }
+                if (t >= 38.5f && directorSubStep < 2)
+                {
+                    directorSubStep = 2;
+                    dustOpticalDepthTau = 0.45f;
+                    ApplyMartianLighting();
+                    MarsAudioManager.Instance?.SetDustOpticalDepth(dustOpticalDepthTau);
+                }
+                DirectorHudLabel = $"1m DEMO ACT 4/6 ({t:F0}s): 6x6 ROVER DRIVE + DUST / RAD STORM [D]";
+            }
+            else if (t < 50.0f)
+            {
+                // Act 5 (40-50s): Hydroponics Agri Dome & NASA HDU Habitat
+                if (lastDirectorAct != 5)
+                {
+                    lastDirectorAct = 5;
+                    directorSubStep = 0;
+                    if (rover != null && rover.IsDriverSeated) rover.DismountDriver();
+                    polish?.EnterExploreMode();
+                    astro?.TeleportToFacility("Agri");
+                    step4HydroponicsO2 = true;
+                }
+                if (t >= 45.0f && directorSubStep < 1)
+                {
+                    directorSubStep = 1;
+                    astro?.TeleportToFacility("Habitat");
+                }
+                DirectorHudLabel = t < 45.0f
+                    ? $"1m DEMO ACT 5/6 ({t:F0}s): HYDROPONICS AGRI DOME · O2/H2O"
+                    : $"1m DEMO ACT 5/6 ({t:F0}s): NASA HDU & MARK III SUITPORT";
+            }
+            else
+            {
+                // Act 6 (50-60s): Med Bay Solar Storm Shelter & Mars Ascent Rocket Pad
+                if (lastDirectorAct != 6)
+                {
+                    lastDirectorAct = 6;
+                    directorSubStep = 0;
+                    polish?.EnterExploreMode();
+                    astro?.TeleportToFacility("Medical");
+                    step5StormShelter = true;
+                }
+                if (t >= 55.0f && directorSubStep < 1)
+                {
+                    directorSubStep = 1;
+                    astro?.TeleportToFacility("Rocket");
+                }
+                DirectorHudLabel = t < 55.0f
+                    ? $"1m DEMO ACT 6/6 ({t:F0}s): RAD SOLAR STORM MED BAY SHELTER"
+                    : $"1m DEMO ACT 6/6 ({t:F0}s): MARS ASCENT ROCKET PAD · READY";
+            }
+
+            if (txtActiveCamera != null)
+            {
+                txtActiveCamera.text = DirectorHudLabel;
+            }
+        }
+
+        private static MarsInspectableTarget FindInspectableByKeyword(string keyword)
+        {
+            if (string.IsNullOrEmpty(keyword)) return null;
+            string kw = keyword.ToLowerInvariant();
+            for (int i = 0; i < MarsInspectableTarget.AllTargets.Count; i++)
+            {
+                var item = MarsInspectableTarget.AllTargets[i];
+                if (item == null) continue;
+                string id = (item.targetId ?? "").ToLowerInvariant();
+                string title = (item.title ?? "").ToLowerInvariant();
+                if (id.Contains(kw) || title.Contains(kw)) return item;
+            }
+            return MarsInspectableTarget.AllTargets.Count > 0 ? MarsInspectableTarget.AllTargets[0] : null;
         }
 
         public void CycleGeologyUnit()
@@ -157,6 +452,8 @@ namespace MarsSentinel.NASA
             if (datasetLoader != null && datasetLoader.GeologyUnits != null && datasetLoader.GeologyUnits.Count > 0)
             {
                 currentGeologyUnitIndex = (currentGeologyUnitIndex + 1) % datasetLoader.GeologyUnits.Count;
+                manualGeologyOverride = true;
+                manualGeologyAnchorPos = GetActivePlayerWorldPosition();
                 RefreshGeologyHudText();
             }
         }
@@ -168,12 +465,10 @@ namespace MarsSentinel.NASA
             else if (dustOpticalDepthTau < 2.2f) dustOpticalDepthTau = 2.80f;
             else dustOpticalDepthTau = 0.45f;
 
+            step5StormShelter = true;
             ApplyMartianLighting();
             MarsAudioManager.Instance?.SetDustOpticalDepth(dustOpticalDepthTau);
-            if (telemetryController != null)
-            {
-                UpdateTelemetryDisplay(telemetryController.CurrentTelemetry);
-            }
+            RefreshLiveExplorationHud();
         }
 
         public static float ComputeBeerLambertTransmission(float tau, float solarElevationDeg)
@@ -434,12 +729,104 @@ namespace MarsSentinel.NASA
 
         private void HandleDataLoaded()
         {
+            UpdateSpatialNasaAndChecklist();
             RefreshRoutesHudText();
             RefreshGeologyHudText();
             if (telemetryController != null)
             {
                 UpdateTelemetryDisplay(telemetryController.CurrentTelemetry);
             }
+        }
+
+        private Vector3 GetActivePlayerWorldPosition()
+        {
+            if (MarsRoverVehicleController.Instance != null && MarsRoverVehicleController.Instance.IsDriverSeated)
+            {
+                return MarsRoverVehicleController.Instance.transform.position;
+            }
+            if (MarsAstronautController.Instance != null)
+            {
+                return MarsAstronautController.Instance.transform.position;
+            }
+            return Camera.main != null ? Camera.main.transform.position : Vector3.zero;
+        }
+
+        private int GetCompletedChecklistCount()
+        {
+            int count = 0;
+            if (step1EvaMeda) count++;
+            if (step2OutcropScan) count++;
+            if (step3RoverDrive) count++;
+            if (step4HydroponicsO2) count++;
+            if (step5StormShelter) count++;
+            return count;
+        }
+
+        private void UpdateSpatialNasaAndChecklist()
+        {
+            Vector3 playerPos = GetActivePlayerWorldPosition();
+
+            if (manualGeologyOverride)
+            {
+                float movedXZ = Vector2.Distance(
+                    new Vector2(playerPos.x, playerPos.z),
+                    new Vector2(manualGeologyAnchorPos.x, manualGeologyAnchorPos.z));
+                if (movedXZ > 4.0f)
+                {
+                    manualGeologyOverride = false;
+                }
+            }
+
+            if (telemetryController != null)
+            {
+                telemetryController.GetLiveNavigationMetrics(
+                    playerPos,
+                    out liveNearestOutcrop,
+                    out liveNearestOutcropDistM,
+                    out liveGeoSymbol,
+                    out liveGeoName,
+                    out liveGeoTrafficability,
+                    out liveMountSharpNote,
+                    out liveDistToRouteM,
+                    out liveDistToGoalM,
+                    out _);
+            }
+
+            // Evaluate 5-Step Marswalk Mission Checklist
+            if (datasetLoader != null && datasetLoader.EnvironmentData != null)
+            {
+                step1EvaMeda = true;
+            }
+            if (MarsInspectableTarget.DiscoveredCount > 0 ||
+                (MarsInteractionSystem.Instance != null && MarsInteractionSystem.Instance.SelectedTarget != null))
+            {
+                step2OutcropScan = true;
+            }
+            if (MarsRoverVehicleController.Instance != null &&
+                (MarsRoverVehicleController.Instance.IsDriverSeated || MarsRoverVehicleController.Instance.TotalDistanceMeters > 1.0f))
+            {
+                step3RoverDrive = true;
+            }
+
+            Vector2 playerXZ = new Vector2(playerPos.x, playerPos.z);
+            string zoneName = MarsAstronautController.Instance != null ? (MarsAstronautController.Instance.ActiveZoneName ?? "") : "";
+            string zoneLower = zoneName.ToLowerInvariant();
+
+            if (Vector2.Distance(playerXZ, MarsBaseFacilitiesBuilder.POS_AGRICULTURE) <= 14.0f ||
+                Vector2.Distance(playerXZ, MarsBaseFacilitiesBuilder.POS_HABITAT_HDU) <= 14.0f ||
+                zoneLower.Contains("agri") || zoneLower.Contains("hydro") || zoneLower.Contains("hdu") || zoneLower.Contains("habitat"))
+            {
+                step4HydroponicsO2 = true;
+            }
+
+            if (Vector2.Distance(playerXZ, MarsBaseFacilitiesBuilder.POS_MEDICAL_BAY) <= 14.0f ||
+                zoneLower.Contains("med") || zoneLower.Contains("shelter") || zoneLower.Contains("first aid") ||
+                dustOpticalDepthTau > 0.65f)
+            {
+                step5StormShelter = true;
+            }
+
+            telemetryController?.SetChecklistProgress(GetCompletedChecklistCount());
         }
 
         private void RefreshRoutesHudText()
@@ -451,10 +838,19 @@ namespace MarsSentinel.NASA
                 int flights = datasetLoader.IngenuityFlights != null ? datasetLoader.IngenuityFlights.Count : 0;
                 int dropouts = datasetLoader.PerseveranceDropoutsFiltered;
                 float curKm = datasetLoader.CuriosityStats != null ? datasetLoader.CuriosityStats.totalLengthMeters / 1000.0f : 0f;
-                txtRoutes.text = $"A* TRAVERSE ROUTES (JEZERO CRATER)\n" +
-                                 $"• Safest: {r.safest.distance_m:F1}m ({r.safest.max_slope_deg:F1}°) | Short: {r.shortest.distance_m:F1}m | Sci: {r.science.distance_m:F1}m\n" +
-                                 $"• Tubes: {tubes}/22 | Ingenuity: {flights} Flights | Dropouts Fixed: {dropouts}\n" +
-                                 $"• Curiosity MSL Gale: {curKm:F1} km | History Overlay [H]: {(showHistoricalOverlays ? "ON" : "OFF")}";
+                NasaDataLayerMode mode = telemetryController != null ? telemetryController.CurrentLayerMode : NasaDataLayerMode.SafestRouteFocus;
+                string layerName = MarsTelemetryController.GetLayerModeDisplayName(mode);
+                int doneSteps = GetCompletedChecklistCount();
+                string chk = $"{(step1EvaMeda ? "[+]" : "[ ]")}EVA " +
+                             $"{(step2OutcropScan ? "[+]" : "[ ]")}Scan " +
+                             $"{(step3RoverDrive ? "[+]" : "[ ]")}Rover " +
+                             $"{(step4HydroponicsO2 ? "[+]" : "[ ]")}O2 " +
+                             $"{(step5StormShelter ? "[+]" : "[ ]")}Storm";
+
+                txtRoutes.text = $"A* TRAVERSE ({r.safest.distance_m:F0}m) · MISSION {doneSteps}/5\n" +
+                                 $"• [H] {layerName} | Offset {liveDistToRouteM:F1}m | Goal {liveDistToGoalM:F0}m\n" +
+                                 $"• Site: {liveNearestOutcrop} ({liveNearestOutcropDistM:F0}m) | Tubes {tubes}/22 | MSL {curKm:F1}km | 72 Flt | Fix {dropouts}\n" +
+                                 $"• {chk}";
             }
         }
 
@@ -464,15 +860,25 @@ namespace MarsSentinel.NASA
             {
                 if (datasetLoader != null && datasetLoader.GeologyUnits != null && datasetLoader.GeologyUnits.Count > 0)
                 {
+                    if (!manualGeologyOverride && !string.IsNullOrEmpty(liveGeoSymbol))
+                    {
+                        for (int i = 0; i < datasetLoader.GeologyUnits.Count; i++)
+                        {
+                            if (string.Equals(datasetLoader.GeologyUnits[i].symbol, liveGeoSymbol, StringComparison.OrdinalIgnoreCase))
+                            {
+                                currentGeologyUnitIndex = i;
+                                break;
+                            }
+                        }
+                    }
+
                     int idx = Mathf.Clamp(currentGeologyUnitIndex, 0, datasetLoader.GeologyUnits.Count - 1);
                     var g = datasetLoader.GeologyUnits[idx];
-                    string povInfo = datasetLoader.SampleImageryMeta != null
-                        ? $"Sol {datasetLoader.SampleImageryMeta.sol} Mastcam-Z Az {datasetLoader.SampleImageryMeta.mastAzDeg:F1}° El {datasetLoader.SampleImageryMeta.mastElDeg:F1}°"
-                        : "Mastcam-Z Nominal";
-                    txtGeology.text = $"USGS SIM 3292 GEOLOGY [{idx + 1}/{datasetLoader.GeologyUnits.Count}] ([G] Next)\n" +
+                    string modeTag = manualGeologyOverride ? "Manual [G]" : "Spatial Live";
+                    txtGeology.text = $"USGS SIM 3292 [{idx + 1}/{datasetLoader.GeologyUnits.Count}] ({modeTag}) ([G] Next)\n" +
                                       $"Unit: {g.symbol} ({g.name})\n" +
                                       $"Trafficability: {g.trafficability}/5 | H2O Ice: {g.water_ice_potential}\n" +
-                                      $"POV: {povInfo}";
+                                      $"{liveMountSharpNote}";
                 }
                 else
                 {
@@ -485,20 +891,31 @@ namespace MarsSentinel.NASA
         public void RefreshLiveExplorationHud()
         {
             hudRefreshTimer = 0f;
+            UpdateSpatialNasaAndChecklist();
+            RefreshRoutesHudText();
+            RefreshGeologyHudText();
+
             if (telemetryController != null)
             {
                 UpdateTelemetryDisplay(telemetryController.CurrentTelemetry);
             }
 
-            if (txtActiveCamera != null && MarsVisualRealismPolish.Instance != null && MarsVisualRealismPolish.Instance.IsExploreModeActive)
+            if (txtActiveCamera != null)
             {
-                bool driving = MarsRoverVehicleController.Instance != null && MarsRoverVehicleController.Instance.IsDriverSeated;
-                string modeStr = driving
-                    ? "ROVER DRIVE [E Dismount]"
-                    : (MarsAstronautController.Instance != null && MarsAstronautController.Instance.IsFirstPerson
-                        ? "EVA VISOR [V 3rd-Person]"
-                        : "EVA EXPLORER [WASD / E]");
-                txtActiveCamera.text = $"ACTIVE VIEW: [F] {modeStr}";
+                if (isPresentationDirectorActive)
+                {
+                    txtActiveCamera.text = DirectorHudLabel;
+                }
+                else if (MarsVisualRealismPolish.Instance != null && MarsVisualRealismPolish.Instance.IsExploreModeActive)
+                {
+                    bool driving = MarsRoverVehicleController.Instance != null && MarsRoverVehicleController.Instance.IsDriverSeated;
+                    string modeStr = driving
+                        ? "ROVER DRIVE [E Dismount]"
+                        : (MarsAstronautController.Instance != null && MarsAstronautController.Instance.IsFirstPerson
+                            ? "EVA VISOR [V 3rd-Person]"
+                            : "EVA EXPLORER [WASD / E]");
+                    txtActiveCamera.text = $"ACTIVE VIEW: [F] {modeStr}";
+                }
             }
 
             if (txtMuteBtnLabel != null && MarsAudioManager.Instance != null)
@@ -509,6 +926,7 @@ namespace MarsSentinel.NASA
             {
                 txtRoverBtnLabel.text = MarsRoverVehicleController.Instance.IsDriverSeated ? "Exit Rover" : "Drive Rover";
             }
+            UpdateDirectorButtonLabel();
         }
 
         private void UpdateTelemetryDisplay(RoverTelemetry t)
@@ -517,7 +935,10 @@ namespace MarsSentinel.NASA
             {
                 int scanned = MarsInspectableTarget.DiscoveredCount;
                 int total = MarsInspectableTarget.TotalCount;
-                txtVisorTitle.text = $"ORBITX · MARS SENTINEL | EXPLORED {scanned}/{total} SITES";
+                NasaDataLayerMode mode = telemetryController != null ? telemetryController.CurrentLayerMode : NasaDataLayerMode.SafestRouteFocus;
+                string layerName = MarsTelemetryController.GetLayerModeDisplayName(mode);
+                int doneSteps = GetCompletedChecklistCount();
+                txtVisorTitle.text = $"ORBITX · MARS SENTINEL | SITES {scanned}/{total} | MISSION {doneSteps}/5 | {layerName.ToUpperInvariant()}";
             }
 
             float elevDeg = celestialController != null ? celestialController.SolarElevationDeg : 45.0f;
@@ -592,9 +1013,9 @@ namespace MarsSentinel.NASA
             // Visor Header Panel (Top-Center)
             GameObject headerPanel = CreatePanel("VisorHeaderPanel", canvasGo.transform,
                 new Vector2(0.5f, 1.0f), new Vector2(0.5f, 1.0f), new Vector2(0.5f, 1.0f),
-                new Vector2(0, -20), new Vector2(760, 90));
-            txtVisorTitle = CreateText("TxtTitle", headerPanel.transform, "MARSSENTINEL — JEZERO SURFACE SHOWCASE",
-                18, FontStyle.Bold, new Color(1.0f, 0.85f, 0.5f), TextAnchor.MiddleCenter, defaultFont);
+                new Vector2(0, -20), new Vector2(830, 90));
+            txtVisorTitle = CreateText("TxtTitle", headerPanel.transform, "ORBITX · MARS SENTINEL | SITES 0/50 | MISSION 1/5",
+                17, FontStyle.Bold, new Color(1.0f, 0.85f, 0.5f), TextAnchor.MiddleCenter, defaultFont);
             txtVisorTitle.rectTransform.anchoredPosition = new Vector2(0, 18);
             txtCoordinates = CreateText("TxtCoordinates", headerPanel.transform, "SOL 100 | COORDS: 77.4508°E, 18.4447°N | ELEV: -2569.9m",
                 14, FontStyle.Normal, new Color(0.3f, 0.9f, 1.0f), TextAnchor.MiddleCenter, defaultFont);
@@ -611,15 +1032,15 @@ namespace MarsSentinel.NASA
             // Traverse Routes Panel (Bottom-Left)
             GameObject routesPanel = CreatePanel("RoutesPanel", canvasGo.transform,
                 new Vector2(0.0f, 0.0f), new Vector2(0.0f, 0.0f), new Vector2(0.0f, 0.0f),
-                new Vector2(25, 25), new Vector2(380, 160));
+                new Vector2(25, 25), new Vector2(410, 170));
             txtRoutes = CreateText("TxtRoutes", routesPanel.transform,
-                "A* TRAVERSE ROUTES (JEZERO CRATER)\n• Safest Path:   1159.9 m (Slope: 6.5°)\n• Shortest Path: 1113.5 m (Slope: 7.1°)\n• Science Path:  1203.2 m (Slope: 6.8°)",
+                "A* TRAVERSE · MISSION 1/5\n• [H] Safest A* Route\n• Tubes: 22/22 | 72 Flights",
                 13, FontStyle.Normal, new Color(0.2f, 1.0f, 0.8f), TextAnchor.UpperLeft, defaultFont);
 
             // Geology Panel (Bottom-Right)
             GameObject geoPanel = CreatePanel("GeologyPanel", canvasGo.transform,
                 new Vector2(1.0f, 0.0f), new Vector2(1.0f, 0.0f), new Vector2(1.0f, 0.0f),
-                new Vector2(-25, 25), new Vector2(400, 160));
+                new Vector2(-25, 25), new Vector2(425, 170));
             txtGeology = CreateText("TxtGeology", geoPanel.transform,
                 "USGS SIM 3292 GEOLOGY\nLoading geological dataset...",
                 13, FontStyle.Normal, new Color(1.0f, 0.8f, 0.4f), TextAnchor.UpperLeft, defaultFont);
@@ -639,7 +1060,7 @@ namespace MarsSentinel.NASA
             SetTopTextSlot(txtActiveCamera.rectTransform, 58f, 42f);
 
             txtControlsLegend = CreateText("TxtControlsLegend", statusPanel.transform,
-                "CAMERAS: [1]-[5] | [L] Solar | [T] +1h | [D] Dust τ | [G] Geo | [H] History\n[1] Surface Fleet | [2] Rover Close-Up | [3] Ingenuity\n[4] Route Orbit | [5] Orbital Fleet Skyward",
+                "CAMERAS: [1]-[5] | [L] Solar | [T] +1h | [D] Dust τ | [G] Geo\n[H] Data Layers | [P] 1m Auto-Director Demo | [F] Explore",
                 12, FontStyle.Normal, new Color(0.85f, 0.85f, 0.9f), TextAnchor.UpperLeft, defaultFont);
             SetTopTextSlot(txtControlsLegend.rectTransform, 106f, 110f);
 
@@ -650,7 +1071,7 @@ namespace MarsSentinel.NASA
         {
             GameObject navBar = CreatePanel("ORBITX_QuickNavBar", canvasTransform,
                 new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0.5f, 0f),
-                new Vector2(0f, 22f), new Vector2(890f, 44f));
+                new Vector2(0f, 22f), new Vector2(970f, 44f));
 
             HorizontalLayoutGroup hlg = navBar.AddComponent<HorizontalLayoutGroup>();
             hlg.padding = new RectOffset(8, 8, 5, 5);
@@ -712,6 +1133,11 @@ namespace MarsSentinel.NASA
             AddNavButton(navBar.transform, font, "Scan Next", new Color(0.16f, 0.44f, 0.52f, 0.92f), () =>
             {
                 MarsInteractionSystem.Instance?.InspectNextTarget();
+            });
+
+            txtDemoBtnLabel = AddNavButton(navBar.transform, font, "[P] 1m Demo", new Color(0.32f, 0.22f, 0.54f, 0.92f), () =>
+            {
+                TogglePresentationDirector();
             });
 
             txtMuteBtnLabel = AddNavButton(navBar.transform, font, "Audio: ON", new Color(0.20f, 0.24f, 0.30f, 0.92f), () =>

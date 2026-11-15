@@ -405,9 +405,9 @@ namespace MarsSentinel.NASA
                         t.horizontalOverflow = HorizontalWrapMode.Overflow;
                         t.text =
                             "EXPLORE & CAMERAS:\n" +
-                            "[F] Explore/Showcase | [WASD] Move/Drive | [E] Inspect/Rover\n" +
-                            "[1-4] Cams  [5/O] Orbit  [6] Sun  [7] Phobos  [8] Deimos\n" +
-                            "[V] Visor  [B] Lamp  [K] Mute  [L] Sol  [C/D] Dust  [G] Geo";
+                            "[F] Explore  [WASD] Move  [E] Inspect/Rover  [V] Visor\n" +
+                            "[1-4] Cams  [5/O] Orbit  [6-8] Sun/Moons  [B] Lamp  [K] Mute\n" +
+                            "[H] Data Layers  [P] 1m Demo  [G] Geo  [D/C] Dust  [L] Sol";
                     }
                     else if (assignedControls && (t.text.Contains("CONTROLS:") || t.text.Contains("CAMERAS:")))
                     {
@@ -588,13 +588,20 @@ namespace MarsSentinel.NASA
                 int count = lr.positionCount;
                 if (count < 2) continue;
 
-                if (smoothedRouteCounts.TryGetValue(lr, out int prevCount) && prevCount == count && lr.startWidth <= 0.08f)
+                if (smoothedRouteCounts.TryGetValue(lr, out int prevCount) && prevCount == count)
                 {
                     continue;
                 }
 
                 bool isIngenuity = ln.Contains("ingenuity");
-                float targetW = isIngenuity ? 0.038f : 0.050f;
+                float targetW = lr.startWidth;
+                if (ln.Contains("safest")) targetW = 0.55f;
+                else if (ln.Contains("shortest")) targetW = 0.38f;
+                else if (ln.Contains("science")) targetW = 0.42f;
+                else if (isIngenuity) targetW = 0.28f;
+                else if (ln.Contains("persev")) targetW = 0.32f;
+                else targetW = 0.26f;
+
                 lr.startWidth = targetW;
                 lr.endWidth = targetW;
                 lr.numCornerVertices = 2;
@@ -639,7 +646,7 @@ namespace MarsSentinel.NASA
                 var flat = new Vector3[raw.Length];
                 for (int i = 0; i < raw.Length; i++)
                 {
-                    float y = preserveHeight ? Mathf.Max(raw[i].y, SampleHorizonHeight(raw[i].x, raw[i].z) + 0.045f) : SampleHorizonHeight(raw[i].x, raw[i].z) + 0.045f;
+                    float y = preserveHeight ? Mathf.Max(raw[i].y, SampleTerrainElevation(raw[i].x, raw[i].z) + 0.35f) : SampleTerrainElevation(raw[i].x, raw[i].z) + 0.35f;
                     flat[i] = new Vector3(raw[i].x, y, raw[i].z);
                 }
                 return flat;
@@ -662,7 +669,7 @@ namespace MarsSentinel.NASA
                 for (int i = 0; i < dedup.Count; i++)
                 {
                     Vector3 p = dedup[i];
-                    float y = preserveHeight ? Mathf.Max(p.y, SampleHorizonHeight(p.x, p.z) + 0.045f) : SampleHorizonHeight(p.x, p.z) + 0.045f;
+                    float y = preserveHeight ? Mathf.Max(p.y, SampleTerrainElevation(p.x, p.z) + 0.35f) : SampleTerrainElevation(p.x, p.z) + 0.35f;
                     dedup[i] = new Vector3(p.x, y, p.z);
                 }
                 return dedup.ToArray();
@@ -737,13 +744,13 @@ namespace MarsSentinel.NASA
                         (2f * p0 - 5f * p1 + 4f * p2 - p3) * u2 +
                         (-p0 + 3f * p1 - 3f * p2 + p3) * u3
                     );
-                    float gy = SampleHorizonHeight(pt.x, pt.z) + 0.045f;
+                    float gy = SampleTerrainElevation(pt.x, pt.z) + 0.35f;
                     pt.y = preserveHeight ? Mathf.Max(pt.y, gy) : gy;
                     spline.Add(pt);
                 }
             }
             Vector3 last = relaxed[n - 1];
-            float lastGy = SampleHorizonHeight(last.x, last.z) + 0.045f;
+            float lastGy = SampleTerrainElevation(last.x, last.z) + 0.35f;
             last.y = preserveHeight ? Mathf.Max(last.y, lastGy) : lastGy;
             spline.Add(last);
 
@@ -1759,7 +1766,7 @@ namespace MarsSentinel.NASA
                 else if (kb.digit4Key.wasPressedThisFrame) SetSurfaceMode(4);
                 else if (kb.digit5Key.wasPressedThisFrame || kb.oKey.wasPressedThisFrame) SetOrbitMode(!forceOrbital || focusMode > 0);
                 else if (kb.digit6Key.wasPressedThisFrame || kb.uKey.wasPressedThisFrame) SetFocusMode(focusMode == 1 ? 0 : 1);
-                else if (kb.digit7Key.wasPressedThisFrame || kb.pKey.wasPressedThisFrame) SetFocusMode(focusMode == 2 ? 0 : 2);
+                else if (kb.digit7Key.wasPressedThisFrame) SetFocusMode(focusMode == 2 ? 0 : 2);
                 else if (kb.digit8Key.wasPressedThisFrame || kb.mKey.wasPressedThisFrame) SetFocusMode(focusMode == 3 ? 0 : 3);
             }
             if (cinemachineBrain != null)
@@ -1787,7 +1794,8 @@ namespace MarsSentinel.NASA
 
             if (txtActiveCamera != null)
             {
-                if (focusMode == 1) txtActiveCamera.text = "ACTIVE VIEW: SOL • SUN FOCUS";
+                if (!string.IsNullOrEmpty(MarsSceneManager.DirectorHudLabel)) txtActiveCamera.text = MarsSceneManager.DirectorHudLabel;
+                else if (focusMode == 1) txtActiveCamera.text = "ACTIVE VIEW: SOL • SUN FOCUS";
                 else if (focusMode == 2) txtActiveCamera.text = "ACTIVE VIEW: PHOBOS • INNER MOON";
                 else if (focusMode == 3) txtActiveCamera.text = "ACTIVE VIEW: DEIMOS • OUTER MOON";
                 else if (forceOrbital) txtActiveCamera.text = "ACTIVE VIEW: ORBITAL CONSTELLATION (KEY 5 / O)";
@@ -2238,6 +2246,11 @@ namespace MarsSentinel.NASA
             if (enhancer != null) enhancer.SendMessage("ClearCameraOverrides", SendMessageOptions.DontRequireReceiver);
             if (cinemachineBrain != null) cinemachineBrain.enabled = false;
             MarsAudioManager.Instance?.PlayUiClick();
+        }
+
+        public void SetOrbitView(bool active)
+        {
+            SetOrbitMode(active);
         }
 
         public void TriggerViewMode(int modeKey)

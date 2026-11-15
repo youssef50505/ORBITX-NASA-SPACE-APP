@@ -26,6 +26,15 @@ namespace MarsSentinel.NASA
     /// MarsTelemetryController visualizes NASA traverse routes via LineRenderers,
     /// places sample tube and landmark waypoints, and exposes live rover telemetry.
     /// </summary>
+    public enum NasaDataLayerMode
+    {
+        SafestRouteFocus = 0,
+        AllThreeAStarRoutes = 1,
+        HistoricalM20AndIngenuity = 2,
+        FullLayeredMap = 3,
+        CleanCinemaView = 4
+    }
+
     public class MarsTelemetryController : MonoBehaviour
     {
         public static MarsTelemetryController Instance { get; private set; }
@@ -36,7 +45,7 @@ namespace MarsSentinel.NASA
         [SerializeField] private LineRenderer lineScience;
         [SerializeField] private LineRenderer lineIngenuity;
         [SerializeField] private LineRenderer linePerseveranceHistory;
-        [SerializeField] private float lineWidth = 0.8f;
+        [SerializeField] private float lineWidth = 0.55f;
 
         [Header("Colors")]
         [SerializeField] private Color colorSafest = new Color(0.0f, 0.95f, 0.75f, 1.0f);   // Cyan / Green
@@ -48,7 +57,7 @@ namespace MarsSentinel.NASA
         [Header("Waypoints")]
         [SerializeField] private Transform waypointContainer;
         [SerializeField] private bool showSampleTubes = true;
-        [SerializeField] private bool showHistoricalOverlays = true;
+        [SerializeField] private bool showHistoricalOverlays = false;
 
         [Header("Active Rover Telemetry")]
         [SerializeField] private RoverTelemetry telemetry = new RoverTelemetry
@@ -69,9 +78,21 @@ namespace MarsSentinel.NASA
         };
 
         private readonly List<LineRenderer> persevExtraRenderers = new List<LineRenderer>();
+        private readonly List<Renderer> campusSampleRenderers = new List<Renderer>();
+        private readonly List<Renderer> distantSampleRenderers = new List<Renderer>();
+        private readonly List<Renderer> waypointBeaconRenderers = new List<Renderer>();
+
+        public NasaDataLayerMode CurrentLayerMode { get; private set; } = NasaDataLayerMode.SafestRouteFocus;
+        public int ChecklistStepsCompleted { get; private set; } = 1;
+        public string NearestSampleSummary { get; private set; } = "Sample Cache Active (22 Tubes)";
 
         public RoverTelemetry CurrentTelemetry => telemetry;
         public event Action<RoverTelemetry> OnTelemetryUpdated;
+
+        public void SetChecklistProgress(int completedCount)
+        {
+            ChecklistStepsCompleted = Mathf.Clamp(completedCount, 0, 5);
+        }
 
         private void Awake()
         {
@@ -103,16 +124,30 @@ namespace MarsSentinel.NASA
             EnsureLineRenderers();
             PopulateRouteLines();
             SpawnWaypoints();
+            ApplyDataLayerMode(CurrentLayerMode);
             OnTelemetryUpdated?.Invoke(telemetry);
         }
 
         private void EnsureLineRenderers()
         {
-            if (lineSafest == null) lineSafest = CreateRouteRenderer("LineRenderer_SafestRoute", colorSafest);
-            if (lineShortest == null) lineShortest = CreateRouteRenderer("LineRenderer_ShortestRoute", colorShortest);
-            if (lineScience == null) lineScience = CreateRouteRenderer("LineRenderer_ScienceRoute", colorScience);
-            if (lineIngenuity == null) lineIngenuity = CreateRouteRenderer("LineRenderer_IngenuityFlights", colorIngenuity, 0.35f);
-            if (linePerseveranceHistory == null) linePerseveranceHistory = CreateRouteRenderer("LineRenderer_PerseveranceHistory", colorPerseveranceHistory, 0.45f);
+            if (lineSafest == null) lineSafest = CreateRouteRenderer("LineRenderer_SafestRoute", colorSafest, 0.55f);
+            if (lineShortest == null) lineShortest = CreateRouteRenderer("LineRenderer_ShortestRoute", colorShortest, 0.38f);
+            if (lineScience == null) lineScience = CreateRouteRenderer("LineRenderer_ScienceRoute", colorScience, 0.42f);
+            if (lineIngenuity == null) lineIngenuity = CreateRouteRenderer("LineRenderer_IngenuityFlights", colorIngenuity, 0.28f);
+            if (linePerseveranceHistory == null) linePerseveranceHistory = CreateRouteRenderer("LineRenderer_PerseveranceHistory", colorPerseveranceHistory, 0.32f);
+
+            ApplyLineWidth(lineSafest, 0.55f);
+            ApplyLineWidth(lineShortest, 0.38f);
+            ApplyLineWidth(lineScience, 0.42f);
+            ApplyLineWidth(lineIngenuity, 0.28f);
+            ApplyLineWidth(linePerseveranceHistory, 0.32f);
+        }
+
+        private static void ApplyLineWidth(LineRenderer lr, float width)
+        {
+            if (lr == null) return;
+            lr.startWidth = width;
+            lr.endWidth = width;
         }
 
         private LineRenderer CreateRouteRenderer(string objectName, Color color, float overrideWidth = -1f)
@@ -200,11 +235,13 @@ namespace MarsSentinel.NASA
                     SetLinePoints(linePerseveranceHistory, persevSegments[0]);
                     for (int sIdx = 1; sIdx < persevSegments.Count; sIdx++)
                     {
-                        LineRenderer extraLr = CreateRouteRenderer($"PersevSegment_{sIdx}", colorPerseveranceHistory, 0.45f);
+                        LineRenderer extraLr = CreateRouteRenderer($"PersevSegment_{sIdx}", colorPerseveranceHistory, 0.32f);
                         if (linePerseveranceHistory != null)
                         {
                             extraLr.transform.SetParent(linePerseveranceHistory.transform, false);
                         }
+                        extraLr.startWidth = 0.32f;
+                        extraLr.endWidth = 0.32f;
                         SetLinePoints(extraLr, persevSegments[sIdx]);
                         extraLr.enabled = showHistoricalOverlays;
                         persevExtraRenderers.Add(extraLr);
@@ -218,12 +255,14 @@ namespace MarsSentinel.NASA
         {
             if (lr == null || points == null || points.Count == 0) return;
 
+            bool isIngenuity = lr == lineIngenuity || lr.name.IndexOf("Ingenuity", StringComparison.OrdinalIgnoreCase) >= 0;
             lr.positionCount = points.Count;
             for (int i = 0; i < points.Count; i++)
             {
-                // Elevate slightly above ground to prevent z-fighting
+                // Elevate 0.35m above Jezero terrain elevation to prevent z-fighting
                 Vector3 pt = points[i];
-                pt.y += 0.25f;
+                float terrainY = MarsVisualRealismPolish.SampleTerrainElevation(pt.x, pt.z);
+                pt.y = isIngenuity ? Mathf.Max(pt.y, terrainY) + 0.35f : (terrainY + 0.35f);
                 lr.SetPosition(i, pt);
             }
         }
@@ -243,6 +282,10 @@ namespace MarsSentinel.NASA
             }
 
             // Spawn Landing Site Marker
+            campusSampleRenderers.Clear();
+            distantSampleRenderers.Clear();
+            waypointBeaconRenderers.Clear();
+
             CreateBeacon("Octavia_E_Butler_Landing", Vector3.zero, new Color(1.0f, 0.8f, 0.2f, 1.0f), 1.5f);
 
             // Spawn Science Site Marker (Rochette)
@@ -254,7 +297,7 @@ namespace MarsSentinel.NASA
                 CreateBeacon("Science_Site_Rochette", new Vector3(uX, 0f, uZ), colorScience, 1.2f);
             }
 
-            // Spawn ALL 22 NASA Perseverance Sample Tubes
+            // Spawn ALL 22 NASA Perseverance Sample Tubes (distant markers hidden cleanly in focused view)
             if (showSampleTubes && MarsDatasetLoader.Instance != null)
             {
                 foreach (var tube in MarsDatasetLoader.Instance.SampleTubes)
@@ -283,17 +326,22 @@ namespace MarsSentinel.NASA
                 Material mat = new Material(s);
                 mat.color = color;
                 r.material = mat;
+                waypointBeaconRenderers.Add(r);
             }
         }
 
         private void CreateSampleMarker(string name, Vector3 pos, SampleTubeData tube)
         {
+            float horizDist = new Vector2(pos.x, pos.z).magnitude;
+            bool withinCampus = horizDist <= 90.0f;
+
             GameObject marker = GameObject.CreatePrimitive(PrimitiveType.Sphere);
             marker.name = name;
             marker.transform.SetParent(waypointContainer, false);
             float groundY = MarsVisualRealismPolish.SampleTerrainElevation(pos.x, pos.z);
-            marker.transform.position = new Vector3(pos.x, groundY + 0.55f, pos.z);
-            marker.transform.localScale = new Vector3(0.55f, 0.55f, 0.55f);
+            marker.transform.position = new Vector3(pos.x, groundY + 0.35f, pos.z);
+            float markerScale = withinCampus ? 0.42f : 0.32f;
+            marker.transform.localScale = new Vector3(markerScale, markerScale, markerScale);
 
             SphereCollider col = marker.GetComponent<SphereCollider>();
             if (col != null)
@@ -313,6 +361,18 @@ namespace MarsSentinel.NASA
                 mat.EnableKeyword("_EMISSION");
                 mat.SetColor("_EmissionColor", c * 0.65f);
                 r.material = mat;
+
+                if (withinCampus)
+                {
+                    campusSampleRenderers.Add(r);
+                    r.enabled = CurrentLayerMode != NasaDataLayerMode.CleanCinemaView;
+                }
+                else
+                {
+                    distantSampleRenderers.Add(r);
+                    r.enabled = CurrentLayerMode == NasaDataLayerMode.HistoricalM20AndIngenuity
+                        || CurrentLayerMode == NasaDataLayerMode.FullLayeredMap;
+                }
             }
 
             var target = marker.GetComponent<MarsInspectableTarget>() ?? marker.AddComponent<MarsInspectableTarget>();
@@ -353,15 +413,267 @@ namespace MarsSentinel.NASA
             if (lineScience != null) lineScience.enabled = science;
         }
 
-        public void SetHistoricalOverlaysVisibility(bool ingenuityVisible, bool perseveranceHistoryVisible)
+        public void SetHistoricalOverlaysVisibility(bool showIngenuity, bool showPerseverance)
         {
-            showHistoricalOverlays = ingenuityVisible || perseveranceHistoryVisible;
-            if (lineIngenuity != null) lineIngenuity.enabled = ingenuityVisible;
-            if (linePerseveranceHistory != null) linePerseveranceHistory.enabled = perseveranceHistoryVisible;
+            showHistoricalOverlays = showIngenuity || showPerseverance;
+            if (lineIngenuity != null) lineIngenuity.enabled = showIngenuity;
+            if (linePerseveranceHistory != null) linePerseveranceHistory.enabled = showPerseverance;
             foreach (var extra in persevExtraRenderers)
             {
-                if (extra != null) extra.enabled = perseveranceHistoryVisible;
+                if (extra != null) extra.enabled = showPerseverance;
             }
+        }
+
+        public void ApplyDataLayerMode(NasaDataLayerMode mode)
+        {
+            CurrentLayerMode = mode;
+
+            bool showSafest = mode == NasaDataLayerMode.SafestRouteFocus
+                || mode == NasaDataLayerMode.AllThreeAStarRoutes
+                || mode == NasaDataLayerMode.FullLayeredMap;
+            bool showShortest = mode == NasaDataLayerMode.AllThreeAStarRoutes
+                || mode == NasaDataLayerMode.FullLayeredMap;
+            bool showScience = mode == NasaDataLayerMode.AllThreeAStarRoutes
+                || mode == NasaDataLayerMode.FullLayeredMap;
+            bool showIngenuity = mode == NasaDataLayerMode.HistoricalM20AndIngenuity
+                || mode == NasaDataLayerMode.FullLayeredMap;
+            bool showPerseverance = mode == NasaDataLayerMode.HistoricalM20AndIngenuity
+                || mode == NasaDataLayerMode.FullLayeredMap;
+
+            SetRouteVisibility(showSafest, showShortest, showScience);
+            SetHistoricalOverlaysVisibility(showIngenuity, showPerseverance);
+
+            bool showCampusSamples = mode != NasaDataLayerMode.CleanCinemaView;
+            bool showDistantSamples = mode == NasaDataLayerMode.HistoricalM20AndIngenuity
+                || mode == NasaDataLayerMode.FullLayeredMap;
+
+            foreach (var r in campusSampleRenderers)
+            {
+                if (r != null) r.enabled = showCampusSamples;
+            }
+            foreach (var r in distantSampleRenderers)
+            {
+                if (r != null) r.enabled = showDistantSamples;
+            }
+            foreach (var r in waypointBeaconRenderers)
+            {
+                if (r != null) r.enabled = showCampusSamples;
+            }
+        }
+
+        public static string GetLayerModeDisplayName(NasaDataLayerMode mode)
+        {
+            switch (mode)
+            {
+                case NasaDataLayerMode.SafestRouteFocus: return "Safest A* Route";
+                case NasaDataLayerMode.AllThreeAStarRoutes: return "All 3 A* Routes";
+                case NasaDataLayerMode.HistoricalM20AndIngenuity: return "M20 + Ingenuity 72";
+                case NasaDataLayerMode.FullLayeredMap: return "Full NASA Overlay";
+                case NasaDataLayerMode.CleanCinemaView: return "Clean Cinema View";
+                default: return mode.ToString();
+            }
+        }
+
+        public void GetLiveNavigationMetrics(
+            Vector3 playerWorldPos,
+            out string nearestOutcropName,
+            out string nearestGeologySymbol,
+            out float distToActiveRouteM,
+            out int completedChecklistSteps)
+        {
+            GetLiveNavigationMetrics(
+                playerWorldPos,
+                out nearestOutcropName,
+                out _,
+                out nearestGeologySymbol,
+                out _,
+                out _,
+                out _,
+                out distToActiveRouteM,
+                out _,
+                out completedChecklistSteps);
+        }
+
+        public void GetLiveNavigationMetrics(
+            Vector3 playerWorldPos,
+            out string nearestOutcropName,
+            out float nearestOutcropDistM,
+            out string nearestGeologySymbol,
+            out string nearestGeologyName,
+            out int nearestGeologyTrafficability,
+            out string nearestMountSharpNote,
+            out float distToActiveRouteM,
+            out float distToGoalM,
+            out int completedChecklistSteps)
+        {
+            nearestOutcropName = "Octavia E. Butler";
+            nearestOutcropDistM = 0f;
+            nearestGeologySymbol = "Nh_lf";
+            nearestGeologyName = "Noachian Jezero Layered Delta";
+            nearestGeologyTrafficability = 4;
+            nearestMountSharpNote = "Gale Curiosity Analog · Carolyn's Shoals";
+            distToActiveRouteM = 0f;
+            distToGoalM = 0f;
+            completedChecklistSteps = ChecklistStepsCompleted;
+
+            var loader = MarsDatasetLoader.Instance;
+            if (loader == null) return;
+
+            Vector2 playerXZ = new Vector2(playerWorldPos.x, playerWorldPos.z);
+
+            // 1. Spatial lookup across NASA Jezero Outcrops
+            JezeroOutcropData bestOutcrop = null;
+            float bestOutcropDist = float.MaxValue;
+            int bestOutcropIdx = 0;
+            if (loader.Outcrops != null && loader.Outcrops.Count > 0)
+            {
+                for (int i = 0; i < loader.Outcrops.Count; i++)
+                {
+                    var o = loader.Outcrops[i];
+                    if (o == null) continue;
+                    float d = Vector2.Distance(playerXZ, o.unityPosXZ);
+                    if (d < bestOutcropDist)
+                    {
+                        bestOutcropDist = d;
+                        bestOutcrop = o;
+                        bestOutcropIdx = i;
+                    }
+                }
+                if (bestOutcrop != null)
+                {
+                    nearestOutcropName = bestOutcrop.name;
+                    nearestOutcropDistM = bestOutcropDist;
+                }
+            }
+
+            // 2. Spatial lookup across 22 M20 Sample Tubes
+            if (loader.SampleTubes != null && loader.SampleTubes.Count > 0)
+            {
+                SampleTubeData bestTube = null;
+                float bestTubeDist = float.MaxValue;
+                for (int i = 0; i < loader.SampleTubes.Count; i++)
+                {
+                    var tube = loader.SampleTubes[i];
+                    if (tube == null) continue;
+                    float d = Vector2.Distance(playerXZ, new Vector2(tube.unityPosition.x, tube.unityPosition.z));
+                    if (d < bestTubeDist)
+                    {
+                        bestTubeDist = d;
+                        bestTube = tube;
+                    }
+                }
+                if (bestTube != null)
+                {
+                    NearestSampleSummary = $"Tube #{bestTube.sample_num} {bestTube.sample_name} ({bestTubeDist:F1}m)";
+                }
+            }
+
+            // 3. Matching USGS SIM 3292 Geology Unit from outcrop context or Jezero zone
+            if (loader.GeologyUnits != null && loader.GeologyUnits.Count > 0)
+            {
+                GeologyUnit matched = null;
+                if (bestOutcrop != null && !string.IsNullOrEmpty(bestOutcrop.usgs_unit))
+                {
+                    for (int i = 0; i < loader.GeologyUnits.Count; i++)
+                    {
+                        var gu = loader.GeologyUnits[i];
+                        if (gu != null && string.Equals(gu.symbol, bestOutcrop.usgs_unit, StringComparison.OrdinalIgnoreCase))
+                        {
+                            matched = gu;
+                            break;
+                        }
+                    }
+                }
+                if (matched == null)
+                {
+                    int sectorIdx = Mathf.Abs(Mathf.RoundToInt(playerXZ.x * 0.25f) + Mathf.RoundToInt(playerXZ.y * 0.35f) + bestOutcropIdx) % loader.GeologyUnits.Count;
+                    matched = loader.GeologyUnits[sectorIdx];
+                }
+                if (matched != null)
+                {
+                    nearestGeologySymbol = matched.symbol;
+                    nearestGeologyName = matched.name;
+                    nearestGeologyTrafficability = matched.trafficability;
+                }
+            }
+
+            // 4. Matching Curiosity Gale/Mount Sharp comparison stop
+            if (loader.MountSharpStops != null && loader.MountSharpStops.Count > 0)
+            {
+                string searchCtx = ((bestOutcrop != null ? (bestOutcrop.formation + " " + bestOutcrop.crism_mineralogy + " " + bestOutcrop.rock_type) : "") + " " + nearestGeologyName).ToLowerInvariant();
+                CuriosityMountSharpStop bestStop = null;
+                int bestScore = -1;
+                for (int i = 0; i < loader.MountSharpStops.Count; i++)
+                {
+                    var st = loader.MountSharpStops[i];
+                    if (st == null) continue;
+                    string stopText = (st.name + " " + st.unit + " " + st.finding).ToLowerInvariant();
+                    int score = 0;
+                    if (searchCtx.Contains("sulfate") && stopText.Contains("sulfate")) score += 3;
+                    if (searchCtx.Contains("clay") && (stopText.Contains("clay") || stopText.Contains("smectite"))) score += 3;
+                    if (searchCtx.Contains("carbonate") && stopText.Contains("carbonate")) score += 2;
+                    if (searchCtx.Contains("delta") && (stopText.Contains("delta") || stopText.Contains("lacustrine"))) score += 2;
+                    if (searchCtx.Contains("sand") && stopText.Contains("sand")) score += 2;
+                    if (searchCtx.Contains("mud") && stopText.Contains("mud")) score += 2;
+                    if (score > bestScore)
+                    {
+                        bestScore = score;
+                        bestStop = st;
+                    }
+                }
+                if (bestStop == null)
+                {
+                    bestStop = loader.MountSharpStops[bestOutcropIdx % loader.MountSharpStops.Count];
+                }
+                nearestMountSharpNote = $"MSL Sol {bestStop.sol} {bestStop.name} ({bestStop.unit})";
+            }
+
+            // 5. Distance to active A* route & traverse goal
+            if (loader.RoutesData != null)
+            {
+                float dSafest = DistanceToRouteXZ(playerXZ, loader.RoutesData.safest?.unityPositions, out float goalSafest);
+                float dShortest = DistanceToRouteXZ(playerXZ, loader.RoutesData.shortest?.unityPositions, out float goalShortest);
+                float dScience = DistanceToRouteXZ(playerXZ, loader.RoutesData.science?.unityPositions, out float goalScience);
+
+                if (CurrentLayerMode == NasaDataLayerMode.AllThreeAStarRoutes || CurrentLayerMode == NasaDataLayerMode.FullLayeredMap)
+                {
+                    distToActiveRouteM = Mathf.Min(dSafest, Mathf.Min(dShortest, dScience));
+                    distToGoalM = goalSafest;
+                }
+                else
+                {
+                    distToActiveRouteM = dSafest;
+                    distToGoalM = goalSafest;
+                }
+            }
+        }
+
+        private static float DistanceToRouteXZ(Vector2 p, List<Vector3> routePts, out float distToGoalM)
+        {
+            distToGoalM = 0f;
+            if (routePts == null || routePts.Count == 0) return 0f;
+
+            Vector3 goal = routePts[routePts.Count - 1];
+            distToGoalM = Vector2.Distance(p, new Vector2(goal.x, goal.z));
+
+            if (routePts.Count == 1)
+            {
+                return Vector2.Distance(p, new Vector2(routePts[0].x, routePts[0].z));
+            }
+
+            float minDistSq = float.MaxValue;
+            for (int i = 0; i < routePts.Count - 1; i++)
+            {
+                Vector2 a = new Vector2(routePts[i].x, routePts[i].z);
+                Vector2 b = new Vector2(routePts[i + 1].x, routePts[i + 1].z);
+                Vector2 ab = b - a;
+                float lenSq = ab.sqrMagnitude;
+                float t = lenSq > 0.0001f ? Mathf.Clamp01(Vector2.Dot(p - a, ab) / lenSq) : 0f;
+                Vector2 proj = a + ab * t;
+                float dSq = (p - proj).sqrMagnitude;
+                if (dSq < minDistSq) minDistSq = dSq;
+            }
+            return Mathf.Sqrt(minDistSq);
         }
 
         public void UpdateRoverMotionTelemetry(float speedMps, float headingDeg, float distanceTraveled)
