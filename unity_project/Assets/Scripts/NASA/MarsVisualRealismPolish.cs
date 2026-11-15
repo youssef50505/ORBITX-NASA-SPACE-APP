@@ -1799,6 +1799,16 @@ namespace MarsSentinel.NASA
                 else if (focusMode == 2) txtActiveCamera.text = "ACTIVE VIEW: PHOBOS • INNER MOON";
                 else if (focusMode == 3) txtActiveCamera.text = "ACTIVE VIEW: DEIMOS • OUTER MOON";
                 else if (forceOrbital) txtActiveCamera.text = "ACTIVE VIEW: ORBITAL CONSTELLATION (KEY 5 / O)";
+                else if (IsExploreModeActive)
+                {
+                    bool driving = MarsRoverVehicleController.Instance != null && MarsRoverVehicleController.Instance.IsDriverSeated;
+                    string modeStr = driving
+                        ? "ROVER DRIVE [E Dismount]"
+                        : (MarsAstronautController.Instance != null && MarsAstronautController.Instance.IsFirstPerson
+                            ? "EVA VISOR [V 3rd-Person]"
+                            : "EVA EXPLORER [WASD / E]");
+                    txtActiveCamera.text = $"ACTIVE VIEW: [F] {modeStr}";
+                }
                 else if (activeSurfaceKey == 2) txtActiveCamera.text = "ACTIVE VIEW: PERSEVERANCE CLOSE-UP";
                 else if (activeSurfaceKey == 3) txtActiveCamera.text = "ACTIVE VIEW: INGENUITY HELICOPTER";
                 else if (activeSurfaceKey == 4) txtActiveCamera.text = "ACTIVE VIEW: JEZERO TRAVERSE OVERVIEW";
@@ -1829,13 +1839,17 @@ namespace MarsSentinel.NASA
                         cinemachineBrain.enabled = true;
                         SnapMainCameraToActiveSurfaceCam();
                     }
-                    else
+                    else if (!IsExploreModeActive)
                     {
                         cinemachineBrain.enabled = true;
                         if (string.IsNullOrEmpty(captureOutDir))
                         {
                             cinemachineBrain.DefaultBlend = new CinemachineBlendDefinition(CinemachineBlendDefinition.Styles.EaseInOut, 0.65f);
                         }
+                    }
+                    else
+                    {
+                        cinemachineBrain.enabled = false;
                     }
                 }
             }

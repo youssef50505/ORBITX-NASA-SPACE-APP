@@ -881,6 +881,10 @@ namespace MarsSentinel.NASA
                                       $"Trafficability: {g.trafficability}/5 | H2O Ice: {g.water_ice_potential}\n" +
                                       $"{liveMountSharpNote}";
                 }
+                else if (datasetLoader != null && !datasetLoader.IsLoaded)
+                {
+                    txtGeology.text = "USGS SIM 3292 GEOLOGY\nLoading geological dataset...";
+                }
                 else
                 {
                     Debug.LogWarning("[MarsSceneManager] No geology units loaded from dataset.");
