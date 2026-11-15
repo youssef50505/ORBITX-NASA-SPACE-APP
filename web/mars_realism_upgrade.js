@@ -2150,6 +2150,11 @@
   function showOmniPopup(probeData) {
     v10State.lastProbe = probeData;
     let pop = document.getElementById('ms-omni-popup');
+    if (v10State.activeTab === 'omni') {
+      if (pop) pop.classList.remove('visible');
+      renderV10DrawerContent('omni');
+      return;
+    }
     if (!pop) {
       pop = document.createElement('div');
       pop.id = 'ms-omni-popup';
@@ -2539,11 +2544,34 @@
       toggle30SecDemo();
       return;
     }
+
+    const leftPanel = document.querySelector('.hud-left');
+    const rightPanel = document.querySelector('.hud-right');
+
     if (v10State.activeTab === tab) tab = null;
     v10State.activeTab = tab;
+
     document.querySelectorAll('.ms-v10-tab').forEach((b) => {
       b.classList.toggle('active', b.getAttribute('data-tab') === tab);
     });
+
+    if (tab === 'routes-panel') {
+      if (leftPanel) leftPanel.classList.add('ms-panel-open');
+      if (rightPanel) rightPanel.classList.remove('ms-panel-open');
+      renderV10DrawerContent(null);
+      return;
+    }
+
+    if (tab === 'agri-panel') {
+      if (rightPanel) rightPanel.classList.add('ms-panel-open');
+      if (leftPanel) leftPanel.classList.remove('ms-panel-open');
+      renderV10DrawerContent(null);
+      return;
+    }
+
+    if (leftPanel) leftPanel.classList.remove('ms-panel-open');
+    if (rightPanel) rightPanel.classList.remove('ms-panel-open');
+
     if (tab === 'slides') applySlideView(v10State.slideIdx);
     renderV10DrawerContent(tab);
   }
@@ -2641,20 +2669,56 @@
   function initOmniProbeAndV10Dock(scene, camera) {
     if (typeof window !== 'undefined' && window.location && window.location.search.indexOf('embed=1') !== -1) {
       document.body.classList.add('embed-mode');
+    } else {
+      document.body.classList.add('ms-modern-simple');
     }
     buildOmniTargetsAndBeacons(scene);
 
-    // 1. Inject Bottom-Center v10 Command Dock & Drawer
+    // 0. Inject Side Drawer Close Buttons & Topbar Full HUD Toggle
+    document.querySelectorAll('.hud-left .panel-header, .hud-right .panel-header').forEach((hdr) => {
+      if (!hdr.querySelector('.ms-panel-close-btn')) {
+        const cbtn = document.createElement('button');
+        cbtn.type = 'button';
+        cbtn.className = 'ms-panel-close-btn';
+        cbtn.title = 'Minimize Panel (Esc)';
+        cbtn.textContent = '✕';
+        cbtn.addEventListener('click', () => selectDockTab(null));
+        hdr.appendChild(cbtn);
+      }
+    });
+
+    const topActions = document.querySelector('.topbar-actions');
+    if (topActions && !document.getElementById('btn-toggle-full-hud')) {
+      const hudBtn = document.createElement('button');
+      hudBtn.type = 'button';
+      hudBtn.id = 'btn-toggle-full-hud';
+      hudBtn.className = 'action-btn';
+      hudBtn.textContent = '⊞ Full HUD: OFF';
+      hudBtn.title = 'Switch between Clean 3D-First Mode and Full Telemetry Side Panels';
+      hudBtn.addEventListener('click', () => {
+        const isFull = document.body.classList.toggle('ms-full-hud');
+        hudBtn.classList.toggle('hud-active', isFull);
+        hudBtn.textContent = isFull ? '⊞ Full HUD: ON' : '⊞ Full HUD: OFF';
+        if (isFull && (v10State.activeTab === 'routes-panel' || v10State.activeTab === 'agri-panel')) {
+          selectDockTab(null);
+        }
+      });
+      topActions.appendChild(hudBtn);
+    }
+
+    // 1. Inject Bottom-Center Unified v10 Command Dock & Drawer
     if (!document.getElementById('ms-v10-command-dock')) {
       const dock = document.createElement('div');
       dock.id = 'ms-v10-command-dock';
       dock.innerHTML = [
-        '<button type="button" class="ms-v10-tab" data-tab="omni">🧭 Omni-Probe X-Ray</button>',
-        '<button type="button" class="ms-v10-tab" data-tab="rover">🚙 Rover Control</button>',
-        '<button type="button" class="ms-v10-tab" data-tab="drones">🚁 Drone Fleet &amp; Hazards</button>',
-        '<button type="button" class="ms-v10-tab" data-tab="lifesupport">📊 Poster &amp; Life Support</button>',
-        '<button type="button" class="ms-v10-tab demo-hot" data-tab="demo30">🎬 30s NASA Demo</button>',
-        '<button type="button" class="ms-v10-tab" data-tab="slides">📽 7-Slide Deck</button>'
+        '<button type="button" class="ms-v10-tab" data-tab="routes-panel">⌁ Routes &amp; Weather</button>',
+        '<button type="button" class="ms-v10-tab" data-tab="omni">⌖ Omni-Probe X-Ray</button>',
+        '<button type="button" class="ms-v10-tab" data-tab="rover">◈ Rover Control</button>',
+        '<button type="button" class="ms-v10-tab" data-tab="drones">⚑ Drones &amp; Hazards</button>',
+        '<button type="button" class="ms-v10-tab" data-tab="agri-panel">❖ Agri &amp; Geology</button>',
+        '<button type="button" class="ms-v10-tab" data-tab="lifesupport">▤ v10 Telemetry</button>',
+        '<button type="button" class="ms-v10-tab demo-hot" data-tab="demo30">▶ 30s NASA Demo</button>',
+        '<button type="button" class="ms-v10-tab" data-tab="slides">◫ 7-Slide Deck</button>'
       ].join('');
       document.body.appendChild(dock);
       dock.addEventListener('click', (e) => {
@@ -2662,6 +2726,14 @@
         if (b) selectDockTab(b.getAttribute('data-tab'));
       });
     }
+
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        selectDockTab(null);
+        const pop = document.getElementById('ms-omni-popup');
+        if (pop) pop.classList.remove('visible');
+      }
+    });
 
     if (!document.getElementById('ms-v10-drawer')) {
       const drw = document.createElement('div');

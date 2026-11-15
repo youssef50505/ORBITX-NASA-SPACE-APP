@@ -1225,3 +1225,146 @@ body.embed-mode .hud-topbar,
 body.embed-mode .hud-footer {
   display: none !important;
 }
+
+/* ==========================================================================
+   SIMPLE MODERN UI MODE (3D-FIRST VIEWPORT + ON-DEMAND DRAWERS)
+   ========================================================================== */
+body.ms-modern-simple .hud-topbar {
+  height: 54px;
+  padding: 0 14px;
+  background: rgba(10, 14, 20, 0.72);
+  border-color: rgba(143, 240, 224, 0.16);
+}
+
+body.ms-modern-simple .topbar-actions {
+  gap: 8px;
+}
+
+body.ms-modern-simple .action-btn {
+  padding: 6px 10px;
+  font-size: 11px;
+}
+
+body.ms-modern-simple .action-btn.hud-active {
+  background: rgba(143, 240, 224, 0.24);
+  border-color: #8ff0e0;
+  color: #ffffff;
+}
+
+body.ms-modern-simple .ms-focus-bar {
+  top: 76px !important;
+  bottom: auto !important;
+  padding: 4px 10px !important;
+  border-radius: 999px !important;
+  background: rgba(8, 12, 18, 0.68) !important;
+  border: 1px solid rgba(143, 240, 224, 0.22) !important;
+  transform: translateX(-50%) scale(0.92);
+}
+
+body.ms-modern-simple .hud-panel {
+  top: 82px;
+  bottom: 92px;
+  background: rgba(10, 14, 22, 0.84);
+  border-color: rgba(143, 240, 224, 0.2);
+}
+
+body.ms-modern-simple:not(.ms-full-hud) .hud-left {
+  transform: translateX(calc(-100% - 32px));
+  opacity: 0;
+  pointer-events: none;
+  transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.22s ease;
+}
+
+body.ms-modern-simple:not(.ms-full-hud) .hud-left.ms-panel-open {
+  transform: translateX(0);
+  opacity: 1;
+  pointer-events: auto;
+}
+
+body.ms-modern-simple:not(.ms-full-hud) .hud-right {
+  transform: translateX(calc(100% + 32px));
+  opacity: 0;
+  pointer-events: none;
+  transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.22s ease;
+}
+
+body.ms-modern-simple:not(.ms-full-hud) .hud-right.ms-panel-open {
+  transform: translateX(0);
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.panel-header {
+  position: relative;
+}
+
+.ms-panel-close-btn {
+  display: none;
+  position: absolute;
+  top: 0;
+  right: 0;
+  appearance: none;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  background: rgba(30, 41, 59, 0.72);
+  color: #cbd5e1;
+  border-radius: 6px;
+  padding: 2px 8px;
+  cursor: pointer;
+  font-size: 11px;
+  font-family: var(--font-mono);
+}
+
+body.ms-modern-simple:not(.ms-full-hud) .ms-panel-close-btn {
+  display: inline-flex;
+  align-items: center;
+}
+
+.ms-panel-close-btn:hover {
+  border-color: #8ff0e0;
+  color: #ffffff;
+}
+
+body.ms-modern-simple #ms-v10-command-dock {
+  bottom: 36px;
+  border-radius: 14px;
+  background: rgba(10, 14, 18, 0.84);
+  border: 1px solid rgba(143, 240, 224, 0.28);
+  padding: 5px 8px;
+  gap: 5px;
+  flex-wrap: nowrap;
+  max-width: calc(100vw - 24px);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+body.ms-modern-simple #ms-v10-command-dock::-webkit-scrollbar {
+  display: none;
+}
+
+body.ms-modern-simple .ms-v10-tab {
+  padding: 6px 10px;
+  font-size: 11px;
+}
+
+body.ms-modern-simple #ms-v10-drawer {
+  bottom: 92px;
+}
+
+body.ms-modern-simple #ms-demo-subtitle {
+  bottom: 94px;
+}
+
+body.ms-modern-simple #ms-omni-popup {
+  top: 122px;
+  width: min(520px, calc(100vw - 48px));
+  min-width: 300px;
+}
+
+body.ms-modern-simple .hud-footer {
+  height: 24px;
+  bottom: 6px;
+  padding: 0 14px;
+  font-size: 10px;
+  opacity: 0.72;
+  background: rgba(8, 10, 14, 0.58);
+}
