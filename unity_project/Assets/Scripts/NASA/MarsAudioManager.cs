@@ -48,6 +48,14 @@ namespace MarsSentinel.NASA
         private float targetRoverPitch = 0.85f;
         private float lastHazardTime = -10f;
         private float dustLevel = 0.45f;
+        private float ambienceGain = 0.85f;
+        private float sfxGain = 0.90f;
+        private float pauseDuckGain = 1.0f;
+
+        private AudioLowPassFilter windLowPass;
+        private AudioReverbFilter hvacReverb;
+        private AudioSource ingenuitySpatialSource;
+        private bool spatialEmittersWired = false;
 
         private void Awake()
         {
@@ -76,8 +84,16 @@ namespace MarsSentinel.NASA
             hazardBeepClip = SynthesizeHazardBeepClip(sr);
 
             windSource = CreateLoopSource("Audio_MarsWind", windClip, 0.28f, 1.0f);
+            windLowPass = windSource.gameObject.AddComponent<AudioLowPassFilter>();
+            windLowPass.cutoffFrequency = 6500f;
+
             breathingSource = CreateLoopSource("Audio_SuitBreathing", breathingClip, 0.12f, 1.0f);
             hvacSource = CreateLoopSource("Audio_FacilityHVAC", hvacClip, 0.0f, 1.0f);
+            hvacReverb = hvacSource.gameObject.AddComponent<AudioReverbFilter>();
+            hvacReverb.reverbPreset = AudioReverbPreset.Room;
+            hvacReverb.dryLevel = 0f;
+            hvacReverb.room = -1100f;
+
             roverSource = CreateLoopSource("Audio_RoverDrive", roverClip, 0.0f, 0.85f);
 
             GameObject sfxObj = new GameObject("Audio_SFX_Channel");
@@ -86,9 +102,31 @@ namespace MarsSentinel.NASA
             sfxSource.playOnAwake = false;
             sfxSource.loop = false;
             sfxSource.spatialBlend = 0f;
-            sfxSource.volume = masterVolume;
+            sfxSource.volume = masterVolume * sfxGain;
 
             ApplyMuteState();
+        }
+
+        private void WireSpatialEmittersIfReady()
+        {
+            if (spatialEmittersWired) return;
+            GameObject ing = GameObject.Find("MS_Ingenuity_Root");
+            if (ing != null && roverClip != null)
+            {
+                GameObject emit = new GameObject("MS_Ingenuity_SpatialRotorAudio");
+                emit.transform.SetParent(ing.transform, false);
+                ingenuitySpatialSource = emit.AddComponent<AudioSource>();
+                ingenuitySpatialSource.clip = roverClip;
+                ingenuitySpatialSource.loop = true;
+                ingenuitySpatialSource.spatialBlend = 1.0f;
+                ingenuitySpatialSource.rolloffMode = AudioRolloffMode.Logarithmic;
+                ingenuitySpatialSource.minDistance = 2.5f;
+                ingenuitySpatialSource.maxDistance = 32f;
+                ingenuitySpatialSource.pitch = 2.15f;
+                ingenuitySpatialSource.volume = 0.16f * masterVolume * sfxGain;
+                ingenuitySpatialSource.Play();
+                spatialEmittersWired = true;
+            }
         }
 
         private AudioSource CreateLoopSource(string childName, AudioClip clip, float initialVol, float pitch)
@@ -114,33 +152,69 @@ namespace MarsSentinel.NASA
                 ToggleMute();
             }
 
-            float dt = Time.deltaTime;
-            float m = isMuted ? 0f : masterVolume;
+            WireSpatialEmittersIfReady();
+
+            float dt = Time.unscaledDeltaTime;
+            float m = isMuted ? 0f : masterVolume * pauseDuckGain;
 
             if (windSource != null)
             {
                 float stormFactor = Mathf.Clamp01(0.45f + dustLevel * 0.35f);
-                float desiredWind = (IsInsideFacility ? 0.05f : targetWindVol * stormFactor) * m;
+                float desiredWind = (IsInsideFacility ? 0.05f : targetWindVol * stormFactor) * m * ambienceGain;
                 windSource.volume = Mathf.Lerp(windSource.volume, desiredWind, dt * 3.0f);
+                if (windLowPass != null)
+                {
+                    float targetCutoff = IsInsideFacility ? 520f : Mathf.Lerp(5800f, 2200f, Mathf.Clamp01((dustLevel - 0.45f) / 2.2f));
+                    windLowPass.cutoffFrequency = Mathf.Lerp(windLowPass.cutoffFrequency, targetCutoff, dt * 4.0f);
+                }
             }
 
             if (hvacSource != null)
             {
-                float desiredHvac = (IsInsideFacility ? 0.24f : targetHvacVol) * m;
+                float desiredHvac = (IsInsideFacility ? 0.24f : targetHvacVol) * m * ambienceGain;
                 hvacSource.volume = Mathf.Lerp(hvacSource.volume, desiredHvac, dt * 3.0f);
             }
 
             if (breathingSource != null)
             {
-                float desiredBreath = (IsInsideFacility ? 0.04f : targetBreathingVol) * m;
+                float desiredBreath = (IsInsideFacility ? 0.04f : targetBreathingVol) * m * ambienceGain;
                 breathingSource.volume = Mathf.Lerp(breathingSource.volume, desiredBreath, dt * 3.0f);
             }
 
             if (roverSource != null)
             {
-                roverSource.volume = Mathf.Lerp(roverSource.volume, targetRoverVol * m, dt * 5.0f);
+                roverSource.volume = Mathf.Lerp(roverSource.volume, targetRoverVol * m * sfxGain, dt * 5.0f);
                 roverSource.pitch = Mathf.Lerp(roverSource.pitch, targetRoverPitch, dt * 5.0f);
             }
+
+            if (ingenuitySpatialSource != null)
+            {
+                ingenuitySpatialSource.volume = Mathf.Lerp(ingenuitySpatialSource.volume, (IsInsideFacility ? 0.03f : 0.16f) * m * sfxGain, dt * 4.0f);
+            }
+        }
+
+        public void SetMasterVolume(float v)
+        {
+            masterVolume = Mathf.Clamp01(v);
+            if (sfxSource != null) sfxSource.volume = isMuted ? 0f : masterVolume * sfxGain * pauseDuckGain;
+        }
+
+        public void SetAmbienceGain(float v)
+        {
+            ambienceGain = Mathf.Clamp01(v);
+        }
+
+        public void SetSfxGain(float v)
+        {
+            sfxGain = Mathf.Clamp01(v);
+            if (sfxSource != null) sfxSource.volume = isMuted ? 0f : masterVolume * sfxGain * pauseDuckGain;
+        }
+
+        public void SetPauseDucking(bool paused)
+        {
+            // -6 dB linear attenuation while paused (craft-game-floors game-shell spec)
+            pauseDuckGain = paused ? 0.50f : 1.0f;
+            if (sfxSource != null) sfxSource.volume = isMuted ? 0f : masterVolume * sfxGain * pauseDuckGain;
         }
 
         public void SetMuted(bool muted)

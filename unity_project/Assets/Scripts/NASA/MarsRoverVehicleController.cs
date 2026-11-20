@@ -32,6 +32,8 @@ namespace MarsSentinel.NASA
         public float CurrentSpeedMps => currentSpeed;
         public float CurrentSlopeDeg { get; private set; }
         public float TotalDistanceMeters { get; private set; }
+        public float WheelSlipPercent { get; private set; }
+        public float TractionFactor { get; private set; } = 1.0f;
 
         private float currentSpeed = 0f;
         private float steerAngle = 0f;
@@ -420,26 +422,36 @@ namespace MarsSentinel.NASA
                 }
             }
 
-            // Realistic Martian gravity hill-climb drag + hard 25° nav-module slope safety limit
+            // Realistic Martian gravity (3.72 m/s²) hill-climb drag + regolith slip + hard 25° nav-module slope safety limit
             float slopeGrade = Mathf.Sin(CurrentSlopeDeg * Mathf.Deg2Rad);
             float forwardClimbFactor = Vector3.Dot(transform.forward, Vector3.up);
             float slopeLimitScale = CurrentSlopeDeg > 25.0f ? 0.22f : (CurrentSlopeDeg > 15.0f ? 0.68f : 1.0f);
+            // Low-gravity normal force reduces regolith shear grip on loose slopes > 10 deg
+            TractionFactor = Mathf.Clamp(1.0f - Mathf.Max(0f, CurrentSlopeDeg - 8f) * 0.024f, 0.34f, 1.0f);
             float prevSpeed = currentSpeed;
 
             if (braking)
             {
-                currentSpeed = Mathf.MoveTowards(currentSpeed, 0f, dragDecel * 2.6f * Time.deltaTime);
+                currentSpeed = Mathf.MoveTowards(currentSpeed, 0f, dragDecel * 2.6f * TractionFactor * Time.deltaTime);
             }
             else if (Mathf.Abs(throttle) > 0.01f)
             {
                 float targetMax = (throttle > 0f ? maxForwardSpeed : -maxReverseSpeed) * slopeLimitScale;
-                currentSpeed = Mathf.MoveTowards(currentSpeed, targetMax * Mathf.Abs(throttle), acceleration * Time.deltaTime);
+                currentSpeed = Mathf.MoveTowards(currentSpeed, targetMax * Mathf.Abs(throttle), acceleration * TractionFactor * Time.deltaTime);
                 // Gravity resistance climbing uphill / gravity assist downhill
                 currentSpeed -= forwardClimbFactor * 3.72f * Time.deltaTime * 0.65f;
             }
             else
             {
                 currentSpeed = Mathf.MoveTowards(currentSpeed, 0f, (dragDecel + slopeGrade * 3.2f) * Time.deltaTime);
+            }
+
+            // Wheel slip ratio (%) driven by torque vs. low-G regolith traction
+            float commandedRatio = Mathf.Abs(throttle);
+            WheelSlipPercent = Mathf.Clamp((1f - TractionFactor) * 85f * commandedRatio + Mathf.Abs(steerInput) * Mathf.Clamp01(Mathf.Abs(currentSpeed) / 10f) * 14f, 0f, 72f);
+            if (WheelSlipPercent > 22f && Mathf.Abs(currentSpeed) > 1.2f)
+            {
+                MarsCinematicVfxAndPost.Instance?.EmitDustPuff(transform.position - transform.forward * 1.1f, 3, 1.35f);
             }
 
             float accelRate = (currentSpeed - prevSpeed) / Mathf.Max(0.005f, Time.deltaTime);

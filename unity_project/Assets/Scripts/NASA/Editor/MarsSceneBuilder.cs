@@ -139,6 +139,23 @@ namespace MarsSentinel.Editor
             if (orchestrator.GetComponent<MarsCinematicVfxAndPost>() == null)
                 orchestrator.AddComponent<MarsCinematicVfxAndPost>();
 
+            if (orchestrator.GetComponent<MarsLocalizationManager>() == null)
+                orchestrator.AddComponent<MarsLocalizationManager>();
+
+            if (orchestrator.GetComponent<MarsMissionPersistence>() == null)
+                orchestrator.AddComponent<MarsMissionPersistence>();
+
+            if (orchestrator.GetComponent<MarsAutonomousScoutAI>() == null)
+                orchestrator.AddComponent<MarsAutonomousScoutAI>();
+
+            if (orchestrator.GetComponent<MarsCoopWingmanSync>() == null)
+                orchestrator.AddComponent<MarsCoopWingmanSync>();
+
+            if (orchestrator.GetComponent<MarsGameShellUI>() == null)
+                orchestrator.AddComponent<MarsGameShellUI>();
+
+            EnsureXRayRendererFeatureOnPcRenderer();
+
             // Remove duplicate stray MarsCameraRigs or *_OrbitTrail GameObjects if re-running on existing scene
             var allTransforms = Object.FindObjectsByType<Transform>(FindObjectsSortMode.None);
             bool keptCameraRigs = false;
@@ -194,13 +211,13 @@ namespace MarsSentinel.Editor
                 EnsureUrpMaterials(heroInst);
             }
 
-            // Instantiate standalone fleet models under surface root
-            InstantiateFleetModel("mars-2020-perseverance-rover.glb", "MS_Perseverance_Root", surfaceRoot, new Vector3(0, 0, 0));
-            InstantiateFleetModel("Ingenuity_Mars_Helicopter.glb", "MS_Ingenuity_Root", surfaceRoot, new Vector3(8, 0, 10));
-            InstantiateFleetModel("Curiosity Rover (MSL).glb", "MS_Curiosity_Root", surfaceRoot, new Vector3(-8, 0, -14));
-            InstantiateFleetModel("InSight Cruise Lander (panels deployed).glb", "MS_InSight_Lander_Root", surfaceRoot, new Vector3(-12, 0, 16));
-            InstantiateFleetModel("mars-exploration-rover-opportunity-mer-b.glb", "MS_Opportunity_Root", surfaceRoot, new Vector3(-20, 0, 4));
-            InstantiateFleetModel("Viking Lander.glb", "MS_Viking_Lander_Root", surfaceRoot, new Vector3(18, 0, -8));
+            // Instantiate standalone fleet models under surface root (normalized to exact real NASA metric dimensions)
+            InstantiateFleetModel("mars-2020-perseverance-rover.glb", "MS_Perseverance_Root", surfaceRoot, new Vector3(0, 0, 0), 3.0f);
+            InstantiateFleetModel("Ingenuity_Mars_Helicopter.glb", "MS_Ingenuity_Root", surfaceRoot, new Vector3(8, 0, 10), 1.4f);
+            InstantiateFleetModel("Curiosity Rover (MSL).glb", "MS_Curiosity_Root", surfaceRoot, new Vector3(-8, 0, -14), 3.0f);
+            InstantiateFleetModel("InSight Cruise Lander (panels deployed).glb", "MS_InSight_Lander_Root", surfaceRoot, new Vector3(-14, 0, 18), 5.6f);
+            InstantiateFleetModel("mars-exploration-rover-opportunity-mer-b.glb", "MS_Opportunity_Root", surfaceRoot, new Vector3(-20, 0, 4), 2.3f);
+            InstantiateFleetModel("Viking Lander.glb", "MS_Viking_Lander_Root", surfaceRoot, new Vector3(18, 0, -8), 3.2f);
 
             // Wire Ingenuity Rotor Animator
             Transform ingNode = surfaceRoot.Find("MS_Ingenuity_Root");
@@ -224,15 +241,30 @@ namespace MarsSentinel.Editor
                 terrMgr.InitializeTerrain();
             }
 
-            // Instantiate orbiters under orbital root
-            InstantiateFleetModel("Mars Reconnaissance Orbiter (MRO) (A).glb", "MS_MRO_Root", orbitRoot, new Vector3(-80, 250, 150));
-            InstantiateFleetModel("Mars Atmosphere and Volatile EvolutioN (MAVEN) (A).glb", "MS_MAVEN_Root", orbitRoot, new Vector3(60, 300, -100));
-            InstantiateFleetModel("Mars Odyssey.glb", "MS_Odyssey_Root", orbitRoot, new Vector3(0, 280, 200));
-            InstantiateFleetModel("Mars Global Surveyor.glb", "MS_GlobalSurveyor_Root", orbitRoot, new Vector3(100, 260, 50));
+            // Instantiate orbiters under orbital root (metric solar-array span)
+            InstantiateFleetModel("Mars Reconnaissance Orbiter (MRO) (A).glb", "MS_MRO_Root", orbitRoot, new Vector3(-80, 250, 150), 13.6f);
+            InstantiateFleetModel("Mars Atmosphere and Volatile EvolutioN (MAVEN) (A).glb", "MS_MAVEN_Root", orbitRoot, new Vector3(60, 300, -100), 11.4f);
+            InstantiateFleetModel("Mars Odyssey.glb", "MS_Odyssey_Root", orbitRoot, new Vector3(0, 280, 200), 5.7f);
+            InstantiateFleetModel("Mars Global Surveyor.glb", "MS_GlobalSurveyor_Root", orbitRoot, new Vector3(100, 260, 50), 12.0f);
+
+            // Instantiate Phase 1.2 Hero PBR Facility GLBs & Phase 1.3 Rigged Astronaut GLB
+            Transform facRoot = orchestrator.transform.Find("MS_Base_Facilities_HeroGLBs");
+            if (facRoot == null)
+            {
+                var fGo = new GameObject("MS_Base_Facilities_HeroGLBs");
+                fGo.transform.SetParent(orchestrator.transform, false);
+                facRoot = fGo.transform;
+            }
+            InstantiateAssetAtPath("Assets/Models/Facilities/AgriDome_Hero.glb", "MS_Hero_AgriDome", facRoot, new Vector3(-25f, 0f, -4f));
+            InstantiateAssetAtPath("Assets/Models/Facilities/MedBay_Hero.glb", "MS_Hero_MedBay", facRoot, new Vector3(-10f, 0f, 24f));
+            InstantiateAssetAtPath("Assets/Models/Facilities/EDL_Lander_Hero.glb", "MS_Hero_EDL_Lander", facRoot, new Vector3(32f, 0f, -18f));
+            InstantiateAssetAtPath("Assets/Models/Facilities/LaunchPad_Hero.glb", "MS_Hero_LaunchPad", facRoot, new Vector3(36f, 0f, 24f));
+            InstantiateAssetAtPath("Assets/Models/Spacecraft/Astronaut_Rigged.glb", "EVA_NASA_Astronaut_Rigged", surfaceRoot, new Vector3(-3.5f, 0f, -16f));
 
             // Bind Moons & Keplerian Constellation AFTER orbitRoot fleet anchors exist
             var celCtrl = orchestrator.GetComponent<MarsCelestialOrbitController>();
             celCtrl.EnsureMoonsHierarchy();
+            celCtrl.SetSolHour(12.0f); // Position Phobos (850m) & Deimos (1750m) cleanly in Mars sky orbit!
 
             var constCtrl = orchestrator.GetComponent<MarsSatelliteConstellation>();
             constCtrl.EnsureDefaultConstellation();
@@ -398,9 +430,118 @@ namespace MarsSentinel.Editor
                 CaptureCameraFrame(mainCam, new Vector3(4.2f, 2.6f, -5.2f), new Vector3(0f, 1.1f, 0f), Path.Combine(outDir, "unity_overhaul_02_rover_glb.png"));
                 CaptureCameraFrame(mainCam, new Vector3(24f, 16f, -34f), new Vector3(0f, 2f, 14f), Path.Combine(outDir, "unity_overhaul_03_terrain_overview.png"));
 
+                // Verify X-Ray Render Graph Scanner pulse capture at peak visibility
+                MarsXRayScannerRendererFeature.ForcePreviewPulse(new Vector3(0f, 0f, 0f), 0.35f, 0);
+                CaptureCameraFrame(mainCam, new Vector3(-12f, 11f, -22f), new Vector3(0f, 1.2f, 0f), Path.Combine(outDir, "unity_overhaul_04_xray_scanner.png"));
+
                 mainCam.transform.position = origPos;
                 mainCam.transform.rotation = origRot;
-                Debug.Log($"[OverhaulVerify] Saved 3 GPU verification captures to {outDir}");
+                Debug.Log($"[OverhaulVerify] Saved 4 GPU verification captures to {outDir}");
+            }
+
+            // 4. Verify Phase 1-5 Fleet, Facilities, Rigged Astronaut, Render Graph Feature, URP Quality
+            string[] fleetNodes = {
+                "MS_Perseverance_Root", "MS_Ingenuity_Root", "MS_Curiosity_Root", "MS_InSight_Lander_Root",
+                "MS_Opportunity_Root", "MS_Viking_Lander_Root", "MS_MRO_Root", "MS_MAVEN_Root",
+                "MS_Odyssey_Root", "MS_GlobalSurveyor_Root"
+            };
+            int loadedFleet = 0;
+            foreach (string fn in fleetNodes)
+            {
+                GameObject n = GameObject.Find(fn);
+                if (n != null && n.GetComponentsInChildren<Renderer>(true).Length > 0) loadedFleet++;
+            }
+
+            string[] facNodes = { "MS_Hero_AgriDome", "MS_Hero_MedBay", "MS_Hero_EDL_Lander", "MS_Hero_LaunchPad" };
+            int loadedFac = 0;
+            foreach (string fn in facNodes)
+            {
+                GameObject n = GameObject.Find(fn);
+                if (n != null && n.GetComponentsInChildren<Renderer>(true).Length > 0) loadedFac++;
+            }
+
+            GameObject riggedAstro = GameObject.Find("EVA_NASA_Astronaut_Rigged");
+            int riggedBones = riggedAstro != null ? riggedAstro.GetComponentsInChildren<SkinnedMeshRenderer>(true).Length : 0;
+
+            var pcRenderer = AssetDatabase.LoadAssetAtPath<UniversalRendererData>("Assets/Settings/PC_Renderer.asset");
+            bool hasXRayFeature = false;
+            if (pcRenderer != null)
+            {
+                foreach (var rf in pcRenderer.rendererFeatures)
+                {
+                    if (rf is MarsXRayScannerRendererFeature) { hasXRayFeature = true; break; }
+                }
+            }
+
+            Debug.Log($"[Phase1to5Verify] FleetLoaded={loadedFleet}/10 | HeroFacilities={loadedFac}/4 | RiggedAstroSkinnedMeshes={riggedBones} | XRayRenderGraphFeature={hasXRayFeature} | ShadowDist={(urpAsset != null ? urpAsset.shadowDistance : 0f)} | MSAA={(urpAsset != null ? urpAsset.msaaSampleCount : 0)}");
+        }
+
+        private static void EnsureXRayRendererFeatureOnPcRenderer()
+        {
+            string rendererPath = "Assets/Settings/PC_Renderer.asset";
+            var rendererData = AssetDatabase.LoadAssetAtPath<UniversalRendererData>(rendererPath);
+            if (rendererData == null)
+            {
+                Debug.LogWarning($"[MarsSceneBuilder] Could not load {rendererPath} to attach MarsXRayScannerRendererFeature.");
+                return;
+            }
+
+            MarsXRayScannerRendererFeature existing = null;
+            foreach (var f in rendererData.rendererFeatures)
+            {
+                if (f is MarsXRayScannerRendererFeature xf)
+                {
+                    existing = xf;
+                    break;
+                }
+            }
+
+            Shader xrayShader = AssetDatabase.LoadAssetAtPath<Shader>("Assets/Shaders/MarsXRayScanner.shader");
+            if (existing == null)
+            {
+                existing = ScriptableObject.CreateInstance<MarsXRayScannerRendererFeature>();
+                existing.name = "MarsXRayScannerRendererFeature";
+                existing.settings.scannerShader = xrayShader;
+                AssetDatabase.AddObjectToAsset(existing, rendererData);
+
+                var so = new SerializedObject(rendererData);
+                var featuresProp = so.FindProperty("m_RendererFeatures");
+                int idx = featuresProp.arraySize;
+                featuresProp.InsertArrayElementAtIndex(idx);
+                featuresProp.GetArrayElementAtIndex(idx).objectReferenceValue = existing;
+                so.ApplyModifiedPropertiesWithoutUndo();
+
+                EditorUtility.SetDirty(rendererData);
+                AssetDatabase.SaveAssets();
+                Debug.Log("[MarsSceneBuilder] Attached MarsXRayScannerRendererFeature (URP Render Graph) to PC_Renderer.asset.");
+            }
+            else if (existing.settings.scannerShader == null && xrayShader != null)
+            {
+                existing.settings.scannerShader = xrayShader;
+                EditorUtility.SetDirty(existing);
+                EditorUtility.SetDirty(rendererData);
+                AssetDatabase.SaveAssets();
+            }
+        }
+
+        private static void InstantiateAssetAtPath(string assetPath, string nodeName, Transform parent, Vector3 localPos)
+        {
+            Transform existing = parent.Find(nodeName);
+            if (existing != null && existing.GetComponentsInChildren<Renderer>(true).Length > 0) return;
+            if (existing != null) Object.DestroyImmediate(existing.gameObject);
+
+            GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(assetPath);
+            if (prefab != null)
+            {
+                GameObject inst = (GameObject)PrefabUtility.InstantiatePrefab(prefab, parent);
+                inst.name = nodeName;
+                inst.transform.localPosition = localPos;
+                EnsureUrpMaterials(inst);
+                Debug.Log($"[MarsSceneBuilder] Instantiated hero asset '{nodeName}' from '{assetPath}'.");
+            }
+            else
+            {
+                Debug.LogWarning($"[MarsSceneBuilder] Failed to load asset at '{assetPath}'.");
             }
         }
 
@@ -426,7 +567,7 @@ namespace MarsSentinel.Editor
             Object.DestroyImmediate(rt);
         }
 
-        private static void InstantiateFleetModel(string modelFile, string nodeName, Transform parent, Vector3 localPos)
+        private static void InstantiateFleetModel(string modelFile, string nodeName, Transform parent, Vector3 localPos, float targetSizeMeters = 3.0f)
         {
             Transform existing = parent.Find(nodeName);
             string instName = Path.GetFileNameWithoutExtension(modelFile);
@@ -435,21 +576,51 @@ namespace MarsSentinel.Editor
             node.transform.SetParent(parent, false);
             node.transform.localPosition = localPos;
 
-            if (node.transform.Find(instName) != null) return;
-
-            string path = $"Assets/Models/Fleet/{modelFile}";
-            GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(path);
-            if (prefab != null)
+            Transform instTf = node.transform.Find(instName);
+            GameObject inst = instTf != null ? instTf.gameObject : null;
+            if (inst == null)
             {
-                GameObject inst = (GameObject)PrefabUtility.InstantiatePrefab(prefab, node.transform);
-                inst.name = instName;
-                inst.transform.localPosition = Vector3.zero;
-                EnsureUrpMaterials(inst);
-                Debug.Log($"[MarsSceneBuilder] Instantiated 3D model '{instName}' under '{nodeName}'.");
+                string path = $"Assets/Models/Fleet/{modelFile}";
+                GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(path);
+                if (prefab != null)
+                {
+                    inst = (GameObject)PrefabUtility.InstantiatePrefab(prefab, node.transform);
+                    inst.name = instName;
+                    inst.transform.localPosition = Vector3.zero;
+                    EnsureUrpMaterials(inst);
+                    Debug.Log($"[MarsSceneBuilder] Instantiated 3D model '{instName}' under '{nodeName}'.");
+                }
+                else
+                {
+                    Debug.LogWarning($"[MarsSceneBuilder] Failed to load GameObject prefab at '{path}'.");
+                    return;
+                }
             }
-            else
+
+            // Normalize every NASA fleet GLB cleanly to real metric scale & ground bottom flush to local Y=0
+            if (inst != null && targetSizeMeters > 0.1f)
             {
-                Debug.LogWarning($"[MarsSceneBuilder] Failed to load GameObject prefab at '{path}'.");
+                inst.transform.localScale = Vector3.one;
+                inst.transform.localPosition = Vector3.zero;
+                var rends = inst.GetComponentsInChildren<Renderer>(true);
+                if (rends.Length > 0)
+                {
+                    Bounds b = rends[0].bounds;
+                    for (int i = 1; i < rends.Length; i++) b.Encapsulate(rends[i].bounds);
+                    float maxDim = Mathf.Max(b.size.x, Mathf.Max(b.size.y, b.size.z));
+                    if (maxDim > 0.001f)
+                    {
+                        float s = targetSizeMeters / maxDim;
+                        inst.transform.localScale = Vector3.one * s;
+                        Bounds b2 = rends[0].bounds;
+                        for (int i = 1; i < rends.Length; i++) b2.Encapsulate(rends[i].bounds);
+                        Vector3 worldDelta = new Vector3(
+                            node.transform.position.x - b2.center.x,
+                            node.transform.position.y - b2.min.y,
+                            node.transform.position.z - b2.center.z);
+                        inst.transform.position += worldDelta;
+                    }
+                }
             }
         }
 

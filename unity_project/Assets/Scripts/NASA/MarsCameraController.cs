@@ -61,6 +61,24 @@ namespace MarsSentinel.NASA
         private void Update()
         {
             HandleInput();
+            UpdateStormTurbulence();
+        }
+
+        private void UpdateStormTurbulence()
+        {
+            if (cameras == null) return;
+            float tau = MarsSceneManager.Instance != null ? MarsSceneManager.Instance.DustOpticalDepthTau : 0.45f;
+            float stormAmp = Mathf.Clamp01((tau - 0.85f) / 1.95f) * 0.35f;
+            for (int i = 0; i < cameras.Length; i++)
+            {
+                if (cameras[i] == null) continue;
+                var noise = cameras[i].GetComponent<CinemachineBasicMultiChannelPerlin>();
+                if (noise != null)
+                {
+                    noise.AmplitudeGain = stormAmp;
+                    noise.FrequencyGain = 1.2f + stormAmp * 2.5f;
+                }
+            }
         }
 
         private void EnsureCinemachineBrain()
@@ -148,6 +166,11 @@ namespace MarsSentinel.NASA
 
             CinemachineCamera cam = go.GetComponent<CinemachineCamera>();
             if (cam == null) cam = go.AddComponent<CinemachineCamera>();
+
+            var perlin = go.GetComponent<CinemachineBasicMultiChannelPerlin>();
+            if (perlin == null) perlin = go.AddComponent<CinemachineBasicMultiChannelPerlin>();
+            perlin.AmplitudeGain = 0f;
+            perlin.FrequencyGain = 1.2f;
 
             cam.Priority = inactivePriority;
             return cam;

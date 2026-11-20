@@ -59,6 +59,16 @@ namespace MarsSentinel.NASA
             }
 
             transform.localScale = terrainScale;
+
+            // Ensure deterministic non-convex static MeshCollider for accurate 3D PhysX grounding & raycasts
+            if (meshFilter.sharedMesh != null)
+            {
+                MeshCollider mc = GetComponent<MeshCollider>();
+                if (mc == null) mc = gameObject.AddComponent<MeshCollider>();
+                mc.convex = false;
+                mc.cookingOptions = MeshColliderCookingOptions.EnableMeshCleaning | MeshColliderCookingOptions.WeldColocatedVertices;
+                mc.sharedMesh = meshFilter.sharedMesh;
+            }
         }
 
         private void SetupMaterial()

@@ -153,9 +153,21 @@ namespace MarsSentinel.NASA
                 return;
             }
 
-            // [X] always runs an instant Omni-Probe Planetary X-Ray scan right under player or crosshair!
+            // [X] always runs an instant Omni-Probe Planetary X-Ray scan + URP Render Graph pulse wave!
             if (kb != null && kb.xKey.wasPressedThisFrame)
             {
+                Vector3 scanOrigin = MarsAstronautController.Instance != null
+                    ? MarsAstronautController.Instance.transform.position
+                    : (Camera.main != null ? Camera.main.transform.position : Vector3.zero);
+                bool shift = kb.leftShiftKey.isPressed || kb.rightShiftKey.isPressed;
+                if (shift)
+                {
+                    MarsXRayScannerRendererFeature.TogglePersistentOverlay(scanOrigin);
+                }
+                else
+                {
+                    MarsXRayScannerRendererFeature.CycleScanMode(scanOrigin);
+                }
                 InspectPointUnderPlayer();
                 return;
             }

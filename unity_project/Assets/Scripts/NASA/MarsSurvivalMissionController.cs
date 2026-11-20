@@ -275,7 +275,28 @@ namespace MarsSentinel.NASA
                 MissionScore += 500;
                 MarsCinematicVfxAndPost.Instance?.EmitScienceBurst(playerPos, 28);
                 ShowAlert($"JEZERO MISSION COMPLETE! SCORE: {MissionScore} (RANK {GetMissionRank()}) · FREE EXPLORE ACTIVE", 6.5f);
+                MarsGameShellUI.Instance?.TriggerMissionEnded(MissionScore, CumulativeRadMsv, CollectedSamplesCount);
             }
+        }
+
+        public void ResetMission()
+        {
+            OxygenPercent = 100f;
+            PowerPercent = 96f;
+            RadiationTraumaPercent = 4f;
+            CumulativeRadMsv = 0.12f;
+            MissionScore = 0;
+            CollectedSamplesCount = 0;
+            IsMedEvacActive = false;
+            IsCampaignComplete = false;
+            medEvacTimer = 0f;
+            for (int i = 0; i < sampleSites.Count; i++)
+            {
+                sampleSites[i].collected = false;
+                if (sampleSites[i].beaconRoot != null) sampleSites[i].beaconRoot.SetActive(true);
+            }
+            ShowAlert("MISSION RESET · COLLECT 3 JEZERO CORE SAMPLES", 3.5f);
+            MarsSceneManager.Instance?.RefreshLiveExplorationHud();
         }
 
         private void UpdateObjectiveTracker()

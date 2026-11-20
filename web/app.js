@@ -549,10 +549,13 @@
     return g;
   }
 
-  surfaceGroup.add(createAstronaut(4.2, 11.5, 0xd94814));
-  surfaceGroup.add(createAstronaut(-7.8, 10.2, 0xd94814));
-  surfaceGroup.add(createAstronaut(-10.5, 6.2, 0x2b5b84));
-  surfaceGroup.add(createAstronaut(-12.2, 6.4, 0x2b5b84));
+  const astronautGroups = [
+    createAstronaut(4.2, 11.5, 0xd94814),
+    createAstronaut(-7.8, 10.2, 0xd94814),
+    createAstronaut(-10.5, 6.2, 0x2b5b84),
+    createAstronaut(-12.2, 6.4, 0x2b5b84)
+  ];
+  astronautGroups.forEach(a => surfaceGroup.add(a));
 
   // ==============================================================================
   // FEATURE 21: INGENUITY MARS HELICOPTER (WRIGHT BROTHERS FIELD AIRFIELD)
@@ -1991,6 +1994,9 @@
     routeMeshes: routeMeshes,
     routesPts: { safest: safestPts, shortest: shortestPts, science: sciencePts },
     roverGroup: roverGroup,
+    habGroup: habGroup,
+    agriGroup: agriGroup,
+    astronautGroups: astronautGroups,
     ingenuity: ingenuity,
     webOutcropEntries: webOutcropEntries,
     clickableTargets: clickableTargets,

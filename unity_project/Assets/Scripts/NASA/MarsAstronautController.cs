@@ -59,6 +59,15 @@ namespace MarsSentinel.NASA
         private Vector3 baseVisualScale = Vector3.one;
         private Vector3 baseVisualLocalPos = Vector3.zero;
 
+        // Skeletal bone handles for rigged Astronaut_Rigged.glb (Phase 1.3)
+        private Transform boneSpine, boneChest, boneHead;
+        private Transform boneUpperArmL, boneLowerArmL, boneUpperArmR, boneLowerArmR;
+        private Transform boneUpperLegL, boneLowerLegL, boneUpperLegR, boneLowerLegR;
+        private Quaternion restSpine, restChest, restHead;
+        private Quaternion restUpperArmL, restLowerArmL, restUpperArmR, restLowerArmR;
+        private Quaternion restUpperLegL, restLowerLegL, restUpperLegR, restLowerLegR;
+        public bool HasSkeletalRig { get; private set; }
+
         private void Awake()
         {
             if (Instance != null && Instance != this)
@@ -91,16 +100,27 @@ namespace MarsSentinel.NASA
             charCtrl.slopeLimit = 50f;
             charCtrl.skinWidth = 0.04f;
 
-            // Use official NASA Astronaut GLB if mounted in scene (or via AssetDatabase in Editor); fallback cleanly otherwise
-            Transform glbSuit = transform.Find("EVA_NASA_Astronaut_GLB");
+            // Prefer rigged skeletal Astronaut_Rigged.glb (Phase 1.3), fallback to Astronaut.glb
+            Transform glbSuit = transform.Find("EVA_NASA_Astronaut_Rigged") ?? transform.Find("EVA_NASA_Astronaut_GLB");
+            if (glbSuit == null)
+            {
+                GameObject preMounted = GameObject.Find("EVA_NASA_Astronaut_Rigged");
+                if (preMounted != null)
+                {
+                    preMounted.transform.SetParent(transform, false);
+                    glbSuit = preMounted.transform;
+                }
+            }
 #if UNITY_EDITOR
             if (glbSuit == null)
             {
-                GameObject astroAsset = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Models/Spacecraft/Astronaut.glb");
+                GameObject astroAsset =
+                    UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Models/Spacecraft/Astronaut_Rigged.glb")
+                    ?? UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Models/Spacecraft/Astronaut.glb");
                 if (astroAsset != null)
                 {
                     GameObject glbGo = Instantiate(astroAsset, transform);
-                    glbGo.name = "EVA_NASA_Astronaut_GLB";
+                    glbGo.name = "EVA_NASA_Astronaut_Rigged";
                     glbSuit = glbGo.transform;
                 }
             }
@@ -183,6 +203,7 @@ namespace MarsSentinel.NASA
                 headlamp.enabled = headlampOn;
 
                 visualRoot = glbSuit;
+                BindSkeletalBones(glbSuit);
                 headGroup = null;
                 leftArmPivot = null;
                 rightArmPivot = null;
@@ -617,6 +638,7 @@ namespace MarsSentinel.NASA
                         targetVis.localPosition = Vector3.Lerp(targetVis.localPosition, baseVisualLocalPos + new Vector3(0f, breatheY, 0f), Time.deltaTime * 7f);
                         targetVis.localRotation = Quaternion.Slerp(targetVis.localRotation, Quaternion.Euler(0.8f * Mathf.Sin(Time.time * 1.9f), 0f, swayZ), Time.deltaTime * 7f);
                     }
+                    DriveSkeletalBones(speed, sprinting, grounded);
                 }
                 return;
             }
@@ -695,6 +717,74 @@ namespace MarsSentinel.NASA
             m.EnableKeyword("_EMISSION");
             if (m.HasProperty("_EmissionColor")) m.SetColor("_EmissionColor", emission);
             return m;
+        }
+
+        private void BindSkeletalBones(Transform root)
+        {
+            if (root == null) return;
+            Transform FindBone(string boneName)
+            {
+                foreach (Transform t in root.GetComponentsInChildren<Transform>(true))
+                {
+                    if (t.name == boneName) return t;
+                }
+                return null;
+            }
+
+            boneSpine = FindBone("Spine");
+            boneChest = FindBone("Chest");
+            boneHead = FindBone("Head");
+            boneUpperArmL = FindBone("UpperArm.L");
+            boneLowerArmL = FindBone("LowerArm.L");
+            boneUpperArmR = FindBone("UpperArm.R");
+            boneLowerArmR = FindBone("LowerArm.R");
+            boneUpperLegL = FindBone("UpperLeg.L");
+            boneLowerLegL = FindBone("LowerLeg.L");
+            boneUpperLegR = FindBone("UpperLeg.R");
+            boneLowerLegR = FindBone("LowerLeg.R");
+
+            if (boneSpine != null) restSpine = boneSpine.localRotation;
+            if (boneChest != null) restChest = boneChest.localRotation;
+            if (boneHead != null) restHead = boneHead.localRotation;
+            if (boneUpperArmL != null) restUpperArmL = boneUpperArmL.localRotation;
+            if (boneLowerArmL != null) restLowerArmL = boneLowerArmL.localRotation;
+            if (boneUpperArmR != null) restUpperArmR = boneUpperArmR.localRotation;
+            if (boneLowerArmR != null) restLowerArmR = boneLowerArmR.localRotation;
+            if (boneUpperLegL != null) restUpperLegL = boneUpperLegL.localRotation;
+            if (boneLowerLegL != null) restLowerLegL = boneLowerLegL.localRotation;
+            if (boneUpperLegR != null) restUpperLegR = boneUpperLegR.localRotation;
+            if (boneLowerLegR != null) restLowerLegR = boneLowerLegR.localRotation;
+
+            HasSkeletalRig = boneUpperLegL != null && boneUpperLegR != null && boneUpperArmL != null && boneUpperArmR != null;
+        }
+
+        private void DriveSkeletalBones(float speed, bool sprinting, bool grounded)
+        {
+            if (!HasSkeletalRig) return;
+            float dt = Time.deltaTime;
+            float legAmp = !grounded ? 26f : (speed > 0.25f ? (sprinting ? 34f : 22f) : 0f);
+            float armAmp = !grounded ? 20f : (speed > 0.25f ? (sprinting ? 30f : 18f) : 2.5f);
+            float phase = speed > 0.25f ? walkCycle : Time.time * 1.8f;
+
+            float sinP = Mathf.Sin(phase);
+            float cosP = Mathf.Cos(phase);
+            float legL = grounded ? sinP * legAmp : 24f;
+            float legR = grounded ? -sinP * legAmp : 12f;
+            float kneeL = grounded ? Mathf.Max(0f, -cosP) * (sprinting ? 38f : 22f) : 38f;
+            float kneeR = grounded ? Mathf.Max(0f, cosP) * (sprinting ? 38f : 22f) : 28f;
+            float armL = grounded ? -sinP * armAmp : -18f;
+            float armR = grounded ? sinP * armAmp : -18f;
+
+            if (boneUpperLegL != null) boneUpperLegL.localRotation = Quaternion.Slerp(boneUpperLegL.localRotation, restUpperLegL * Quaternion.Euler(legL, 0f, 0f), dt * 14f);
+            if (boneUpperLegR != null) boneUpperLegR.localRotation = Quaternion.Slerp(boneUpperLegR.localRotation, restUpperLegR * Quaternion.Euler(legR, 0f, 0f), dt * 14f);
+            if (boneLowerLegL != null) boneLowerLegL.localRotation = Quaternion.Slerp(boneLowerLegL.localRotation, restLowerLegL * Quaternion.Euler(-kneeL, 0f, 0f), dt * 14f);
+            if (boneLowerLegR != null) boneLowerLegR.localRotation = Quaternion.Slerp(boneLowerLegR.localRotation, restLowerLegR * Quaternion.Euler(-kneeR, 0f, 0f), dt * 14f);
+            if (boneUpperArmL != null) boneUpperArmL.localRotation = Quaternion.Slerp(boneUpperArmL.localRotation, restUpperArmL * Quaternion.Euler(armL, 0f, 0f), dt * 12f);
+            if (boneUpperArmR != null) boneUpperArmR.localRotation = Quaternion.Slerp(boneUpperArmR.localRotation, restUpperArmR * Quaternion.Euler(armR, 0f, 0f), dt * 12f);
+            if (boneLowerArmL != null) boneLowerArmL.localRotation = Quaternion.Slerp(boneLowerArmL.localRotation, restLowerArmL * Quaternion.Euler(Mathf.Abs(armL) * 0.55f, 0f, 0f), dt * 12f);
+            if (boneLowerArmR != null) boneLowerArmR.localRotation = Quaternion.Slerp(boneLowerArmR.localRotation, restLowerArmR * Quaternion.Euler(Mathf.Abs(armR) * 0.55f, 0f, 0f), dt * 12f);
+            if (boneSpine != null) boneSpine.localRotation = Quaternion.Slerp(boneSpine.localRotation, restSpine * Quaternion.Euler(speed > 0.25f ? (sprinting ? 10f : 4f) : 0f, -sinP * (speed > 0.25f ? 6f : 0f), 0f), dt * 10f);
+            if (boneHead != null) boneHead.localRotation = Quaternion.Slerp(boneHead.localRotation, restHead * Quaternion.Euler(Mathf.Sin(Time.time * 1.1f) * 2.5f, Mathf.Sin(Time.time * 0.65f) * (speed < 0.2f ? 7f : 2f), 0f), dt * 8f);
         }
     }
 }

@@ -114,7 +114,62 @@ namespace MarsSentinel.NASA
             BuildHabitatPadAndWrapHdu();
             BuildEdlLiftingBodyLander();
             BuildMarsAscentRocketPad();
+            AttachHeroFacilityGlbUpgrades();
             AttachFleetInspectables();
+        }
+
+        /// <summary>
+        /// Phase 1.2: Replaces procedural primitive meshes on AgriDome, MedBay, EDL Lander,
+        /// and Launch Pad with Blender-authored PBR Hero GLBs while preserving all shelter zones,
+        /// walkways, quickTargets, and MarsInspectableTarget scientific metadata.
+        /// </summary>
+        private void AttachHeroFacilityGlbUpgrades()
+        {
+            MountHeroFacilityGlb("MS_Hero_AgriDome", "MS_Agriculture_Lab", POS_AGRICULTURE, 1.12f);
+            MountHeroFacilityGlb("MS_Hero_MedBay", "MS_Medical_Radiation_Bay", POS_MEDICAL_BAY, 1.0f);
+            MountHeroFacilityGlb("MS_Hero_EDL_Lander", "MS_EDL_LiftingBody_Lander", POS_EDL_AIRCRAFT, 1.05f);
+            MountHeroFacilityGlb("MS_Hero_LaunchPad", "MS_Mars_Ascent_Launch_Pad", POS_ROCKET_PAD, 1.0f);
+        }
+
+        private void MountHeroFacilityGlb(string heroGlbNodeName, string legacyRootName, Vector2 xz, float scale)
+        {
+            GameObject heroNode = GameObject.Find(heroGlbNodeName);
+            if (heroNode == null || heroNode.GetComponentsInChildren<Renderer>(true).Length == 0)
+            {
+                return;
+            }
+
+            float y = MarsVisualRealismPolish.SampleTerrainElevation(xz.x, xz.y);
+            GameObject legacyRoot = GameObject.Find(legacyRootName);
+            if (legacyRoot != null)
+            {
+                // Hide boxy primitive child renderers (keep inspectable targets & walkable floor colliders intact)
+                foreach (Renderer r in legacyRoot.GetComponentsInChildren<Renderer>(true))
+                {
+                    if (r.transform.IsChildOf(heroNode.transform)) continue;
+                    string rn = r.gameObject.name;
+                    if (rn.Contains("Inspect") || rn.Contains("Pylon") || rn.Contains("Rocket") || rn.Contains("Ares") || rn.Contains("Launcher"))
+                        continue;
+                    r.enabled = false;
+                }
+                heroNode.transform.SetParent(legacyRoot.transform, false);
+                heroNode.transform.localPosition = Vector3.zero;
+            }
+            else
+            {
+                heroNode.transform.position = new Vector3(xz.x, y, xz.y);
+            }
+
+            heroNode.transform.localScale = Vector3.one * scale;
+            // Ground bottom cleanly to local Y = 0
+            Renderer[] rends = heroNode.GetComponentsInChildren<Renderer>(true);
+            if (rends.Length > 0)
+            {
+                Bounds b = rends[0].bounds;
+                for (int i = 1; i < rends.Length; i++) b.Encapsulate(rends[i].bounds);
+                float targetY = legacyRoot != null ? legacyRoot.transform.position.y : y;
+                heroNode.transform.position += new Vector3(0f, targetY - b.min.y, 0f);
+            }
         }
 
         public void BuildOutcropsFromDatasets()
