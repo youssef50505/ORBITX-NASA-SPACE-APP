@@ -17,10 +17,10 @@
 2. [Chapter 1 — NASA Scientific Data Pipeline, HiRISE Photogrammetry & USGS Geology (6 Figures)](#chapter-1--nasa-scientific-data-pipeline-hirise-photogrammetry--usgs-geology)
 3. [Chapter 2 — Authentic NASA Perseverance Field Outcrops & Astrobiology Targets (6 Figures)](#chapter-2--authentic-nasa-perseverance-field-outcrops--astrobiology-targets)
 4. [Chapter 3 — Module 1: Blender 5.2 Orbital Astrodynamics & 3D Production Master (9 Figures)](#chapter-3--module-1-blender-52-orbital-astrodynamics--3d-production-master)
-5. [Chapter 4 — Module 2: Interactive WebGL 3D Digital Twin & "Google Earth for Mars" (3 Figures)](#chapter-4--module-2-interactive-webgl-3d-digital-twin--google-earth-for-mars)
+5. [Chapter 4 — Module 2: Interactive WebGL 3D Digital Twin & "Google Earth for Mars" (12 Figures)](#chapter-4--module-2-interactive-webgl-3d-digital-twin--google-earth-for-mars)
 6. [Chapter 5 — Module 3: Autonomous CTX A* Pathfinding, Solar Optics & RF Viewshed (`nav-module`) (1 Figure)](#chapter-5--module-3-autonomous-ctx-a-pathfinding-solar-optics--rf-viewshed-nav-module)
-7. [Chapter 6 — Module 4: Unity 6 (`6000.6.9f1`) Playable 0.38g Survival Game & Subsurface Radar (2 Figures)](#chapter-6--module-4-unity-6-600069f1-playable-038g-survival-game--subsurface-radar)
-8. [Chapter 7 — Module 5: Unreal Engine 5.8 DX12 Lumen GI & Nanite Planetary Simulation (1 Figure)](#chapter-7--module-5-unreal-engine-58-dx12-lumen-gi--nanite-planetary-simulation)
+7. [Chapter 6 — Module 4: Unity 6 (`6000.6.9f1`) Playable 0.38g Survival Game & Subsurface Radar (2 Figures + Complete 30-Script C# Reference)](#chapter-6--module-4-unity-6-600069f1-playable-038g-survival-game--subsurface-radar)
+8. [Chapter 7 — Module 5: Unreal Engine 5.8 DX12 Lumen GI & Nanite Planetary Simulation (1 Figure + Complete C++/Python Reference)](#chapter-7--module-5-unreal-engine-58-dx12-lumen-gi--nanite-planetary-simulation)
 9. [Chapter 8 — Authentic NASA 3D Spacecraft & Rover Fleet Catalog (7 Figures)](#chapter-8--authentic-nasa-3d-spacecraft--rover-fleet-catalog)
 10. [Chapter 9 — Unified 5-Chapter Interactive Story Campaign ("Sol 1042: Echoes of Jezero")](#chapter-9--unified-5-chapter-interactive-story-campaign-sol-1042-echoes-of-jezero)
 11. [Chapter 10 — Module 6: Automated Verification, Cryptographic Invariants & Quick-Start Guide](#chapter-10--module-6-automated-verification-cryptographic-invariants--quick-start-guide)
@@ -195,6 +195,42 @@ The WebGL Digital Twin brings the entire Jezero Crater simulation directly into 
 ![Figure 4.3 — WebGL Bilingual Arabic RTL](showcase/web_arabic_rtl.png)
 - **Explanation:** Pressing the top-right **`عربي`** toggle switches the entire DOM to native Right-to-Left (`dir="rtl"`) with Cairo Arabic typography — translating the top camera switcher (`القاعدة السطحية`, `المدار الكوكبي`, `قبة الزراعة`, `المسكن الفضائي`, `الخريطة التكتيكية`), planetary bookmarks (`فوهة جيزيرو`, `فوهة غيل`, `جبل أوليمبوس مونس`, `وادي مارينيريس`), bottom command dock, and all 5 Story Mode chapters (`الفصل 1 / 5 · الوصول إلى جيزيرو`).
 
+### Figure 4.4 — WebGL Planetary Orbit Mode: Mars Globe, Sun, Phobos, Deimos & Relay Rings (`[2 Orbit]`)
+![Figure 4.4 — WebGL Planetary Orbit Globe](showcase/doc_web_orbit_globe.png)
+- **Explanation:** Interactive planetary orbit view (`[2 Orbit]`) rendering the textured Mars globe with atmospheric Rayleigh/Mie halo shaders, the blazing Space Sun in the upper sky, irregular cratered asteroid meshes for **Phobos (`9,376 km`, Stickney Crater)** and **Deimos (`23,463 km`)**, and sleek glowing orbital wake tracks for `MRO`, `MAVEN`, `Mars Odyssey`, and `Mars Global Surveyor`.
+
+### Figure 4.5 — "Google Earth for Mars" Planetary Bookmark: Olympus Mons (`+21,229 m` MOLA)
+![Figure 4.5 — WebGL Olympus Mons Planetary Bookmark](showcase/doc_web_olympus_mons.png)
+- **Explanation:** Clicking **`Olympus Mons`** in the top Mars Sites bar smoothly slews the orbital camera to `18.65°N, 226.2°E` (`+21,229 m` MOLA), demonstrating our scalable **"Google Earth for Mars"** architecture that transitions seamlessly between global planetary landmarks (`Jezero Crater`, `Gale Crater`, `Olympus Mons`, `Valles Marineris`) and meter-scale surface bases.
+
+### Figure 4.6 — WebGL Geodesic Hydroponics Agri-Dome Close-Up (`[3 Agriculture]`)
+![Figure 4.6 — WebGL Agriculture Dome Close-Up](showcase/doc_web_agriculture.png)
+- **Explanation:** Close-up surface camera (`[3 Agriculture]`) framing the PBR `agridome_web.glb` Geodesic Hydroponics Dome connected via pressurized airlock to the Ribbed Medical Bay (`medbay_web.glb`). Inside the transparent curved glass struts, multi-tier green hydroponic crop racks surround the central cyan water-recycling column (`98.4%` closed-loop efficiency).
+
+### Figure 4.7 — WebGL Bird's-Eye Tactical Operations Map (`[6 Tactical Map]`)
+![Figure 4.7 — WebGL Tactical Map View](showcase/doc_web_tactical_map.png)
+- **Explanation:** Top-down orthographic-style tactical view (`[6 Tactical Map]`) displaying the complete Jezero base layout from above: the circular illuminated Mars Ascent Vehicle **Launch Pad** (left), **NASA HDU Habitat**, **Ribbed Medical Bay**, **Geodesic Agri-Dome** (right), **Perseverance Rover** at the base trailhead (bottom center), faceted volcanic basalt outcrops, and the diverging **Shortest** (yellow) vs. **Safest** (cyan) A\* traverse corridors.
+
+### Figure 4.8 — Live 3D Solar Irradiance Heatmap Projection (`Solar 3D`)
+![Figure 4.8 — WebGL Live Solar 3D Heatmap](showcase/doc_web_solar_3d_heatmap.png)
+- **Explanation:** Activating **`Solar 3D`** in the 3D Terrain Map bar computes real-time solar irradiance across the Jezero elevation mesh and drapes the normalized flux distribution directly onto the 3D surface geometry so mission planners can identify peak photovoltaic siting zones and crater-rim shadow pockets.
+
+### Figure 4.9 — Live 3D UHF Radio Line-of-Sight Viewshed (`RF LOS 3D`)
+![Figure 4.9 — WebGL Live RF LOS 3D Viewshed](showcase/doc_web_rf_los_3d_heatmap.png)
+- **Explanation:** Activating **`RF LOS 3D`** projects terrain-occluded UHF radio visibility directly onto the 3D crater floor and distant delta rim — highlighting clear line-of-sight communication corridors around the base antenna while shading occluded crater-wall radio blackout zones in crimson along the far horizon.
+
+### Figure 4.10 — Omni-Probe Planetary X-Ray & 0–15 m RIMFAX Subsurface Scanner
+![Figure 4.10 — WebGL Omni-Probe Subsurface Scanner](showcase/doc_web_omni_probe.png)
+- **Explanation:** Opening **`Omni-Probe`** launches our interactive geophysical probe that combines HiRISE 4 m slope, USGS SIM 3292 stratigraphy, RIMFAX `0–15 m` subsurface radar, and PIXL oxide chemistry — allowing users to click ANY point on the terrain, *Cacao Meteorite*, *Belva Crater Rim*, *Sun*, *Phobos*, or *Earth / DSN Link* to inspect layered subsurface horizons (`0.0–1.8 m` Perchlorate Regolith · `1.8–6.5 m` Lacustrine Delta Clay & Sulfate Sandstone · `6.5–15 m` Deep Basalt Basement & Subsurface Brine/Ice Check).
+
+### Figure 4.11 — Martian Twilight & Starfield Diurnal Cycle (`19:10 LMST`)
+![Figure 4.11 — WebGL Martian Twilight & Night Mode](showcase/doc_web_night_mode.png)
+- **Explanation:** Cycling the top-bar diurnal clock to **`TWILIGHT (19:10 LMST)`** transitions the sky dome into deep Martian dusk with stars and Phobos emerging above the crater rim, while activating the base camp's perimeter floodlights around the **Launch Pad**, **EDL Lander** (`edl_lander_web.glb`), **Perseverance**, **NASA HDU**, and EVA Astronauts.
+
+### Figure 4.12 — Cryptographic Data Trust & NASA Provenance Integrity Modal
+![Figure 4.12 — WebGL Data Provenance & SHA-256 Integrity Modal](showcase/doc_web_provenance_modal.png)
+- **Explanation:** Clicking **`Provenance`** opens the live Data Trust audit modal separating **`MEASURED NASA DATA`** (HiRISE 4 m DTM `1,132,096` vertices, Viking/Perseverance calibrated color, JPL Mars Trek, USGS SIM 3292, Curiosity/Perseverance official datasets) from **`ALGORITHMICALLY DERIVED`** A\* routes and **`ENGINEERING SIMULATION`** habitats, complete with live **`SHA-256 VERIFIED`** cryptographic digests (`jez_distinct_routes.json`, `sample_tubes_m20.geojson`, `ingenuity_flights_m20.geojson`).
+
 ---
 
 ## Chapter 5 — Module 3: Autonomous CTX A\* Pathfinding, Solar Optics & RF Viewshed (`nav-module`)
@@ -245,6 +281,24 @@ Built on **Unity 6 (`6000.6.9f1`)** with Universal Render Pipeline (`URP 17.6`),
 ### Figure 6.2 — Unity 6 Custom URP 17.6 Render Graph `[X]` RIMFAX Subsurface X-Ray Scanner
 ![Figure 6.2 — Unity 6 Live URP X-Ray Scanner](showcase/unity_game_xray_story.png)
 - **Explanation:** Live GPU capture with **`[X]` RIMFAX Subsurface X-Ray** active during **Chapter 2 (*Cheyava Falls Biosignature*)**, sweeping a glowing cyan wireframe subsurface stratigraphy grid over Jezero Crater while displaying full CTX A\* telemetry, RF signal quality, and solar irradiance on the HUD.
+
+### Complete Unity 6 C# Script Architecture Reference (`unity_project/Assets/Scripts/NASA/`)
+
+| Subsystem | C# Script | Core Engineering Responsibility |
+| :--- | :--- | :--- |
+| **Player & Vehicle Physics** | `MarsAstronautController.cs` | 0.38g EVA movement, 12-bone skeletal rig animation (`BindSkeletalBones`/`DriveSkeletalBones`), footstep dust VFX, camera `SphereCast`. |
+| **Player & Vehicle Physics** | `MarsRoverVehicleController.cs` | Drivable NASA Perseverance rover, 6-point Rocker-Bogie suspension, `WheelSlipPercent`/`TractionFactor`, `>25°` slope cutback, `[R]` A\* autopilot. |
+| **AI & Co-op Companions** | `MarsAutonomousScoutAI.cs` | NavMesh-driven autonomous scout rover `SCOUT-AI-01` patrolling Jezero waypoints with `maxSafeSlopeDeg` avoidance. |
+| **AI & Co-op Companions** | `MarsCoopWingmanSync.cs` | Rigged NASA spacesuit Co-op Wingman `EVA-02 (Dr. Nadia)` following the player with limb swing and `RfVoiceQualityPercent` comms degradation. |
+| **Navigation & Survival** | `MarsCtxNavSolarEngine.cs` | Native C# port of `nav-module` running live `399×378` CTX A\* (`[Q]`), Mars $L_s$ solar optics (`[J]`), RF LOS occlusion & Outpost Site Check. |
+| **Navigation & Survival** | `MarsSurvivalMissionController.cs` | Live `O2`, Battery Power, Radiation drain, HDU shelter recharge, 3 collectible core samples, 3D objective markers & MedEvac respawn. |
+| **Story & Game Shell** | `MarsStoryDirector.cs` | 5-Chapter *"Sol 1042: Echoes of Jezero"* campaign controller, DONKI $\tau = 2.35$ storm triage, MAV Rocket Ignition VFX (`[T]`) & showcase capture. |
+| **Story & Game Shell** | `MarsGameShellUI.cs` | Full game state machine (`Title`, `Playing`, `Paused`, `Ended`), audio pause ducking, and clean menu shell. |
+| **Rendering & Shaders** | `MarsXRayScannerRendererFeature.cs` | Unity 6 URP 17.6 `RecordRenderGraph` + `AddBlitPass` custom fullscreen subsurface RIMFAX radar scanner pass. |
+| **Rendering & Shaders** | `MarsCinematicVfxAndPost.cs` · `MarsVisualRealismPolish.cs` · `MarsVisualRealismEnhancer.cs` | URP Volume bloom/tonemapping/vignette, Martian blowing dust particles, triplanar sand-slope shaders & lighting polish. |
+| **Scene & NASA Data** | `MarsSceneBuilder.cs` · `MarsTerrainManager.cs` · `MarsBaseCampusBuilder.cs` · `MarsBaseFacilitiesBuilder.cs` | Automated Unity Editor scene builder, baked `1,280 m` Jezero `MeshCollider` terrain, 10 Fleet GLBs & 4 PBR Hero Facilities. |
+| **Telemetry, Audio & I18n** | `MarsSceneManager.cs` · `MarsTelemetryController.cs` · `MarsDatasetLoader.cs` · `MarsInteractionSystem.cs` · `MarsAudioManager.cs` · `MarsLocalizationManager.cs` · `MarsMissionPersistence.cs` | Live HUD (`[Y]` Clean/Full toggle), GeoJSON/JSON data loader, spatial audio filters (`AudioLowPassFilter`/`AudioReverbFilter`), English/Arabic localization & Cloud Save persistence. |
+| **Celestial & Animation** | `MarsCelestialOrbitController.cs` · `MarsSatelliteConstellation.cs` · `IngenuityRotorAnimator.cs` · `MarsSimulationAnimator.cs` · `MarsCameraController.cs` · `MarsInspectableTarget.cs` | Phobos/Deimos sky arcs, orbital relay constellation, 2,400 RPM coaxial Ingenuity rotor spin, Cinemachine Perlin camera shake & outcrop inspection. |
 
 ---
 

@@ -11,7 +11,7 @@
 </p>
 
 <p align="center">
-  <a href="DOCUMENTATION.md"><strong>Full Visual Documentation (36 Figures)</strong></a> •
+  <a href="DOCUMENTATION.md"><strong>Full Visual Documentation (45 Figures)</strong></a> •
   <a href="#1-system-architecture--what-we-simulated">Architecture & Simulations</a> •
   <a href="#2-outer-space-astrodynamics--mars-sun-orbital-simulation-blender-52">Orbital Simulation</a> •
   <a href="#3-nocturnal-daylight--bioregenerative-3d-surface-simulation-blender-52">3D Surface & Agriculture</a> •
@@ -159,5 +159,5 @@ ORBITX-NASA-SPACE-APP/
 4. **Full Verification Suite (`122/122 Audit PASS` · `253/253 Tests OK`):** Run `python scripts/audit_workspace_integrity.py --json` and `python -m unittest discover -s tests`.
 
 ### Canonical Documentation & NASA Data Compliance
-- **Documentation:** [`DOCUMENTATION.md`](DOCUMENTATION.md) (Full 36-Figure Visual & Technical Manual) · [`docs/SYSTEM_GUIDE.md`](docs/SYSTEM_GUIDE.md) · [`docs/AGENTS.md`](docs/AGENTS.md) · [`unreal_project/README.md`](unreal_project/README.md) · `presentation/ORBITX_Deck.pdf` · `presentation/Mars_Sentinel_OrbitX00.pptx`.
+- **Documentation:** [`DOCUMENTATION.md`](DOCUMENTATION.md) (Full 45-Figure Visual & Technical Manual) · [`docs/SYSTEM_GUIDE.md`](docs/SYSTEM_GUIDE.md) · [`docs/AGENTS.md`](docs/AGENTS.md) · [`unreal_project/README.md`](unreal_project/README.md) · `presentation/ORBITX_Deck.pdf` · `presentation/Mars_Sentinel_OrbitX00.pptx`.
 - **Protected Baselines:** `archive/Mars_backup_before_quality_pass.blend`, `data/JEZ_hirise_soc_006_DTM_1m.tif` (DOI `10.5066/P9REJ9JN`), and `data/JEZ_ctx_B_soc_008_DTM_20m.tif` (DOI `10.5066/P906QQT8`). All public NASA and USGS planetary datasets comply with `14 CFR 1221`.
