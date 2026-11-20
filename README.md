@@ -153,7 +153,7 @@ ORBITX-NASA-SPACE-APP/
 
 ### Quick-Start Commands
 1. **WebGL Digital Twin & `nav-module`:** Run `python -m http.server 8080` and open `http://localhost:8080/web/index.html` (or CLI: `python nav-module/nav.py --mode both`).
-2. **Unity 6 Playable Survival Game:** Launch `unity_project/Builds/Windows/MarsSentinel.exe` (`WASD` move · `E` board Perseverance · `R` A\* Autopilot · `X` RIMFAX X-Ray · `Q` CTX A\* · `T` Story / Rocket Launch · `L` EN/AR).
+2. **Unity 6 Playable Survival Game:** Launch `unity_project/Builds/Windows/Play_MarsSentinel.bat` (or `MarsSentinel.exe`) (`WASD` move · `E` board Perseverance · `R` A\* Autopilot · `X` RIMFAX X-Ray · `Q` CTX A\* · `T` Story / Rocket Launch · `L` EN/AR).
 3. **Unreal Engine 5.8 & Blender 5.2:** Open `unreal_project/MarsSentinelUE.uproject` in UE 5.8, or open `MARS_SENTINEL_HERO_PRODUCTION.blend` in Blender 5.2 with [`tools/mars_front_view.py`](tools/mars_front_view.py).
 4. **Full Verification Suite (`122/122 Audit PASS` · `253/253 Tests OK`):** Run `python scripts/audit_workspace_integrity.py --json` and `python -m unittest discover -s tests`.
 
