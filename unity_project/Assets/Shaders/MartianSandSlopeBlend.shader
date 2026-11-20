@@ -126,7 +126,8 @@ Shader "MarsSentinel/MartianSandSlopeBlend"
                 float macroNoise = Fbm3(pos.xz * 0.035);
                 float gritNoise = Fbm3(pos.xz * 0.55);
                 float pebbleNoise = ValueNoise(pos.xz * 3.8);
-                float slope = saturate(dot(normalWS, float3(0.0, 1.0, 0.0)) + (macroNoise - 0.5) * 0.08);
+                float baseSlope = saturate(dot(normalWS, float3(0.0, 1.0, 0.0)));
+                float slope = saturate(baseSlope + (macroNoise - 0.5) * 0.08);
                 float blend = smoothstep(_SlopeThreshold - _SlopeBlendWidth, _SlopeThreshold + _SlopeBlendWidth, slope);
 
                 // 2. Curved wind-sculpted aeolian sand ripples + fine basalt grit micro-normals
@@ -137,7 +138,8 @@ Shader "MarsSentinel/MartianSandSlopeBlend"
                 float gritDx = (gritNoise - 0.5) * 0.30 + (pebbleNoise - 0.5) * 0.18 * detailFade;
                 float gritDz = (ValueNoise(pos.xz * 0.55 + float2(4.7, 9.2)) - 0.5) * 0.30 + (pebbleNoise - 0.5) * 0.18 * detailFade;
 
-                float3 perturbedNormal = normalize(normalWS + float3(rippleDx + gritDx, 0.0, rippleDz + gritDz));
+                float3 rippleOffset = float3(rippleDx + gritDx, 0.0, rippleDz + gritDz);
+                float3 perturbedNormal = normalize(normalWS + rippleOffset);
 
                 // 3. Multi-tone Jezero regolith: ochre dust drifts, hematite dark patches & basaltic strata
                 float3 dustTint = _SandColor.rgb * float3(1.12, 1.02, 0.90);

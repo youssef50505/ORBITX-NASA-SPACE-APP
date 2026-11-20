@@ -21,7 +21,10 @@ MARS SENTINEL is an EVA tactical planning and survival platform scaling toward a
 - 🌐 **Web Platform:** [`web/index.html`](web/index.html)
 - 🎮 **Blender Controller:** [`tools/mars_front_view.py`](tools/mars_front_view.py)
 - 🧭 **Navigation Module:** [`nav-module/nav.py`](nav-module/nav.py)
-- 📊 **Presentation:** [`presentation/ORBITX_Deck.pdf`](presentation/ORBITX_Deck.pdf) · [`Mars_Sentinel_OrbitX00.pptx`](Mars_Sentinel_OrbitX00.pptx)
+- 📊 **Presentation:** [`presentation/ORBITX_Deck.pdf`](presentation/ORBITX_Deck.pdf) · [`presentation/Mars_Sentinel_OrbitX00.pptx`](presentation/Mars_Sentinel_OrbitX00.pptx)
+
+## Repository Layout
+`web/` WebGL digital twin · `unity_project/` Unity 6 playable survival game · `nav-module/` CTX A\*/Solar/RF engine · `data/` NASA/USGS datasets & 3D GLBs · `tools/` & `scripts/` Blender & integrity automation · `presentation/` 7-slide deck & shots · `tests/` 231-test suite · `docs/` system & agent docs.
 
 ---
 

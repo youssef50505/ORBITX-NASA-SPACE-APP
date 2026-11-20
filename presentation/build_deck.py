@@ -1,45 +1,45 @@
 import os, html
 D = os.path.dirname(os.path.abspath(__file__))
 S = os.path.join(D, "shots")
-FB = ["web_modern_simple_ui.png", "web_modern_omni_open.png"]
+FB = ["01_hero_glass_ui.png", "03_omni_xray.png"]
 
 def img(name, i=0):
     f = name if os.path.exists(os.path.join(S, name)) else FB[i % 2]
     return f"shots/{f}"
 
 slides = [
- dict(t="ORBITX: Mars Sentinel", sub="Interplanetary Survival Guide: Martian Map",
-      b=["Team ORBITX · NASA Space Apps Challenge 2026",
+ dict(t="ORBITX: Mars Sentinel", sub="Toward 'Google Earth for Mars' — Web + 3D + Playable Game",
+      b=["Team ORBITX · NASA Space Apps Challenge 2026 (orbitX00)",
          "Anchor: Jezero Crater, Mars (18.4447°N, 77.4508°E)",
-         "3D digital twin: Unity 6 desktop + live Three.js web twin"], im=img("01_hero.png", 0), title=True),
- dict(t="The Problem & the Data Stack", sub="Earth is 15–22 light-minutes away. No GPS. Dust, radiation, steep slopes.",
-      b=["MRO HiRISE DTM (1,132,096 vertices, SHA-256 verified) + MOLA",
-         "USGS SIM 3292: 44 geologic units with trafficability",
-         "Perseverance (559 legs, 22 tubes), Ingenuity (72 flights), Curiosity, MEDA, RAD, DONKI"], im=None,
-      note="Honest limit: terrain resolution cannot resolve individual rocks. Panels tag measured data vs. simulation."),
- dict(t="A* Multi-Objective Traverse", sub="Three routes from Octavia E. Butler Landing",
-      b=["Safest 88.4/100: 1,159.95 m, max slope 6.49°",
-         "Shortest 64.1/100: 1,113.50 m, 7.08°  ·  Science 82.7/100: 1,203.21 m",
-         "[H] toggles layers to cut visual clutter"], im=img("02_routes.png", 0),
-      note="Slope limits and risk weights are demo assumptions."),
- dict(t="Omni-Probe X-Ray Scanner", sub="Inspect terrain beyond fixed map pins",
-      b=["Click terrain, outcrops, meteorites (Cacao, Lebanon), Belva Crater",
-         "Shows lat/lon, slope, thermal inertia, USGS unit",
-         "PIXL chemistry + 3-layer RIMFAX radar profile (0–15 m)"], im=img("03_omni.png", 1)),
- dict(t="Space Weather & EVA Survival Radius", sub="Beer-Lambert: I = 586.2 · exp(−τ / sin(elevation))",
-      b=["Dust optical depth τ from 0.45 (nominal) to 2.80 (global storm)",
-         "Point-of-No-Return EVA radius contracts with visibility and suit O2",
-         "Storm triage: GCR 0.67 mSv/day and DONKI SEP alerts"], im=img("04_orbit.png", 0),
-      note="Atmospheric and solar values are a simulation parameterized by MEDA/RAD data."),
- dict(t="Closed-Loop Base, Rover & Drones", sub="Unified Command Deck (MARS-SENTINEL-v10)",
-      b=["Hydroponics + aeroponics: 98.4% water recycling, 2.84 kg/Sol O2",
-         "ROVER-01 manual drive or A* autopilot",
-         "3-drone recon fleet DR-01..03"], im=img("05_rover.png", 1),
-      note="Rover speeds and base figures are demo assumptions."),
- dict(t="Verified, Open Source, Ready", sub="github.com/youssef50505/ORBITX-NASA-SPACE-APP",
-      b=["Unity 6 desktop build + zero-build WebGL twin + Blender 5.2 pipeline",
-         "120/120 integrity checks · 208/208 automated tests passing",
-         "Built-in demo directors: [N] 28 s, [P] 60 s"], im=img("01_hero.png", 0), last=True),
+         "Synchronized WebGL digital twin + Unity 6 game + Blender 5.2 master"], im=img("01_hero_glass_ui.png", 0), title=True),
+ dict(t="The Problem & Verified NASA Stack", sub="Earth is 15–22 light-minutes away. No GPS. Dust, radiation, steep slopes.",
+      b=["MRO HiRISE 4 m DTM (1,132,096 vertices, SHA-256 verified) + CTX 20 m + MOLA",
+         "USGS SIM 3292: 44 geologic units with slope & trafficability hazards",
+         "Perseverance (559 legs, 22 tubes), Ingenuity (72 flights), MEDA, RAD, DONKI"], im=None,
+      note="Honest limit: orbital DEM resolution cannot resolve meter-scale boulders. Panels separate measured NASA data vs. simulation."),
+ dict(t="CTX A* Routing, Solar & RF Viewshed", sub="Shared nav-module running live in WebGL & Unity 6",
+      b=["8-connected A* over 399×378 CTX grid: Shortest 5,367 m (13.1°) vs. Safest 6,483 m (8.1°)",
+         "Mars orbital solar & shadow model (Ls 0°–355°, 75-step raymarch) + RF LOS viewshed",
+         "Automated Outpost Site Check (Slope ≤ 10°, Roughness ≤ 2 m, Daylight ≥ 50%)"], im=img("02_ctx_nav_rf.png", 0),
+      note="Slope thresholds and risk weights are configurable operational parameters."),
+ dict(t="Omni-Probe Planetary X-Ray", sub="Inspect Jezero terrain beyond fixed map pins",
+      b=["Click terrain, outcrops, meteorites (Cacao, Lebanon), or Belva Crater",
+         "Live lat/lon, elevation, slope, thermal inertia, and USGS unit",
+         "PIXL elemental chemistry + 3-layer RIMFAX radar profile (0–15 m)"], im=img("03_omni_xray.png", 1)),
+ dict(t="Space Weather & Survival Loop", sub="Beer-Lambert: I = 586.2 · exp(−τ / sin(elevation))",
+      b=["Dust optical depth τ from 0.45 (nominal) to 2.80 (global storm) + Phobos/Deimos orbit",
+         "Live EVA survival loop: Suit O2, Power, Radiation (0.67 mSv/d), RF link & MedEvac",
+         "Point-of-No-Return EVA safety envelope contracts dynamically during dust storms"], im=img("04_orbit_globe.png", 0),
+      note="Atmospheric and survival physics are parameterized by NASA MEDA/RAD/DONKI datasets."),
+ dict(t="Unity 6 Survival Game & Base Ops", sub="Playable MarsSentinel.exe + Closed-Loop Habitat",
+      b=["Authentic NASA Perseverance GLB with 6-point Rocker-Bogie suspension & [R] A* Autopilot",
+         "URP ACES Post-Processing, FBM regolith shader, pooled dust VFX, Clean/Full [Y] HUD",
+         "Hydroponics + aeroponics dome (98.4% water recycling) + 3-drone recon fleet"], im=img("05_agri_base.png", 1),
+      note="Rover handling speeds and base production figures are simulation parameters."),
+ dict(t="Verified, Open Source & Scalable", sub="github.com/youssef50505/ORBITX-NASA-SPACE-APP",
+      b=["Zero-build WebGL twin + Unity 6 desktop game + Blender 5.2 pipeline",
+         "120/120 workspace integrity checks · 231 automated tests passing (0 failures)",
+         "Built-in WebM recorder (● Rec 28s) + [N] 28 s / [P] 60 s Unity directors"], im=img("01_hero_glass_ui.png", 0), last=True),
 ]
 
 CSS = """

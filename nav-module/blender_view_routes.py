@@ -9,9 +9,11 @@ from mathutils import Vector
 PRESET = 0          # 0, 1 or 2 -> which preset from routes.json
 EXAG = 1.0          # vertical exaggeration (try 2.0 if the terrain looks flat)
 HOME = os.path.expanduser("~")
-GRID = os.path.join(HOME, "Desktop", "NASASPACEAPP", "data", "jez_ctx_20m_grid.json")
-ROUTES = os.path.join(HOME, "Desktop", "NASASPACEAPP", "nav-module", "routes.json")
-OUT = os.path.join(HOME, "Desktop", "nav_view_esraa.blend")
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__)) if "__file__" in globals() else os.path.join(HOME, "Downloads", "NASASPACEAPP", "nav-module")
+REPO_ROOT = os.path.dirname(SCRIPT_DIR)
+GRID = os.path.join(REPO_ROOT, "data", "jez_ctx_20m_grid.json")
+ROUTES = os.path.join(SCRIPT_DIR, "routes.json")
+OUT = os.path.join(REPO_ROOT, "archive", "nav_view_esraa.blend")
 
 if bpy.data.filepath:
     raise RuntimeError("An existing .blend is open (%s). Use File > New > General first." % bpy.data.filepath)
