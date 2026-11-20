@@ -1,3 +1,0 @@
-# Large >100MB rasters and .blend files are ignored via .gitignore and distributed via GitHub Releases / NASA PDS
-*.geojson text eol=lf
-

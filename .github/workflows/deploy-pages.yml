@@ -29,7 +29,11 @@ jobs:
         uses: actions/configure-pages@v5
 
       - name: Stage static site bundle
-        run: mkdir -p _site && cp index.html .nojekyll _site/ && cp -r web previews _site/
+        run: |
+          mkdir -p _site
+          printf '<!DOCTYPE html><html><head><meta charset="utf-8"><meta http-equiv="refresh" content="0;url=web/index.html"></head><body><a href="web/index.html">Launch ORBITX Mars Sentinel</a></body></html>' > _site/index.html
+          touch _site/.nojekyll
+          cp -r web previews showcase _site/
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
