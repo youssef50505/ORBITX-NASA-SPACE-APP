@@ -183,24 +183,13 @@ namespace MarsSentinel.NASA
             else if (CurrentState == MarsGameState.Title)
             {
                 // Pulsing interactive prompt (0.5 <-> 1.0 over 1.6s unscaled time)
+                // NOTE: Never hijack Camera.main transform here so Cinemachine / MarsAstronautController stay rock-solid!
                 if (titlePrompt != null)
                 {
                     float a = 0.50f + 0.50f * (0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * Mathf.PI / 0.8f));
                     Color c = titlePrompt.color;
                     c.a = a;
                     titlePrompt.color = c;
-                }
-
-                // Gentle live backdrop orbit (~4.5 deg/s) while viewing Title Screen
-                titleOrbitAngle += 4.5f * Time.unscaledDeltaTime;
-                Camera cam = Camera.main;
-                bool exploreActive = MarsVisualRealismPolish.Instance != null && MarsVisualRealismPolish.Instance.IsExploreModeActive;
-                if (cam != null && !exploreActive)
-                {
-                    float rad = titleOrbitAngle * Mathf.Deg2Rad;
-                    Vector3 target = new Vector3(-4f, 2.5f, 4f);
-                    cam.transform.position = target + new Vector3(Mathf.Sin(rad) * 34f, 12.5f, Mathf.Cos(rad) * 34f);
-                    cam.transform.LookAt(target);
                 }
             }
 
@@ -215,11 +204,12 @@ namespace MarsSentinel.NASA
             if (CurrentState == MarsGameState.Title)
             {
                 if (kb.enterKey.wasPressedThisFrame || kb.spaceKey.wasPressedThisFrame ||
-                    kb.fKey.wasPressedThisFrame || kb.nKey.wasPressedThisFrame || kb.pKey.wasPressedThisFrame)
+                    kb.fKey.wasPressedThisFrame || kb.wKey.wasPressedThisFrame ||
+                    kb.nKey.wasPressedThisFrame || kb.pKey.wasPressedThisFrame)
                 {
                     SetState(MarsGameState.Playing);
-                    if (kb.fKey.wasPressedThisFrame)
-                        MarsVisualRealismPolish.Instance?.EnterExploreMode();
+                    MarsVisualRealismPolish.Instance?.EnterExploreMode();
+                    MarsStoryDirector.Instance?.BeginCampaign();
                 }
             }
             else if (CurrentState == MarsGameState.Playing)
@@ -304,26 +294,32 @@ namespace MarsSentinel.NASA
 
         private void BuildTitlePanel(Transform root)
         {
-            titlePanel = CreateFullScreenScrim(root, "TitleScreenPanel", new Color(0.035f, 0.045f, 0.08f, 0.42f));
+            // Light, crisp atmospheric scrim (0.14 alpha) so sunlit Jezero Crater base shines through cleanly
+            titlePanel = CreateFullScreenScrim(root, "TitleScreenPanel", new Color(0.03f, 0.04f, 0.07f, 0.14f));
 
-            GameObject card = CreateGlassCard(titlePanel.transform, "TitleHeroCard", new Vector2(880f, 430f), new Vector2(0f, 35f));
+            GameObject card = CreateGlassCard(titlePanel.transform, "TitleHeroCard", new Vector2(840f, 380f), new Vector2(0f, 30f));
 
-            titleHeading = CreateText(card.transform, "TitleHeading", "ORBITX · MARS SENTINEL", 54, FontStyle.Bold,
-                new Color(1.0f, 0.56f, 0.28f), new Vector2(0f, 125f), new Vector2(820f, 76f));
-            titleSub = CreateText(card.transform, "TitleSub", "JEZERO CRATER DIGITAL TWIN & EVA SURVIVAL", 20, FontStyle.Normal,
-                new Color(0.86f, 0.90f, 0.96f), new Vector2(0f, 65f), new Vector2(820f, 36f));
+            titleHeading = CreateText(card.transform, "TitleHeading", "ORBITX · MARS SENTINEL", 52, FontStyle.Bold,
+                new Color(1.0f, 0.56f, 0.28f), new Vector2(0f, 110f), new Vector2(800f, 70f));
+            titleSub = CreateText(card.transform, "TitleSub", "SOL 1042: ECHOES OF JEZERO — 5-CHAPTER SURVIVAL STORY", 19, FontStyle.Normal,
+                new Color(0.88f, 0.92f, 0.98f), new Vector2(0f, 54f), new Vector2(800f, 34f));
 
-            btnLaunchLabel = CreateGlassButton(card.transform, "BtnLaunch", "LAUNCH EVA MISSION",
-                new Vector2(-150f, -20f), new Vector2(280f, 54f), new Color(0.92f, 0.36f, 0.16f, 0.92f),
+            btnLaunchLabel = CreateGlassButton(card.transform, "BtnLaunch", "LAUNCH STORY MISSION",
+                new Vector2(-150f, -20f), new Vector2(280f, 52f), new Color(0.92f, 0.36f, 0.16f, 0.94f),
+                () =>
+                {
+                    SetState(MarsGameState.Playing);
+                    MarsVisualRealismPolish.Instance?.EnterExploreMode();
+                    MarsStoryDirector.Instance?.BeginCampaign();
+                });
+
+            btnExploreLabel = CreateGlassButton(card.transform, "BtnExplore", "FREE EXPLORE JEZERO",
+                new Vector2(150f, -20f), new Vector2(280f, 52f), new Color(0.14f, 0.22f, 0.34f, 0.90f),
                 () =>
                 {
                     SetState(MarsGameState.Playing);
                     MarsVisualRealismPolish.Instance?.EnterExploreMode();
                 });
-
-            btnExploreLabel = CreateGlassButton(card.transform, "BtnExplore", "FREE EXPLORE JEZERO",
-                new Vector2(150f, -20f), new Vector2(280f, 54f), new Color(0.14f, 0.22f, 0.34f, 0.90f),
-                () => SetState(MarsGameState.Playing));
 
             btnTitleLangLabel = CreateGlassButton(card.transform, "BtnTitleLang", "LANGUAGE: EN / عربي",
                 new Vector2(0f, -92f), new Vector2(260f, 42f), new Color(0.10f, 0.16f, 0.24f, 0.86f),

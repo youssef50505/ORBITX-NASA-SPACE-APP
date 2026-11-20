@@ -25,8 +25,7 @@ namespace MarsSentinel.NASA
 
         public static float SampleTerrainElevation(float x, float z)
         {
-            if (Instance != null) return Instance.SampleHorizonHeight(x, z);
-            return 0f;
+            return SampleHorizonHeightStatic(x, z);
         }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
@@ -417,7 +416,9 @@ namespace MarsSentinel.NASA
             }
         }
 
-        private float SampleHorizonHeight(float x, float z)
+        private float SampleHorizonHeight(float x, float z) => SampleHorizonHeightStatic(x, z);
+
+        public static float SampleHorizonHeightStatic(float x, float z)
         {
             float r = Mathf.Sqrt(x * x + z * z);
             // Level pad around landing fleet showcase (r < 16m) so every wheel rests flush, rising smoothly into Jezero dunes & mesa rim

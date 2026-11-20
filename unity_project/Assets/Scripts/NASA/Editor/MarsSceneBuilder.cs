@@ -78,9 +78,9 @@ namespace MarsSentinel.Editor
             }
 
             sunLight.color = new Color(1.0f, 0.8784f, 0.698f, 1.0f); // #FFE0B2
-            sunLight.intensity = 1.3f;
+            sunLight.intensity = 1.95f;
             sunLight.shadows = LightShadows.Soft;
-            sunLight.transform.rotation = Quaternion.Euler(50f, -30f, 0f);
+            sunLight.transform.rotation = Quaternion.Euler(34f, -38f, 0f);
 
             RenderSettings.ambientMode = AmbientMode.Trilight;
             RenderSettings.ambientSkyColor = new Color(0.7686f, 0.4784f, 0.3216f, 1.0f); // #C47A52
@@ -154,7 +154,11 @@ namespace MarsSentinel.Editor
             if (orchestrator.GetComponent<MarsGameShellUI>() == null)
                 orchestrator.AddComponent<MarsGameShellUI>();
 
+            if (orchestrator.GetComponent<MarsStoryDirector>() == null)
+                orchestrator.AddComponent<MarsStoryDirector>();
+
             EnsureXRayRendererFeatureOnPcRenderer();
+            BakeJezeroTerrainAndSkyIntoScene();
 
             // Remove duplicate stray MarsCameraRigs or *_OrbitTrail GameObjects if re-running on existing scene
             var allTransforms = Object.FindObjectsByType<Transform>(FindObjectsSortMode.None);
@@ -211,13 +215,13 @@ namespace MarsSentinel.Editor
                 EnsureUrpMaterials(heroInst);
             }
 
-            // Instantiate standalone fleet models under surface root (normalized to exact real NASA metric dimensions)
-            InstantiateFleetModel("mars-2020-perseverance-rover.glb", "MS_Perseverance_Root", surfaceRoot, new Vector3(0, 0, 0), 3.0f);
-            InstantiateFleetModel("Ingenuity_Mars_Helicopter.glb", "MS_Ingenuity_Root", surfaceRoot, new Vector3(8, 0, 10), 1.4f);
-            InstantiateFleetModel("Curiosity Rover (MSL).glb", "MS_Curiosity_Root", surfaceRoot, new Vector3(-8, 0, -14), 3.0f);
-            InstantiateFleetModel("InSight Cruise Lander (panels deployed).glb", "MS_InSight_Lander_Root", surfaceRoot, new Vector3(-14, 0, 18), 5.6f);
-            InstantiateFleetModel("mars-exploration-rover-opportunity-mer-b.glb", "MS_Opportunity_Root", surfaceRoot, new Vector3(-20, 0, 4), 2.3f);
-            InstantiateFleetModel("Viking Lander.glb", "MS_Viking_Lander_Root", surfaceRoot, new Vector3(18, 0, -8), 3.2f);
+            // Instantiate standalone fleet models under surface root (normalized to exact NASA metric size & grounded to terrain!)
+            InstantiateFleetModel("mars-2020-perseverance-rover.glb", "MS_Perseverance_Root", surfaceRoot, GroundedPos(0f, 0f), 3.0f);
+            InstantiateFleetModel("Ingenuity_Mars_Helicopter.glb", "MS_Ingenuity_Root", surfaceRoot, GroundedPos(8f, 10f), 1.4f);
+            InstantiateFleetModel("Curiosity Rover (MSL).glb", "MS_Curiosity_Root", surfaceRoot, GroundedPos(-8f, -14f), 3.0f);
+            InstantiateFleetModel("InSight Cruise Lander (panels deployed).glb", "MS_InSight_Lander_Root", surfaceRoot, GroundedPos(-14f, 18f), 5.6f);
+            InstantiateFleetModel("mars-exploration-rover-opportunity-mer-b.glb", "MS_Opportunity_Root", surfaceRoot, GroundedPos(-20f, 4f), 2.3f);
+            InstantiateFleetModel("Viking Lander.glb", "MS_Viking_Lander_Root", surfaceRoot, GroundedPos(18f, -8f), 3.2f);
 
             // Wire Ingenuity Rotor Animator
             Transform ingNode = surfaceRoot.Find("MS_Ingenuity_Root");
@@ -255,11 +259,18 @@ namespace MarsSentinel.Editor
                 fGo.transform.SetParent(orchestrator.transform, false);
                 facRoot = fGo.transform;
             }
-            InstantiateAssetAtPath("Assets/Models/Facilities/AgriDome_Hero.glb", "MS_Hero_AgriDome", facRoot, new Vector3(-25f, 0f, -4f));
-            InstantiateAssetAtPath("Assets/Models/Facilities/MedBay_Hero.glb", "MS_Hero_MedBay", facRoot, new Vector3(-10f, 0f, 24f));
-            InstantiateAssetAtPath("Assets/Models/Facilities/EDL_Lander_Hero.glb", "MS_Hero_EDL_Lander", facRoot, new Vector3(32f, 0f, -18f));
-            InstantiateAssetAtPath("Assets/Models/Facilities/LaunchPad_Hero.glb", "MS_Hero_LaunchPad", facRoot, new Vector3(36f, 0f, 24f));
-            InstantiateAssetAtPath("Assets/Models/Spacecraft/Astronaut_Rigged.glb", "EVA_NASA_Astronaut_Rigged", surfaceRoot, new Vector3(-3.5f, 0f, -16f));
+            InstantiateAssetAtPath("Assets/Models/Facilities/AgriDome_Hero.glb", "MS_Hero_AgriDome", facRoot, GroundedPos(-37.5f, -6.5f));
+            InstantiateAssetAtPath("Assets/Models/Facilities/MedBay_Hero.glb", "MS_Hero_MedBay", facRoot, GroundedPos(-1.5f, 30.0f));
+            InstantiateAssetAtPath("Assets/Models/Facilities/EDL_Lander_Hero.glb", "MS_Hero_EDL_Lander", facRoot, GroundedPos(32f, -18f));
+            InstantiateAssetAtPath("Assets/Models/Facilities/LaunchPad_Hero.glb", "MS_Hero_LaunchPad", facRoot, GroundedPos(36f, 24f));
+            InstantiateAssetAtPath("Assets/Models/Spacecraft/Astronaut_Rigged.glb", "EVA_NASA_Astronaut_Rigged", surfaceRoot, GroundedPos(-3.5f, -16f));
+
+            // Sink tiny legacy 6m STL square below baked 1,280m Jezero terrain so no floating square appears
+            if (terrainNode != null)
+            {
+                Vector3 tp = terrainNode.localPosition;
+                terrainNode.localPosition = new Vector3(tp.x, -1.25f, tp.z);
+            }
 
             // Bind Moons & Keplerian Constellation AFTER orbitRoot fleet anchors exist
             var celCtrl = orchestrator.GetComponent<MarsCelestialOrbitController>();
@@ -474,6 +485,174 @@ namespace MarsSentinel.Editor
             }
 
             Debug.Log($"[Phase1to5Verify] FleetLoaded={loadedFleet}/10 | HeroFacilities={loadedFac}/4 | RiggedAstroSkinnedMeshes={riggedBones} | XRayRenderGraphFeature={hasXRayFeature} | ShadowDist={(urpAsset != null ? urpAsset.shadowDistance : 0f)} | MSAA={(urpAsset != null ? urpAsset.msaaSampleCount : 0)}");
+        }
+
+        private static Vector3 GroundedPos(float x, float z)
+        {
+            return new Vector3(x, MarsVisualRealismPolish.SampleTerrainElevation(x, z), z);
+        }
+
+        /// <summary>
+        /// Track A.1: Bakes a real 1,280m x 1,280m sculpted Jezero Crater Terrain + MeshCollider +
+        /// MartianSandSlopeBlend FBM regolith material + sunlit Martian Atmosphere Skybox + scattered
+        /// basalt boulders directly into the saved Unity scenes so Editor & Play Mode look AAA immediately.
+        /// </summary>
+        private static void BakeJezeroTerrainAndSkyIntoScene()
+        {
+            const string terrainDir = "Assets/Models/Terrain";
+            if (!Directory.Exists(terrainDir)) Directory.CreateDirectory(terrainDir);
+
+            // 1. Build & save 192x192 sculpted Jezero Crater mesh (1,280m x 1,280m)
+            string meshAssetPath = $"{terrainDir}/JezeroHorizonTerrain.asset";
+            Mesh mesh = new Mesh { name = "JezeroHorizonTerrain" };
+            mesh.indexFormat = IndexFormat.UInt32;
+            const int res = 160;
+            const float worldSize = 1280f;
+            float half = worldSize * 0.5f;
+            int vertCount = (res + 1) * (res + 1);
+            Vector3[] verts = new Vector3[vertCount];
+            Vector2[] uvs = new Vector2[vertCount];
+            int[] tris = new int[res * res * 6];
+
+            int vi = 0;
+            for (int z = 0; z <= res; z++)
+            {
+                float vz = ((float)z / res) * worldSize - half;
+                for (int x = 0; x <= res; x++)
+                {
+                    float vx = ((float)x / res) * worldSize - half;
+                    float vy = MarsVisualRealismPolish.SampleTerrainElevation(vx, vz);
+                    verts[vi] = new Vector3(vx, vy, vz);
+                    uvs[vi] = new Vector2((float)x / res, (float)z / res);
+                    vi++;
+                }
+            }
+            int ti = 0;
+            int stride = res + 1;
+            for (int z = 0; z < res; z++)
+            {
+                for (int x = 0; x < res; x++)
+                {
+                    int a = z * stride + x;
+                    int b = a + 1;
+                    int c = a + stride;
+                    int d = c + 1;
+                    tris[ti++] = a; tris[ti++] = c; tris[ti++] = b;
+                    tris[ti++] = b; tris[ti++] = c; tris[ti++] = d;
+                }
+            }
+            mesh.vertices = verts;
+            mesh.uv = uvs;
+            mesh.triangles = tris;
+            mesh.RecalculateNormals();
+            mesh.RecalculateTangents();
+            mesh.RecalculateBounds();
+
+            Mesh existingMesh = AssetDatabase.LoadAssetAtPath<Mesh>(meshAssetPath);
+            if (existingMesh != null) AssetDatabase.DeleteAsset(meshAssetPath);
+            AssetDatabase.CreateAsset(mesh, meshAssetPath);
+
+            // 2. Save MartianSandSlopeBlend FBM regolith material asset
+            string matPath = $"{terrainDir}/M_JezeroRegolithBaked.mat";
+            Shader slopeShader = AssetDatabase.LoadAssetAtPath<Shader>("Assets/Shaders/MartianSandSlopeBlend.shader")
+                                 ?? Shader.Find("MarsSentinel/MartianSandSlopeBlend")
+                                 ?? Shader.Find("Universal Render Pipeline/Lit");
+            Material bakedMat = AssetDatabase.LoadAssetAtPath<Material>(matPath);
+            if (bakedMat == null)
+            {
+                bakedMat = new Material(slopeShader) { name = "M_JezeroRegolithBaked" };
+                AssetDatabase.CreateAsset(bakedMat, matPath);
+            }
+            else
+            {
+                bakedMat.shader = slopeShader;
+            }
+            if (bakedMat.HasProperty("_SandColor")) bakedMat.SetColor("_SandColor", new Color(0.76f, 0.44f, 0.24f, 1f));
+            if (bakedMat.HasProperty("_RockColor")) bakedMat.SetColor("_RockColor", new Color(0.36f, 0.21f, 0.14f, 1f));
+            if (bakedMat.HasProperty("_RippleStrength")) bakedMat.SetFloat("_RippleStrength", 0.55f);
+            if (bakedMat.HasProperty("_RippleFrequency")) bakedMat.SetFloat("_RippleFrequency", 3.2f);
+            EditorUtility.SetDirty(bakedMat);
+
+            // 3. Attach permanent MS_Jezero_Horizon_Terrain GameObject with MeshCollider
+            GameObject terrainGo = GameObject.Find("MS_Jezero_Horizon_Terrain");
+            if (terrainGo == null) terrainGo = new GameObject("MS_Jezero_Horizon_Terrain");
+            terrainGo.transform.position = Vector3.zero;
+            terrainGo.transform.rotation = Quaternion.identity;
+            terrainGo.transform.localScale = Vector3.one;
+            var mf = terrainGo.GetComponent<MeshFilter>();
+            if (mf == null) mf = terrainGo.AddComponent<MeshFilter>();
+            var mr = terrainGo.GetComponent<MeshRenderer>();
+            if (mr == null) mr = terrainGo.AddComponent<MeshRenderer>();
+            var mc = terrainGo.GetComponent<MeshCollider>();
+            if (mc == null) mc = terrainGo.AddComponent<MeshCollider>();
+            mf.sharedMesh = mesh;
+            mr.sharedMaterial = bakedMat;
+            mr.shadowCastingMode = ShadowCastingMode.On;
+            mr.receiveShadows = true;
+            mc.convex = false;
+            mc.sharedMesh = mesh;
+
+            // 4. Bake Martian Atmosphere Skybox & golden atmospheric fog so Edit Mode looks breathtaking too
+            string skyPath = $"{terrainDir}/M_MartianSkyBaked.mat";
+            Shader skyShader = AssetDatabase.LoadAssetAtPath<Shader>("Assets/Shaders/MartianAtmosphereSkybox.shader")
+                               ?? Shader.Find("MarsSentinel/MartianAtmosphereSkybox");
+            if (skyShader != null)
+            {
+                Material skyMat = AssetDatabase.LoadAssetAtPath<Material>(skyPath);
+                if (skyMat == null)
+                {
+                    skyMat = new Material(skyShader) { name = "M_MartianSkyBaked" };
+                    AssetDatabase.CreateAsset(skyMat, skyPath);
+                }
+                RenderSettings.skybox = skyMat;
+                EditorUtility.SetDirty(skyMat);
+            }
+            RenderSettings.fog = true;
+            RenderSettings.fogMode = FogMode.ExponentialSquared;
+            RenderSettings.fogColor = new Color(0.73f, 0.48f, 0.32f, 1f);
+            RenderSettings.fogDensity = 0.0022f;
+
+            // 5. Scatter 36 grounded basalt perimeter boulders cleanly outside base pads
+            GameObject rocksRoot = GameObject.Find("MS_Baked_Basalt_Boulders");
+            if (rocksRoot != null) Object.DestroyImmediate(rocksRoot);
+            rocksRoot = new GameObject("MS_Baked_Basalt_Boulders");
+            string rockMatPath = $"{terrainDir}/M_BasaltBoulderBaked.mat";
+            Material rockMat = AssetDatabase.LoadAssetAtPath<Material>(rockMatPath);
+            if (rockMat == null)
+            {
+                rockMat = new Material(Shader.Find("Universal Render Pipeline/Lit")) { name = "M_BasaltBoulderBaked" };
+                rockMat.SetColor("_BaseColor", new Color(0.30f, 0.20f, 0.16f, 1f));
+                rockMat.SetFloat("_Smoothness", 0.16f);
+                AssetDatabase.CreateAsset(rockMat, rockMatPath);
+            }
+            var rng = new System.Random(1042);
+            for (int i = 0; i < 36; i++)
+            {
+                float ang = (float)(rng.NextDouble() * System.Math.PI * 2.0);
+                float rad = 22f + (float)(rng.NextDouble() * 88.0);
+                float rx = Mathf.Cos(ang) * rad;
+                float rz = Mathf.Sin(ang) * rad;
+                // Keep clear of Launch Pad, Agri-Dome, MedBay, and EDL pads
+                if (Vector2.Distance(new Vector2(rx, rz), new Vector2(36f, 24f)) < 14f) continue;
+                if (Vector2.Distance(new Vector2(rx, rz), new Vector2(-25f, -4f)) < 14f) continue;
+                if (Vector2.Distance(new Vector2(rx, rz), new Vector2(-10f, 24f)) < 12f) continue;
+                if (Vector2.Distance(new Vector2(rx, rz), new Vector2(32f, -18f)) < 11f) continue;
+                float ry = MarsVisualRealismPolish.SampleTerrainElevation(rx, rz);
+                GameObject b = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+                b.name = $"MS_Basalt_Rock_{i:D2}";
+                b.transform.SetParent(rocksRoot.transform, false);
+                float sx = 0.6f + (float)rng.NextDouble() * 1.9f;
+                float sy = sx * (0.35f + (float)rng.NextDouble() * 0.35f);
+                float sz = sx * (0.7f + (float)rng.NextDouble() * 0.5f);
+                b.transform.position = new Vector3(rx, ry + sy * 0.25f, rz);
+                b.transform.rotation = Quaternion.Euler((float)rng.NextDouble() * 25f, (float)rng.NextDouble() * 360f, (float)rng.NextDouble() * 25f);
+                b.transform.localScale = new Vector3(sx, sy, sz);
+                var r = b.GetComponent<Renderer>();
+                if (r != null) r.sharedMaterial = rockMat;
+            }
+
+            AssetDatabase.SaveAssets();
+            Debug.Log("[MarsSceneBuilder] Baked 1,280m Jezero Crater terrain, MartianSandSlopeBlend shader, skybox & 36 basalt boulders into scene.");
         }
 
         private static void EnsureXRayRendererFeatureOnPcRenderer()

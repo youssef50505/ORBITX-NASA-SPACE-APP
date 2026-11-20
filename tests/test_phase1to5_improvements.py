@@ -91,7 +91,7 @@ class Phase1To5ImprovementTests(unittest.TestCase):
         html = read_text(WEB, "index.html")
         self.assertIn("vendor/three.min.js", html)
         self.assertIn("vendor/GLTFLoader.js", html)
-        self.assertIn("mars_earth_3d_upgrade.js", html)
+        self.assertIn("modules/mars_earth_3d_upgrade.js", html)
         self.assertNotIn("cdnjs.cloudflare.com", html)
 
         models_dir = os.path.join(WEB, "assets", "models")
@@ -103,7 +103,7 @@ class Phase1To5ImprovementTests(unittest.TestCase):
             self.assertEqual(jdata.get("extensionsRequired", []), [])
         self.assertLess(total_bytes, 4_500_000, f"Web GLBs bundle too heavy: {total_bytes} B")
 
-        js = read_text(WEB, "mars_earth_3d_upgrade.js")
+        js = read_text(WEB, "modules", "mars_earth_3d_upgrade.js")
         for sym in ("GLTFLoader", "MS_3D_TerrainHeatmapOverlay", "olympus", "valles", "ms-rtl-ar", "flyToBookmark"):
             self.assertIn(sym, js)
 

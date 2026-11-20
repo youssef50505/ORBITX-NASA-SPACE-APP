@@ -119,19 +119,20 @@ namespace MarsSentinel.NASA
         }
 
         /// <summary>
-        /// Phase 1.2: Replaces procedural primitive meshes on AgriDome, MedBay, EDL Lander,
-        /// and Launch Pad with Blender-authored PBR Hero GLBs while preserving all shelter zones,
-        /// walkways, quickTargets, and MarsInspectableTarget scientific metadata.
+        /// Phase 1.2 + Track A.2: Mounts Blender-authored PBR Hero GLBs cleanly to exact terrain elevation.
+        /// Keeps the open walkable Agri-Dome & Medical Bay interiors 100% accessible for EVA shelter
+        /// while placing AgriDome_Hero & MedBay_Hero as exterior PBR annex structures and upgrading
+        /// EDL Lander & Launch Pad directly.
         /// </summary>
         private void AttachHeroFacilityGlbUpgrades()
         {
-            MountHeroFacilityGlb("MS_Hero_AgriDome", "MS_Agriculture_Lab", POS_AGRICULTURE, 1.12f);
-            MountHeroFacilityGlb("MS_Hero_MedBay", "MS_Medical_Radiation_Bay", POS_MEDICAL_BAY, 1.0f);
-            MountHeroFacilityGlb("MS_Hero_EDL_Lander", "MS_EDL_LiftingBody_Lander", POS_EDL_AIRCRAFT, 1.05f);
-            MountHeroFacilityGlb("MS_Hero_LaunchPad", "MS_Mars_Ascent_Launch_Pad", POS_ROCKET_PAD, 1.0f);
+            MountHeroFacilityGlb("MS_Hero_AgriDome", null, new Vector2(-37.5f, -6.5f), 1.08f, hideLegacy: false);
+            MountHeroFacilityGlb("MS_Hero_MedBay", null, new Vector2(-1.5f, 30.0f), 1.0f, hideLegacy: false);
+            MountHeroFacilityGlb("MS_Hero_EDL_Lander", "MS_EDL_LiftingBody_Lander", POS_EDL_AIRCRAFT, 1.05f, hideLegacy: true);
+            MountHeroFacilityGlb("MS_Hero_LaunchPad", "MS_Mars_Ascent_Launch_Pad", POS_ROCKET_PAD, 1.0f, hideLegacy: true);
         }
 
-        private void MountHeroFacilityGlb(string heroGlbNodeName, string legacyRootName, Vector2 xz, float scale)
+        private void MountHeroFacilityGlb(string heroGlbNodeName, string legacyRootName, Vector2 xz, float scale, bool hideLegacy)
         {
             GameObject heroNode = GameObject.Find(heroGlbNodeName);
             if (heroNode == null || heroNode.GetComponentsInChildren<Renderer>(true).Length == 0)
@@ -140,17 +141,19 @@ namespace MarsSentinel.NASA
             }
 
             float y = MarsVisualRealismPolish.SampleTerrainElevation(xz.x, xz.y);
-            GameObject legacyRoot = GameObject.Find(legacyRootName);
+            GameObject legacyRoot = !string.IsNullOrEmpty(legacyRootName) ? GameObject.Find(legacyRootName) : null;
             if (legacyRoot != null)
             {
-                // Hide boxy primitive child renderers (keep inspectable targets & walkable floor colliders intact)
-                foreach (Renderer r in legacyRoot.GetComponentsInChildren<Renderer>(true))
+                if (hideLegacy)
                 {
-                    if (r.transform.IsChildOf(heroNode.transform)) continue;
-                    string rn = r.gameObject.name;
-                    if (rn.Contains("Inspect") || rn.Contains("Pylon") || rn.Contains("Rocket") || rn.Contains("Ares") || rn.Contains("Launcher"))
-                        continue;
-                    r.enabled = false;
+                    foreach (Renderer r in legacyRoot.GetComponentsInChildren<Renderer>(true))
+                    {
+                        if (r.transform.IsChildOf(heroNode.transform)) continue;
+                        string rn = r.gameObject.name;
+                        if (rn.Contains("Inspect") || rn.Contains("Pylon") || rn.Contains("Rocket") || rn.Contains("Ares") || rn.Contains("Launcher"))
+                            continue;
+                        r.enabled = false;
+                    }
                 }
                 heroNode.transform.SetParent(legacyRoot.transform, false);
                 heroNode.transform.localPosition = Vector3.zero;
@@ -161,7 +164,7 @@ namespace MarsSentinel.NASA
             }
 
             heroNode.transform.localScale = Vector3.one * scale;
-            // Ground bottom cleanly to local Y = 0
+            // Ground bottom cleanly flush to exact terrain elevation (zero floating/clipping)
             Renderer[] rends = heroNode.GetComponentsInChildren<Renderer>(true);
             if (rends.Length > 0)
             {

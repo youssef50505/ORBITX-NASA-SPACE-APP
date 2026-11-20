@@ -654,6 +654,14 @@ namespace MarsSentinel.NASA
             RefreshLiveExplorationHud();
         }
 
+        public void SetStormIntensityExternal(float tau)
+        {
+            dustOpticalDepthTau = Mathf.Clamp(tau, 0.35f, 3.2f);
+            ApplyMartianLighting();
+            MarsAudioManager.Instance?.SetDustOpticalDepth(dustOpticalDepthTau);
+            RefreshLiveExplorationHud();
+        }
+
         public static float ComputeBeerLambertTransmission(float tau, float solarElevationDeg)
         {
             float clampedElev = Mathf.Clamp(solarElevationDeg, 5.0f, 90.0f);

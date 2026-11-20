@@ -4,6 +4,8 @@ S = os.path.join(D, "shots")
 FB = ["01_hero_glass_ui.png", "03_omni_xray.png"]
 
 def img(name, i=0):
+    if name.startswith("../"):
+        return name
     f = name if os.path.exists(os.path.join(S, name)) else FB[i % 2]
     return f"shots/{f}"
 
@@ -29,12 +31,12 @@ slides = [
  dict(t="Space Weather & Survival Loop", sub="Beer-Lambert: I = 586.2 · exp(−τ / sin(elevation))",
       b=["Dust optical depth τ from 0.45 (nominal) to 2.80 (global storm) + Phobos/Deimos orbit",
          "Live EVA survival loop: Suit O2, Power, Radiation (0.67 mSv/d), RF link & MedEvac",
-         "Point-of-No-Return EVA safety envelope contracts dynamically during dust storms"], im=img("04_orbit_globe.png", 0),
-      note="Atmospheric and survival physics are parameterized by NASA MEDA/RAD/DONKI datasets."),
- dict(t="Unity 6 Survival Game & Base Ops", sub="Playable MarsSentinel.exe + Closed-Loop Habitat",
+         "Point-of-No-Return EVA safety envelope contracts dynamically during dust storms"], im=img("../previews/final_key2_planet_starfield.png", 0),
+      note="Atmospheric and solar values are parameterized by NASA MEDA/RAD/DONKI datasets."),
+ dict(t="Unity 6, UE 5.8 & Base Ops", sub="Playable MarsSentinel.exe + Unreal 5.8 Lumen/Nanite",
       b=["Authentic NASA Perseverance GLB with 6-point Rocker-Bogie suspension & [R] A* Autopilot",
-         "URP ACES Post-Processing, FBM regolith shader, pooled dust VFX, Clean/Full [Y] HUD",
-         "Hydroponics + aeroponics dome (98.4% water recycling) + 3-drone recon fleet"], im=img("05_agri_base.png", 1),
+         "URP ACES + Render Graph X-Ray + 5-Chapter Story ('Sol 1042: Echoes of Jezero')",
+         "Hydroponics + aeroponics dome (98.4% water recycling) + Unreal Engine 5.8 module"], im=img("../previews/final_key3_agriculture_zone.png", 1),
       note="Rover handling speeds and base production figures are simulation parameters."),
  dict(t="Verified, Open Source & Scalable", sub="github.com/youssef50505/ORBITX-NASA-SPACE-APP",
       b=["Zero-build WebGL twin + Unity 6 desktop game + Blender 5.2 pipeline",

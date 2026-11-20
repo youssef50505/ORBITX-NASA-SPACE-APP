@@ -59,3 +59,12 @@ desktop.ini
 archive/
 TEST_INFRA.md
 TEST_READY.md
+
+# Unreal Engine 5.8 generated build caches & imported binary uassets (rebuilt via Scripts/build_mars_sentinel_ue5.py)
+unreal_project/Binaries/
+unreal_project/Intermediate/
+unreal_project/Saved/
+unreal_project/DerivedDataCache/
+unreal_project/.vs/
+unreal_project/Content/
+unreal_project/SourceAssets/
