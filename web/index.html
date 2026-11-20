@@ -31,23 +31,23 @@
     <nav class="zone-nav" aria-label="Mission Camera Zones">
       <button class="zone-btn active" data-zone="surface" title="Shortcut: Key 1">
         <span class="key-hint">1</span>
-        <span>Surface Base & Crew</span>
+        <span>Surface Base</span>
       </button>
       <button class="zone-btn" data-zone="orbit" title="Shortcut: Key 2">
         <span class="key-hint">2</span>
-        <span>Planet & Starfield</span>
+        <span>Orbit</span>
       </button>
       <button class="zone-btn" data-zone="agriculture" title="Shortcut: Key 3">
         <span class="key-hint">3</span>
-        <span>Agriculture & Hydroponics</span>
+        <span>Agriculture</span>
       </button>
       <button class="zone-btn" data-zone="habitat" title="Shortcut: Key 4">
         <span class="key-hint">4</span>
-        <span>Habitat & Rovers</span>
+        <span>Habitat</span>
       </button>
       <button class="zone-btn" data-zone="tactical" title="Shortcut: Key 6">
         <span class="key-hint">6</span>
-        <span>A* Route Tactical</span>
+        <span>Tactical Map</span>
       </button>
     </nav>
 
@@ -68,7 +68,7 @@
         </div>
       </div>
       <button class="action-btn audio-btn" id="btn-web-audio" title="Toggle Procedural Martian Wind & Scan Audio">Audio: OFF</button>
-      <button class="action-btn" id="btn-provenance">NASA Data Provenance</button>
+      <button class="action-btn" id="btn-provenance" title="NASA & USGS Data Provenance">Provenance</button>
     </div>
   </header>
 
@@ -385,6 +385,7 @@
 
   <script src="nasa_data_bundle.js"></script>
   <script src="app.js"></script>
+  <script src="nav_sun_engine.js"></script>
   <script src="mars_realism_upgrade.js"></script>
 </body>
 </html>

@@ -28,6 +28,7 @@ namespace MarsSentinel.NASA
         [SerializeField] private float chasePitch = 18f;
 
         public bool IsDriverSeated { get; private set; }
+        public bool IsAutopilotActive { get; private set; }
         public float CurrentSpeedMps => currentSpeed;
         public float CurrentSlopeDeg { get; private set; }
         public float TotalDistanceMeters { get; private set; }
@@ -37,6 +38,16 @@ namespace MarsSentinel.NASA
         private float wheelSpinDeg = 0f;
         private bool headlightsOn = true;
         private bool built = false;
+        private bool usingNasaGlb = false;
+
+        private Transform suspensionRoot;
+        private float suspPitchVel = 0f;
+        private float suspRollVel = 0f;
+        private float suspPitch = 0f;
+        private float suspRoll = 0f;
+        private float suspHeave = 0f;
+        private float dustEmitTimer = 0f;
+        private int autopilotWpIdx = 0;
 
         private readonly Transform[] wheelVisuals = new Transform[6];
         private readonly Transform[] wheelSteerPivots = new Transform[4]; // Front L/R + Rear L/R
@@ -74,117 +85,84 @@ namespace MarsSentinel.NASA
 
             GameObject root = new GameObject("Rover_Body_Root");
             root.transform.SetParent(transform, false);
+            suspensionRoot = root.transform;
 
-            Material chassisDark = MakeMat("Rover_Chassis", new Color(0.20f, 0.22f, 0.25f), 0.72f, 0.45f);
-            Material cabWhite = MakeMat("Rover_CabWhite", new Color(0.90f, 0.91f, 0.93f), 0.30f, 0.60f);
-            Material accentOrange = MakeMat("Rover_OrangeTrim", new Color(0.88f, 0.36f, 0.12f), 0.25f, 0.52f);
-            Material goldFoil = MakeMat("Rover_GoldMLI", new Color(0.86f, 0.65f, 0.15f), 0.88f, 0.75f);
-            Material wheelTire = MakeMat("Rover_Tire", new Color(0.16f, 0.15f, 0.15f), 0.55f, 0.28f);
-            Material wheelHub = MakeMat("Rover_WheelHub", new Color(0.75f, 0.55f, 0.22f), 0.80f, 0.65f);
-            Material solarMat = MakeMat("Rover_SolarDeck", new Color(0.08f, 0.15f, 0.34f), 0.75f, 0.82f);
-            Material glassMat = MakeGlassMat("Rover_CockpitGlass", new Color(0.28f, 0.55f, 0.78f, 0.42f));
-            Material consoleGlow = MakeEmissive("Rover_ConsoleGlow", new Color(0.15f, 0.85f, 1.0f), new Color(0.15f, 0.85f, 1.0f) * 1.4f);
-
-            // Pressurized Cabin Body + Lower Rocker-Bogie Frame + Sloped Windshield & Radiator Louvers
-            MakePart("Lower_Chassis", PrimitiveType.Cube, root.transform, new Vector3(0f, 0.76f, 0f), Vector3.zero, new Vector3(1.98f, 0.30f, 4.45f), chassisDark, true);
-            MakePart("Front_Bumper", PrimitiveType.Cube, root.transform, new Vector3(0f, 0.72f, 2.34f), Vector3.zero, new Vector3(2.12f, 0.22f, 0.24f), chassisDark, false);
-            MakePart("Crew_Cabin", PrimitiveType.Cube, root.transform, new Vector3(0f, 1.48f, 0.25f), Vector3.zero, new Vector3(2.26f, 1.14f, 2.80f), cabWhite, true);
-            MakePart("Cabin_RoofFairing", PrimitiveType.Cube, root.transform, new Vector3(0f, 2.08f, 0.10f), Vector3.zero, new Vector3(2.14f, 0.12f, 2.60f), cabWhite, false);
-            MakePart("Nose_Hood", PrimitiveType.Cube, root.transform, new Vector3(0f, 1.12f, 1.95f), new Vector3(18f, 0f, 0f), new Vector3(2.06f, 0.52f, 0.98f), cabWhite, false);
-            MakePart("Cockpit_Glass", PrimitiveType.Cube, root.transform, new Vector3(0f, 1.64f, 1.72f), new Vector3(-28f, 0f, 0f), new Vector3(1.90f, 0.74f, 0.10f), glassMat, false);
-            MakePart("Windshield_FrameL", PrimitiveType.Cube, root.transform, new Vector3(-0.98f, 1.64f, 1.72f), new Vector3(-28f, 0f, 0f), new Vector3(0.08f, 0.78f, 0.14f), chassisDark, false);
-            MakePart("Windshield_FrameR", PrimitiveType.Cube, root.transform, new Vector3(0.98f, 1.64f, 1.72f), new Vector3(-28f, 0f, 0f), new Vector3(0.08f, 0.78f, 0.14f), chassisDark, false);
-            MakePart("SideWindow_L", PrimitiveType.Cube, root.transform, new Vector3(-1.14f, 1.68f, 0.75f), Vector3.zero, new Vector3(0.05f, 0.44f, 1.18f), glassMat, false);
-            MakePart("SideWindow_R", PrimitiveType.Cube, root.transform, new Vector3(1.14f, 1.68f, 0.75f), Vector3.zero, new Vector3(0.05f, 0.44f, 1.18f), glassMat, false);
-            MakePart("Cockpit_Console", PrimitiveType.Cube, root.transform, new Vector3(0f, 1.42f, 1.38f), Vector3.zero, new Vector3(1.2f, 0.22f, 0.22f), consoleGlow, false);
-
-            // Side NASA / ORBITX Orange Accent Bars + Recessed Suitport Bulkhead (replacing oversized yellow drum)
-            MakePart("Accent_Band_L", PrimitiveType.Cube, root.transform, new Vector3(-1.14f, 1.24f, 0.25f), Vector3.zero, new Vector3(0.05f, 0.18f, 2.74f), accentOrange, false);
-            MakePart("Accent_Band_R", PrimitiveType.Cube, root.transform, new Vector3(1.14f, 1.24f, 0.25f), Vector3.zero, new Vector3(0.05f, 0.18f, 2.74f), accentOrange, false);
-            MakePart("Aft_SuitportFrame", PrimitiveType.Cube, root.transform, new Vector3(0f, 1.44f, -1.28f), Vector3.zero, new Vector3(1.68f, 1.04f, 0.44f), chassisDark, true);
-            MakePart("Aft_SuitportHatch", PrimitiveType.Cube, root.transform, new Vector3(0f, 1.46f, -1.52f), Vector3.zero, new Vector3(1.12f, 0.88f, 0.10f), cabWhite, false);
-            MakePart("Aft_ThermalMLI_L", PrimitiveType.Cube, root.transform, new Vector3(-0.78f, 1.44f, -1.51f), Vector3.zero, new Vector3(0.24f, 0.76f, 0.08f), goldFoil, false);
-            MakePart("Aft_ThermalMLI_R", PrimitiveType.Cube, root.transform, new Vector3(0.78f, 1.44f, -1.51f), Vector3.zero, new Vector3(0.24f, 0.76f, 0.08f), goldFoil, false);
-            MakePart("Aft_HatchGlow", PrimitiveType.Cube, root.transform, new Vector3(0f, 1.88f, -1.56f), Vector3.zero, new Vector3(0.60f, 0.05f, 0.03f), consoleGlow, false);
-
-            // NASA Meatball & ORBITX Emblems on both cabin sides & front hood
-            Material nasaBadgeMat = MarsBaseFacilitiesBuilder.CreateNasaBadgeMaterial();
-            if (nasaBadgeMat != null)
+            // Try authentic NASA Perseverance GLB (pre-mounted child, Editor AssetDatabase, or cloned from MS_Perseverance_Root)
+            Transform glbNode = transform.Find("Rover_NASA_Perseverance_GLB");
+#if UNITY_EDITOR
+            if (glbNode == null)
             {
-                GameObject bL = GameObject.CreatePrimitive(PrimitiveType.Quad);
-                bL.name = "Rover_NASABadge_L";
-                bL.transform.SetParent(root.transform, false);
-                Destroy(bL.GetComponent<Collider>());
-                bL.transform.localPosition = new Vector3(-1.145f, 1.54f, -0.45f);
-                bL.transform.localRotation = Quaternion.Euler(0f, 90f, 0f);
-                bL.transform.localScale = Vector3.one * 0.44f;
-                bL.GetComponent<Renderer>().sharedMaterial = nasaBadgeMat;
-
-                GameObject bR = GameObject.CreatePrimitive(PrimitiveType.Quad);
-                bR.name = "Rover_NASABadge_R";
-                bR.transform.SetParent(root.transform, false);
-                Destroy(bR.GetComponent<Collider>());
-                bR.transform.localPosition = new Vector3(1.145f, 1.54f, -0.45f);
-                bR.transform.localRotation = Quaternion.Euler(0f, -90f, 0f);
-                bR.transform.localScale = Vector3.one * 0.44f;
-                bR.GetComponent<Renderer>().sharedMaterial = nasaBadgeMat;
-
-                GameObject bHood = GameObject.CreatePrimitive(PrimitiveType.Quad);
-                bHood.name = "Rover_NASABadge_Hood";
-                bHood.transform.SetParent(root.transform, false);
-                Destroy(bHood.GetComponent<Collider>());
-                bHood.transform.localPosition = new Vector3(0f, 1.41f, 2.02f);
-                bHood.transform.localRotation = Quaternion.Euler(72f, 180f, 0f);
-                bHood.transform.localScale = Vector3.one * 0.42f;
-                bHood.GetComponent<Renderer>().sharedMaterial = nasaBadgeMat;
+                GameObject roverAsset = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Models/Fleet/mars-2020-perseverance-rover.glb");
+                if (roverAsset != null)
+                {
+                    GameObject inst = Instantiate(roverAsset, root.transform);
+                    inst.name = "Rover_NASA_Perseverance_GLB";
+                    glbNode = inst.transform;
+                }
+            }
+#endif
+            if (glbNode == null)
+            {
+                GameObject scenePersev = GameObject.Find("MS_Perseverance_Root");
+                if (scenePersev != null && scenePersev.transform.childCount > 0)
+                {
+                    GameObject cloned = Instantiate(scenePersev.transform.GetChild(0).gameObject, root.transform);
+                    cloned.name = "Rover_NASA_Perseverance_GLB";
+                    glbNode = cloned.transform;
+                }
             }
 
-            // Roof Solar Array + Radiators + Mastcam-Z Sensor Mast + Twin Headlights
-            MakePart("Roof_SolarPanel", PrimitiveType.Cube, root.transform, new Vector3(0f, 2.16f, -0.10f), Vector3.zero, new Vector3(2.05f, 0.06f, 2.20f), solarMat, false);
-            MakePart("Mast_Post", PrimitiveType.Cylinder, root.transform, new Vector3(0.55f, 2.55f, 1.15f), Vector3.zero, new Vector3(0.08f, 0.42f, 0.08f), cabWhite, false);
-            MakePart("Mast_SensorHead", PrimitiveType.Cube, root.transform, new Vector3(0.55f, 3.00f, 1.18f), Vector3.zero, new Vector3(0.46f, 0.22f, 0.28f), cabWhite, false);
-            MakePart("Mast_LensL", PrimitiveType.Cylinder, root.transform, new Vector3(0.42f, 3.00f, 1.33f), new Vector3(90f, 0f, 0f), new Vector3(0.08f, 0.04f, 0.08f), consoleGlow, false);
-            MakePart("Mast_LensR", PrimitiveType.Cylinder, root.transform, new Vector3(0.68f, 3.00f, 1.33f), new Vector3(90f, 0f, 0f), new Vector3(0.08f, 0.04f, 0.08f), consoleGlow, false);
-
-            // Headlights
-            headLightL = CreateHeadlight(root.transform, new Vector3(-0.78f, 1.05f, 2.25f));
-            headLightR = CreateHeadlight(root.transform, new Vector3(0.78f, 1.05f, 2.25f));
-
-            // 6 Articulated Wheels (Front L/R, Mid L/R, Rear L/R) on suspension bogies
-            float[] axleZ = { 1.68f, 0.05f, -1.62f };
-            float[] sideX = { -1.32f, 1.32f };
-            int wheelIdx = 0;
-            int steerIdx = 0;
-
-            for (int a = 0; a < 3; a++)
+            if (glbNode != null && glbNode.GetComponentsInChildren<Renderer>(true).Length > 0)
             {
-                for (int s = 0; s < 2; s++)
+                usingNasaGlb = true;
+                glbNode.SetParent(root.transform, false);
+                foreach (Collider c in glbNode.GetComponentsInChildren<Collider>(true)) Destroy(c);
+
+                glbNode.localPosition = Vector3.zero;
+                glbNode.localRotation = Quaternion.identity;
+                glbNode.localScale = Vector3.one;
+
+                Renderer[] rends = glbNode.GetComponentsInChildren<Renderer>(true);
+                Bounds b = rends[0].bounds;
+                for (int i = 1; i < rends.Length; i++) b.Encapsulate(rends[i].bounds);
+
+                float targetLen = 3.4f;
+                float maxHoriz = Mathf.Max(0.1f, Mathf.Max(b.size.x, b.size.z));
+                float scale = targetLen / maxHoriz;
+                glbNode.localScale = Vector3.one * scale;
+
+                // Ensure longest axis faces +Z forward
+                if (b.size.x > b.size.z * 1.15f)
                 {
-                    float wx = sideX[s];
-                    float wz = axleZ[a];
-
-                    // Strut arm from chassis to wheel axle
-                    MakePart($"BogieStrut_{a}_{s}", PrimitiveType.Cube, root.transform,
-                        new Vector3(wx * 0.72f, 0.62f, wz), new Vector3(0f, 0f, s == 0 ? 22f : -22f), new Vector3(0.55f, 0.10f, 0.14f), chassisDark, false);
-
-                    GameObject steerPivot = new GameObject($"WheelSteer_{a}_{s}");
-                    steerPivot.transform.SetParent(root.transform, false);
-                    steerPivot.transform.localPosition = new Vector3(wx, 0.50f, wz);
-
-                    if (a == 0 || a == 2)
-                    {
-                        wheelSteerPivots[steerIdx++] = steerPivot.transform;
-                    }
-
-                    GameObject wheelSpin = new GameObject($"WheelSpin_{a}_{s}");
-                    wheelSpin.transform.SetParent(steerPivot.transform, false);
-                    wheelVisuals[wheelIdx++] = wheelSpin.transform;
-
-                    MakePart($"Tire_{a}_{s}", PrimitiveType.Cylinder, wheelSpin.transform,
-                        Vector3.zero, new Vector3(0f, 0f, 90f), new Vector3(1.00f, 0.24f, 1.00f), wheelTire, false);
-                    MakePart($"Hub_{a}_{s}", PrimitiveType.Cylinder, wheelSpin.transform,
-                        Vector3.zero, new Vector3(0f, 0f, 90f), new Vector3(0.54f, 0.27f, 0.54f), wheelHub, false);
+                    glbNode.localRotation = Quaternion.Euler(0f, 90f, 0f);
                 }
+
+                Bounds sb = rends[0].bounds;
+                for (int i = 1; i < rends.Length; i++) sb.Encapsulate(rends[i].bounds);
+                glbNode.position += new Vector3(
+                    root.transform.position.x - sb.center.x,
+                    root.transform.position.y - sb.min.y,
+                    root.transform.position.z - sb.center.z);
+
+                // Upgrade metallic/smoothness balance so NASA PBR model pops crisply under URP lighting
+                foreach (Renderer r in rends)
+                {
+                    Material[] mats = r.materials;
+                    for (int i = 0; i < mats.Length; i++)
+                    {
+                        Material m = mats[i];
+                        if (m == null) continue;
+                        if (m.HasProperty("_Smoothness")) m.SetFloat("_Smoothness", Mathf.Clamp(m.GetFloat("_Smoothness"), 0.35f, 0.72f));
+                    }
+                }
+
+                headLightL = CreateHeadlight(root.transform, new Vector3(-0.72f, 1.08f, 1.65f));
+                headLightR = CreateHeadlight(root.transform, new Vector3(0.72f, 1.08f, 1.65f));
+            }
+            else
+            {
+                usingNasaGlb = false;
+                BuildFallbackRoverMesh(root.transform);
             }
 
             // Dismount anchor on left crew side (-X)
@@ -196,26 +174,103 @@ namespace MarsSentinel.NASA
             // Main interaction collider + metadata
             BoxCollider interactCol = gameObject.GetComponent<BoxCollider>();
             if (interactCol == null) interactCol = gameObject.AddComponent<BoxCollider>();
-            interactCol.center = new Vector3(0f, 1.35f, 0.2f);
-            interactCol.size = new Vector3(2.8f, 2.3f, 4.6f);
+            interactCol.center = new Vector3(0f, 1.25f, 0.1f);
+            interactCol.size = new Vector3(2.6f, 2.2f, 3.8f);
 
             inspectTarget = gameObject.GetComponent<MarsInspectableTarget>() ?? gameObject.AddComponent<MarsInspectableTarget>();
             inspectTarget.Configure(
                 id: "vehicle_pressurized_rover",
-                title: "ORBITX Pressurized Mars Exploration Rover",
-                category: "Crew Surface Mobility · Pressurized 6x6",
-                subtitle: "Press [E] to Drive / Dismount · Ackermann 6-Wheel Rocker-Bogie",
+                title: "ORBITX Mars Exploration Rover (NASA M20 PBR)",
+                category: "Crew Surface Mobility · 6x6 Rocker-Bogie",
+                subtitle: "Press [E] to Drive / Dismount · [U] A* Safest Autopilot",
                 coords: "Jezero Base Motor Pool · 18.4446°N, 77.4509°E",
-                geology: "Trafficability calibrated to USGS SIM 3292 units & HiRISE 1m slope hazard thresholds (<15 deg safe / >28 deg no-go).",
+                geology: "Trafficability calibrated to USGS SIM 3292 & nav-module CTX slope limit (<15° safe / >25° hard cutback).",
                 mineralogy: "Onboard Laser Raman + Mastcam-Z stereo suite for mobile Jezero rock & crater reconnaissance.",
-                environment: "6x6 Electric Hub Drive · Solar + MMRTG Aux Power · Headlights [B] · Range: 45 km/sol",
-                summary: "Walk near this pressurized crew rover and press [E] (or click 'Drive Rover [E]' on the HUD) to take full WASD driving control across Jezero Crater.",
+                environment: "6x6 Rocker-Bogie Suspension · Solar + MMRTG Aux Power · Headlights [B] · Autopilot [U]",
+                summary: "Walk near this rover and press [E] to drive manually (WASD) or press [U] to engage A* Safest Route Autopilot across Jezero Crater.",
                 sourceUrl: "https://science.nasa.gov/mission/mars-2020-perseverance/",
                 imageFile: "perseverance_sample_raw.jpg",
                 actionType: MarsInspectActionType.BoardRover,
                 actionHint: "Board & Drive Rover [E]",
                 interactionRadius: 6.5f
             );
+        }
+
+        private void BuildFallbackRoverMesh(Transform root)
+        {
+            Material chassisDark = MakeMat("Rover_Chassis", new Color(0.20f, 0.22f, 0.25f), 0.72f, 0.45f);
+            Material cabWhite = MakeMat("Rover_CabWhite", new Color(0.90f, 0.91f, 0.93f), 0.30f, 0.60f);
+            Material accentOrange = MakeMat("Rover_OrangeTrim", new Color(0.88f, 0.36f, 0.12f), 0.25f, 0.52f);
+            Material wheelTire = MakeMat("Rover_Tire", new Color(0.16f, 0.15f, 0.15f), 0.55f, 0.28f);
+            Material wheelHub = MakeMat("Rover_WheelHub", new Color(0.75f, 0.55f, 0.22f), 0.80f, 0.65f);
+            Material solarMat = MakeMat("Rover_SolarDeck", new Color(0.08f, 0.15f, 0.34f), 0.75f, 0.82f);
+            Material glassMat = MakeGlassMat("Rover_CockpitGlass", new Color(0.28f, 0.55f, 0.78f, 0.42f));
+            Material consoleGlow = MakeEmissive("Rover_ConsoleGlow", new Color(0.15f, 0.85f, 1.0f), new Color(0.15f, 0.85f, 1.0f) * 1.4f);
+
+            MakePart("Lower_Chassis", PrimitiveType.Cube, root, new Vector3(0f, 0.76f, 0f), Vector3.zero, new Vector3(1.98f, 0.30f, 4.45f), chassisDark, true);
+            MakePart("Crew_Cabin", PrimitiveType.Cube, root, new Vector3(0f, 1.48f, 0.25f), Vector3.zero, new Vector3(2.26f, 1.14f, 2.80f), cabWhite, true);
+            MakePart("Cockpit_Glass", PrimitiveType.Cube, root, new Vector3(0f, 1.64f, 1.72f), new Vector3(-28f, 0f, 0f), new Vector3(1.90f, 0.74f, 0.10f), glassMat, false);
+            MakePart("Accent_Band_L", PrimitiveType.Cube, root, new Vector3(-1.14f, 1.24f, 0.25f), Vector3.zero, new Vector3(0.05f, 0.18f, 2.74f), accentOrange, false);
+            MakePart("Accent_Band_R", PrimitiveType.Cube, root, new Vector3(1.14f, 1.24f, 0.25f), Vector3.zero, new Vector3(0.05f, 0.18f, 2.74f), accentOrange, false);
+            MakePart("Roof_SolarPanel", PrimitiveType.Cube, root, new Vector3(0f, 2.16f, -0.10f), Vector3.zero, new Vector3(2.05f, 0.06f, 2.20f), solarMat, false);
+            MakePart("Cockpit_Console", PrimitiveType.Cube, root, new Vector3(0f, 1.42f, 1.38f), Vector3.zero, new Vector3(1.2f, 0.22f, 0.22f), consoleGlow, false);
+
+            headLightL = CreateHeadlight(root, new Vector3(-0.78f, 1.05f, 2.25f));
+            headLightR = CreateHeadlight(root, new Vector3(0.78f, 1.05f, 2.25f));
+
+            float[] axleZ = { 1.68f, 0.05f, -1.62f };
+            float[] sideX = { -1.32f, 1.32f };
+            int wheelIdx = 0;
+            int steerIdx = 0;
+
+            for (int a = 0; a < 3; a++)
+            {
+                for (int s = 0; s < 2; s++)
+                {
+                    float wx = sideX[s];
+                    float wz = axleZ[a];
+                    GameObject steerPivot = new GameObject($"WheelSteer_{a}_{s}");
+                    steerPivot.transform.SetParent(root, false);
+                    steerPivot.transform.localPosition = new Vector3(wx, 0.50f, wz);
+                    if (a == 0 || a == 2) wheelSteerPivots[steerIdx++] = steerPivot.transform;
+                    GameObject wheelSpin = new GameObject($"WheelSpin_{a}_{s}");
+                    wheelSpin.transform.SetParent(steerPivot.transform, false);
+                    wheelVisuals[wheelIdx++] = wheelSpin.transform;
+                    MakePart($"Tire_{a}_{s}", PrimitiveType.Cylinder, wheelSpin.transform, Vector3.zero, new Vector3(0f, 0f, 90f), new Vector3(1.00f, 0.24f, 1.00f), wheelTire, false);
+                    MakePart($"Hub_{a}_{s}", PrimitiveType.Cylinder, wheelSpin.transform, Vector3.zero, new Vector3(0f, 0f, 90f), new Vector3(0.54f, 0.27f, 0.54f), wheelHub, false);
+                }
+            }
+        }
+
+        public void ToggleAutopilot()
+        {
+            if (!IsDriverSeated) BoardDriver();
+            IsAutopilotActive = !IsAutopilotActive;
+            if (IsAutopilotActive)
+            {
+                autopilotWpIdx = FindNearestSafestWaypointIndex();
+                MarsSurvivalMissionController.Instance?.ShowAlert("ROVER AUTOPILOT ENGAGED · FOLLOWING A* SAFEST ROUTE", 3.0f);
+            }
+            else
+            {
+                MarsSurvivalMissionController.Instance?.ShowAlert("ROVER AUTOPILOT DISENGAGED · MANUAL CONTROL", 2.2f);
+            }
+            MarsAudioManager.Instance?.PlayUiClick();
+            MarsSceneManager.Instance?.RefreshLiveExplorationHud();
+        }
+
+        private int FindNearestSafestWaypointIndex()
+        {
+            var pts = MarsDatasetLoader.Instance?.RoutesData?.safest?.unityPositions;
+            if (pts == null || pts.Count == 0) return 0;
+            int best = 0;
+            float bestD = float.MaxValue;
+            for (int i = 0; i < pts.Count; i++)
+            {
+                float d = Vector2.Distance(new Vector2(transform.position.x, transform.position.z), new Vector2(pts[i].x, pts[i].z));
+                if (d < bestD) { bestD = d; best = i; }
+            }
+            return Mathf.Min(best + 1, pts.Count - 1);
         }
 
         public void ToggleBoardOrDismount()
@@ -295,10 +350,57 @@ namespace MarsSentinel.NASA
                     MarsAudioManager.Instance?.PlayUiClick();
                 }
 
+                if (kb.rKey.wasPressedThisFrame)
+                {
+                    ToggleAutopilot();
+                }
+
                 if (kb.eKey.wasPressedThisFrame)
                 {
+                    IsAutopilotActive = false;
                     DismountDriver();
                     return;
+                }
+            }
+
+            // Manual input immediately yields autopilot back to driver
+            if (Mathf.Abs(throttle) > 0.05f || Mathf.Abs(steerInput) > 0.05f || braking)
+            {
+                if (IsAutopilotActive)
+                {
+                    IsAutopilotActive = false;
+                    MarsSceneManager.Instance?.RefreshLiveExplorationHud();
+                }
+            }
+            else if (IsAutopilotActive)
+            {
+                var pts = MarsDatasetLoader.Instance?.RoutesData?.safest?.unityPositions;
+                if (pts != null && pts.Count > 1)
+                {
+                    autopilotWpIdx = Mathf.Clamp(autopilotWpIdx, 0, pts.Count - 1);
+                    Vector3 wp = pts[autopilotWpIdx];
+                    Vector2 toWp = new Vector2(wp.x - transform.position.x, wp.z - transform.position.z);
+                    if (toWp.magnitude < 3.2f)
+                    {
+                        if (autopilotWpIdx < pts.Count - 1) autopilotWpIdx++;
+                        else
+                        {
+                            IsAutopilotActive = false;
+                            MarsSurvivalMissionController.Instance?.ShowAlert("AUTOPILOT ARRIVED AT A* SAFEST TARGET", 3.0f);
+                        }
+                    }
+                    if (IsAutopilotActive)
+                    {
+                        Vector3 desiredDir = new Vector3(toWp.x, 0f, toWp.y).normalized;
+                        Vector3 fwdHoriz = new Vector3(transform.forward.x, 0f, transform.forward.z).normalized;
+                        float signedAng = Vector3.SignedAngle(fwdHoriz, desiredDir, Vector3.up);
+                        steerInput = Mathf.Clamp(signedAng / 30f, -1f, 1f);
+                        throttle = Mathf.Abs(signedAng) > 45f ? 0.35f : 0.62f;
+                    }
+                }
+                else
+                {
+                    IsAutopilotActive = false;
                 }
             }
 
@@ -318,19 +420,31 @@ namespace MarsSentinel.NASA
                 }
             }
 
+            // Realistic Martian gravity hill-climb drag + hard 25° nav-module slope safety limit
+            float slopeGrade = Mathf.Sin(CurrentSlopeDeg * Mathf.Deg2Rad);
+            float forwardClimbFactor = Vector3.Dot(transform.forward, Vector3.up);
+            float slopeLimitScale = CurrentSlopeDeg > 25.0f ? 0.22f : (CurrentSlopeDeg > 15.0f ? 0.68f : 1.0f);
+            float prevSpeed = currentSpeed;
+
             if (braking)
             {
-                currentSpeed = Mathf.MoveTowards(currentSpeed, 0f, dragDecel * 2.5f * Time.deltaTime);
+                currentSpeed = Mathf.MoveTowards(currentSpeed, 0f, dragDecel * 2.6f * Time.deltaTime);
             }
             else if (Mathf.Abs(throttle) > 0.01f)
             {
-                float targetMax = throttle > 0f ? maxForwardSpeed : -maxReverseSpeed;
+                float targetMax = (throttle > 0f ? maxForwardSpeed : -maxReverseSpeed) * slopeLimitScale;
                 currentSpeed = Mathf.MoveTowards(currentSpeed, targetMax * Mathf.Abs(throttle), acceleration * Time.deltaTime);
+                // Gravity resistance climbing uphill / gravity assist downhill
+                currentSpeed -= forwardClimbFactor * 3.72f * Time.deltaTime * 0.65f;
             }
             else
             {
-                currentSpeed = Mathf.MoveTowards(currentSpeed, 0f, dragDecel * Time.deltaTime);
+                currentSpeed = Mathf.MoveTowards(currentSpeed, 0f, (dragDecel + slopeGrade * 3.2f) * Time.deltaTime);
             }
+
+            float accelRate = (currentSpeed - prevSpeed) / Mathf.Max(0.005f, Time.deltaTime);
+            suspPitchVel += (-accelRate * 0.35f) * Time.deltaTime;
+            suspRollVel += (steerInput * currentSpeed * 0.25f) * Time.deltaTime;
 
             // Counter-steer / turn in proportion to speed (with gentle pivot ability at low speed)
             steerAngle = Mathf.Lerp(steerAngle, steerInput * 28f, Time.deltaTime * 8f);
@@ -403,12 +517,40 @@ namespace MarsSentinel.NASA
                 MarsAstronautController.Instance.transform.position = transform.position;
             }
 
+            // Emit pooled rear-wheel Martian regolith dust puffs when rolling
+            if (Mathf.Abs(currentSpeed) > 1.2f)
+            {
+                dustEmitTimer += Time.deltaTime * Mathf.Clamp(Mathf.Abs(currentSpeed) / 3.5f, 0.5f, 3.5f);
+                if (dustEmitTimer >= 0.14f)
+                {
+                    dustEmitTimer = 0f;
+                    Vector3 rearL = transform.position - transform.forward * 1.45f - transform.right * 1.1f;
+                    Vector3 rearR = transform.position - transform.forward * 1.45f + transform.right * 1.1f;
+                    MarsCinematicVfxAndPost.Instance?.EmitDustPuff(rearL, 2, 1.15f);
+                    MarsCinematicVfxAndPost.Instance?.EmitDustPuff(rearR, 2, 1.15f);
+                }
+            }
+
+            // Spring-damper suspension bounce on chassis root (tactile Martian terrain feel)
+            if (suspensionRoot != null)
+            {
+                float dt = Time.deltaTime;
+                suspPitchVel += (-suspPitch * 34f - suspPitchVel * 6.5f) * dt;
+                suspRollVel += (-suspRoll * 36f - suspRollVel * 6.5f) * dt;
+                suspPitch = Mathf.Clamp(suspPitch + suspPitchVel * dt, -5.5f, 5.5f);
+                suspRoll = Mathf.Clamp(suspRoll + suspRollVel * dt, -6.5f, 6.5f);
+                float rumble = Mathf.Abs(currentSpeed) > 0.5f ? Mathf.Sin(Time.time * 18f) * 0.018f * Mathf.Clamp01(Mathf.Abs(currentSpeed) / 8f) : 0f;
+                suspHeave = Mathf.Lerp(suspHeave, rumble, dt * 14f);
+                suspensionRoot.localPosition = new Vector3(0f, suspHeave, 0f);
+                suspensionRoot.localRotation = Quaternion.Euler(suspPitch, 0f, suspRoll);
+            }
+
             // Telemetry & audio updates
             float heading = (transform.eulerAngles.y % 360f + 360f) % 360f;
             MarsTelemetryController.Instance?.UpdateRoverMotionTelemetry(Mathf.Abs(currentSpeed), heading, TotalDistanceMeters);
             MarsAudioManager.Instance?.UpdateRoverAudio(true, currentSpeed);
 
-            if (CurrentSlopeDeg > 18.0f && Mathf.Abs(currentSpeed) > 1.5f)
+            if (CurrentSlopeDeg > 20.0f && Mathf.Abs(currentSpeed) > 1.2f)
             {
                 MarsAudioManager.Instance?.PlayHazardBeep();
             }
@@ -424,14 +566,26 @@ namespace MarsSentinel.NASA
 
             float targetYaw = transform.eulerAngles.y + chaseYawOffset;
             Quaternion camRot = Quaternion.Euler(chasePitch, targetYaw, 0f);
-            Vector3 focus = transform.position + Vector3.up * 1.85f;
-            Vector3 desiredPos = focus - camRot * Vector3.forward * chaseDistance;
+            Vector3 focus = transform.position + Vector3.up * 1.95f;
+            Vector3 dir = -(camRot * Vector3.forward);
+            float dist = chaseDistance;
 
+            // SphereCast prevents chase camera clipping inside Habitat / Agri / Rock obstacles
+            if (Physics.SphereCast(focus, 0.35f, dir, out RaycastHit camHit, chaseDistance, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore))
+            {
+                if (camHit.collider != null && !camHit.collider.transform.IsChildOf(transform))
+                {
+                    dist = Mathf.Clamp(camHit.distance - 0.35f, 2.2f, chaseDistance);
+                }
+            }
+
+            Vector3 desiredPos = focus + dir * dist;
             float groundFloor = MarsVisualRealismPolish.SampleTerrainElevation(desiredPos.x, desiredPos.z) + 0.65f;
             if (desiredPos.y < groundFloor) desiredPos.y = groundFloor;
 
-            mainCam.transform.position = Vector3.Lerp(mainCam.transform.position, desiredPos, Time.deltaTime * 10f);
+            mainCam.transform.position = Vector3.Lerp(mainCam.transform.position, desiredPos, Time.deltaTime * 11f);
             mainCam.transform.LookAt(focus);
+            mainCam.fieldOfView = Mathf.Lerp(mainCam.fieldOfView, 60f + Mathf.Clamp01(Mathf.Abs(currentSpeed) / maxForwardSpeed) * 7f, Time.deltaTime * 6f);
         }
 
         private void AlignToTerrain(float smoothSpeed)
@@ -440,21 +594,24 @@ namespace MarsSentinel.NASA
             Vector3 fwd = new Vector3(transform.forward.x, 0f, transform.forward.z).normalized;
             Vector3 right = new Vector3(transform.right.x, 0f, transform.right.z).normalized;
 
-            Vector3 pF = p + fwd * 1.6f;
-            Vector3 pB = p - fwd * 1.6f;
-            Vector3 pL = p - right * 1.3f;
-            Vector3 pR = p + right * 1.3f;
+            // 6-point Rocker-Bogie wheel terrain sampling (FL, FR, ML, MR, RL, RR)
+            float hFL = MarsVisualRealismPolish.SampleTerrainElevation((p + fwd * 1.55f - right * 1.15f).x, (p + fwd * 1.55f - right * 1.15f).z);
+            float hFR = MarsVisualRealismPolish.SampleTerrainElevation((p + fwd * 1.55f + right * 1.15f).x, (p + fwd * 1.55f + right * 1.15f).z);
+            float hML = MarsVisualRealismPolish.SampleTerrainElevation((p - right * 1.20f).x, (p - right * 1.20f).z);
+            float hMR = MarsVisualRealismPolish.SampleTerrainElevation((p + right * 1.20f).x, (p + right * 1.20f).z);
+            float hRL = MarsVisualRealismPolish.SampleTerrainElevation((p - fwd * 1.55f - right * 1.15f).x, (p - fwd * 1.55f - right * 1.15f).z);
+            float hRR = MarsVisualRealismPolish.SampleTerrainElevation((p - fwd * 1.55f + right * 1.15f).x, (p - fwd * 1.55f + right * 1.15f).z);
 
-            float hC = MarsVisualRealismPolish.SampleTerrainElevation(p.x, p.z);
-            float hF = MarsVisualRealismPolish.SampleTerrainElevation(pF.x, pF.z);
-            float hB = MarsVisualRealismPolish.SampleTerrainElevation(pB.x, pB.z);
-            float hL = MarsVisualRealismPolish.SampleTerrainElevation(pL.x, pL.z);
-            float hR = MarsVisualRealismPolish.SampleTerrainElevation(pR.x, pR.z);
+            float avgY = (hFL + hFR + hML + hMR + hRL + hRR) / 6f;
+            float hF = (hFL + hFR) * 0.5f;
+            float hB = (hRL + hRR) * 0.5f;
+            float hL = (hFL + hML + hRL) / 3f;
+            float hR = (hFR + hMR + hRR) / 3f;
 
-            transform.position = new Vector3(p.x, Mathf.Lerp(p.y, hC, Mathf.Min(1f, Time.deltaTime * 18f)), p.z);
+            transform.position = new Vector3(p.x, Mathf.Lerp(p.y, avgY, Mathf.Min(1f, Time.deltaTime * 18f)), p.z);
 
-            Vector3 vFwd = new Vector3(pF.x - pB.x, hF - hB, pF.z - pB.z).normalized;
-            Vector3 vRight = new Vector3(pR.x - pL.x, hR - hL, pR.z - pL.z).normalized;
+            Vector3 vFwd = new Vector3(fwd.x * 3.1f, hF - hB, fwd.z * 3.1f).normalized;
+            Vector3 vRight = new Vector3(right.x * 2.3f, hR - hL, right.z * 2.3f).normalized;
             Vector3 surfaceNormal = Vector3.Cross(vFwd, vRight).normalized;
             if (surfaceNormal.y < 0f) surfaceNormal = -surfaceNormal;
 

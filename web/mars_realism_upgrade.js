@@ -1964,12 +1964,12 @@
       num: '3 / 7',
       zone: 'tactical',
       focus: 'default',
-      title: 'A* Multi-Objective Pathfinding & Hazard Mitigation',
-      kicker: 'SAFER TRAVERSES ACROSS JEZERO DELTA',
+      title: 'Dynamic A* Multi-Objective Traverse & Hazard Engine',
+      kicker: 'HIRES 4M + LIVE CTX 80M A* PATHFINDING',
       bullets: [
-        'Safest Route (88.4/100): 1,159.95 m · 6.49° max slope · penalizes roughness & boulder scarps below 15° rover safety limit.',
-        'Shortest Geodesic (64.1/100): 1,113.50 m vs Science Return (82.7/100): 1,203.21 m passing all 22 M20 cache targets.',
-        'Interactive Layer Toggle [H] & Live Off-Route Margin + Goal ETA keep crews spatially oriented.'
+        'HiRISE Safest Route (88.4/100): 1,159.95 m · 6.49° max slope vs Shortest (1,113.50 m) & Science Return (1,203.21 m).',
+        'Live CTX A* Solver (399×378 USGS CTX Mosaic): Click any start/destination to compare Shortest vs. Safest with 120 m Douglas-Peucker waypoints.',
+        'Note: 80 m DEM uses roughness as a rock-hazard proxy; slope limit (25°) & EVA speed (0.8 m/s) are explicit model assumptions.'
       ]
     },
     {
@@ -1988,12 +1988,12 @@
       num: '5 / 7',
       zone: 'surface',
       focus: 'sun',
-      title: 'Martian Space Weather Physics & EVA Survival Radius',
-      kicker: 'BEER-LAMBERT OPTICS + MEDA/RAD/DONKI',
+      title: 'Mars Orbital Solar Optics, RF Viewshed & EVA Survival',
+      kicker: 'SOLAR LONGITUDE Ls · RF LINE-OF-SIGHT · SITE CHECK',
       bullets: [
-        'Real-time Beer-Lambert atmospheric attenuation computes surface irradiance I = 586.2 * exp(-tau / sin(el)) as dust depth τ shifts (0.45 -> 2.80).',
-        'Dynamic Point-of-No-Return (PNR) EVA safety radius shrinks automatically under dust storms & O2 depletion.',
-        'Integrated First Aid & Radiation Triage Medical Bay for GCR (0.67 mSv/day baseline) and DONKI Solar Particle Events.'
+        'Computes Mars solar elevation, Beer-Lambert irradiance & terrain shadows across Solar Longitude Ls (0–355°) and solar time (0–24h).',
+        'Terrain-occluded Radio Line-of-Sight (LOS) viewshed flags shadowed valleys & verifies antenna clearance between rover and outpost.',
+        'Outpost Site Check screens candidate sites (Slope <= 10°, Roughness <= 2 m, >= 50% daylight) alongside PNR dust-storm radius.'
       ]
     },
     {
@@ -2533,10 +2533,257 @@
       const nextBtn = document.getElementById('ms-sl-next');
       if (prevBtn) prevBtn.onclick = () => { v10State.slideIdx = (v10State.slideIdx + 6) % 7; applySlideView(v10State.slideIdx); renderV10DrawerContent('slides'); };
       if (nextBtn) nextBtn.onclick = () => { v10State.slideIdx = (v10State.slideIdx + 1) % 7; applySlideView(v10State.slideIdx); renderV10DrawerContent('slides'); };
+    } else if (tab === 'ctxnav') {
+      renderCtxNavDrawer(drawer);
     }
 
     const xBtn = document.getElementById('ms-drw-x');
     if (xBtn) xBtn.onclick = () => selectDockTab(null);
+  }
+
+  const ctxNavState = {
+    grid: null,
+    loading: false,
+    error: null,
+    overlay: 'hazard', // 'imagery' | 'hazard' | 'sun' | 'radio'
+    presetIdx: 0,
+    start: [281, 142],
+    goal: [221, 125],
+    pickTarget: 'goal', // 'start' | 'goal'
+    lsDeg: 90,
+    solarHour: 12.0,
+    antennaM: 6.0,
+    shortest: null,
+    safest: null
+  };
+
+  function recomputeCtxRoutes() {
+    const g = ctxNavState.grid;
+    const NAV = window.ORBITX_NAV;
+    if (!g || !NAV) return;
+    const sIdx = ctxNavState.start[0] * g.C + ctxNavState.start[1];
+    const gIdx = ctxNavState.goal[0] * g.C + ctxNavState.goal[1];
+    const sp = NAV.astar(g, sIdx, gIdx, 'shortest');
+    const fp = NAV.astar(g, sIdx, gIdx, 'safest');
+    ctxNavState.shortest = sp ? NAV.stats(g, sp, 'shortest') : null;
+    ctxNavState.safest = fp ? NAV.stats(g, fp, 'safest') : null;
+  }
+
+  function drawCtxNavCanvas() {
+    const cv = document.getElementById('ms-ctx-canvas');
+    const g = ctxNavState.grid;
+    const SUN = window.ORBITX_SUN;
+    if (!cv || !g || !SUN) return;
+    const R = g.R, C = g.C;
+    cv.width = C;
+    cv.height = R;
+    const ctx = cv.getContext('2d');
+    const imgData = ctx.createImageData(C, R);
+    const d = imgData.data;
+    const sp = SUN.pos(18.4447, ctxNavState.lsDeg, ctxNavState.solarHour);
+    const sIdx = ctxNavState.start[0] * C + ctxNavState.start[1];
+    const ant = ctxNavState.antennaM;
+
+    let minZ = Infinity, maxZ = -Infinity;
+    for (let i = 0; i < R * C; i++) {
+      if (g.z[i] < minZ) minZ = g.z[i];
+      if (g.z[i] > maxZ) maxZ = g.z[i];
+    }
+    const span = (maxZ - minZ) || 1;
+
+    for (let r = 0; r < R; r++) {
+      for (let c = 0; c < C; c++) {
+        const i = r * C + c;
+        const o = i * 4;
+        if (ctxNavState.overlay === 'imagery') {
+          const norm = (g.z[i] - minZ) / span;
+          const shade = Math.max(0.25, Math.min(1.0, 0.85 - (g.S[i] / 45.0) * 0.45 + norm * 0.25));
+          d[o] = Math.round(210 * shade);
+          d[o + 1] = Math.round(125 * shade);
+          d[o + 2] = Math.round(82 * shade);
+        } else if (ctxNavState.overlay === 'hazard') {
+          if (g.S[i] > 25.0) {
+            d[o] = 24; d[o + 1] = 24; d[o + 2] = 30;
+          } else {
+            const k = Math.min(1, g.K[i] * 1.45);
+            d[o] = k < 0.5 ? Math.round(45 + 205 * (k * 2)) : 250;
+            d[o + 1] = k < 0.5 ? 215 : Math.round(215 * (1 - (k - 0.5) * 2));
+            d[o + 2] = 75;
+          }
+        } else if (ctxNavState.overlay === 'sun') {
+          const lit = SUN.lit(g, i, sp.az, sp.el);
+          const ir = lit ? Math.min(1, SUN.irr(g, i, ctxNavState.lsDeg, sp.az, sp.el) / 480.0) : 0;
+          d[o] = lit ? Math.round(70 + 185 * ir) : 18;
+          d[o + 1] = lit ? Math.round(50 + 165 * ir) : 24;
+          d[o + 2] = lit ? Math.round(25 + 75 * ir) : 46;
+        } else {
+          // Radio Line-of-Sight Viewshed (sample every pixel vs start antenna)
+          const res = SUN.los(g, sIdx, i, ant);
+          if (res.ok) {
+            d[o] = 34; d[o + 1] = 197; d[o + 2] = 94;
+          } else {
+            d[o] = 48; d[o + 1] = 24; d[o + 2] = 38;
+          }
+        }
+        d[o + 3] = 255;
+      }
+    }
+    ctx.putImageData(imgData, 0, 0);
+
+    function drawRoute(route, color) {
+      if (!route || !route.path || !route.path.length) return;
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2.2;
+      ctx.beginPath();
+      route.path.forEach((idx, k) => {
+        const rr = Math.floor(idx / C), cc = idx % C;
+        if (k === 0) ctx.moveTo(cc + 0.5, rr + 0.5);
+        else ctx.lineTo(cc + 0.5, rr + 0.5);
+      });
+      ctx.stroke();
+      ctx.fillStyle = color;
+      route.waypoints.forEach((idx) => {
+        const rr = Math.floor(idx / C), cc = idx % C;
+        ctx.fillRect(cc - 2, rr - 2, 4, 4);
+      });
+    }
+
+    drawRoute(ctxNavState.shortest, '#38bdf8');
+    drawRoute(ctxNavState.safest, '#ffffff');
+
+    // Start & Goal markers
+    ctx.fillStyle = '#22c55e';
+    ctx.fillRect(ctxNavState.start[1] - 3, ctxNavState.start[0] - 3, 7, 7);
+    ctx.fillStyle = '#f97316';
+    ctx.fillRect(ctxNavState.goal[1] - 3, ctxNavState.goal[0] - 3, 7, 7);
+  }
+
+  function renderCtxNavDrawer(drawer) {
+    const eng = window.ORBITX_NAV_ENGINE;
+    if (!eng) {
+      drawer.innerHTML = '<div class="ms-drawer-head"><h3>CTX Nav &amp; RF Viewshed</h3><button class="ms-drawer-close" id="ms-drw-x">✕</button></div><p class="mono-mini">Loading nav_sun_engine.js...</p>';
+      return;
+    }
+
+    if (!ctxNavState.grid && !ctxNavState.loading) {
+      ctxNavState.loading = true;
+      eng.loadJezeroCtxGrid().then((g) => {
+        ctxNavState.grid = g;
+        ctxNavState.loading = false;
+        recomputeCtxRoutes();
+        if (v10State.activeTab === 'ctxnav') renderCtxNavDrawer(drawer);
+      }).catch((err) => {
+        ctxNavState.loading = false;
+        ctxNavState.error = String(err && err.message || 'Grid unavailable');
+        if (v10State.activeTab === 'ctxnav') renderCtxNavDrawer(drawer);
+      });
+    }
+
+    const presetsHtml = eng.PRESETS.map((p, idx) => '<option value="' + idx + '"' + (idx === ctxNavState.presetIdx ? ' selected' : '') + '>' + p.label + '</option>').join('');
+    const sh = ctxNavState.shortest;
+    const sf = ctxNavState.safest;
+    const g = ctxNavState.grid;
+    const SUN = window.ORBITX_SUN;
+
+    let telemetryHtml = '<p class="mono-mini" style="color:#7fe3d2">Loading 399×378 USGS CTX DTM Mosaic (80 m cells)...</p>';
+    if (ctxNavState.error) {
+      telemetryHtml = '<p class="mono-mini" style="color:#fca5a5">Grid fetch notice: ' + ctxNavState.error + ' (serve via HTTP at /web/index.html).</p>';
+    } else if (g && SUN) {
+      const sIdx = ctxNavState.start[0] * g.C + ctxNavState.start[1];
+      const gIdx = ctxNavState.goal[0] * g.C + ctxNavState.goal[1];
+      const sp = SUN.pos(18.4447, ctxNavState.lsDeg, ctxNavState.solarHour);
+      const irrStart = SUN.lit(g, sIdx, sp.az, sp.el) ? SUN.irr(g, sIdx, ctxNavState.lsDeg, sp.az, sp.el) : 0;
+      const rf = SUN.los(g, sIdx, gIdx, ctxNavState.antennaM);
+      const site = SUN.siteCheck(g, gIdx, 18.4447, ctxNavState.lsDeg);
+      telemetryHtml = [
+        '<table class="ms-ctx-table">',
+        '  <tr><th>Mode</th><th>Dist</th><th>Slope</th><th>Risk</th><th>ETA</th><th>Pts</th></tr>',
+        '  <tr><td style="color:#38bdf8;font-weight:600">Shortest</td><td>' + (sh ? sh.distanceMeters + ' m' : 'Blocked') + '</td><td>' + (sh ? sh.maxSlopeDeg + '°' : '-') + '</td><td>' + (sh ? sh.meanRisk : '-') + '</td><td>' + (sh ? sh.etaMinutes + 'm' : '-') + '</td><td>' + (sh ? sh.waypoints.length : '-') + '</td></tr>',
+        '  <tr><td style="color:#34d399;font-weight:600">Safest</td><td>' + (sf ? sf.distanceMeters + ' m' : 'Blocked') + '</td><td>' + (sf ? sf.maxSlopeDeg + '°' : '-') + '</td><td>' + (sf ? sf.meanRisk : '-') + '</td><td>' + (sf ? sf.etaMinutes + 'm' : '-') + '</td><td>' + (sf ? sf.waypoints.length : '-') + '</td></tr>',
+        '</table>',
+        '<div class="ms-ctx-kpis">',
+        '  <div class="ms-ctx-kpi"><div class="ms-ctx-kpi-lbl">Solar Optics</div><div class="ms-ctx-kpi-val" style="color:#fbbf24">' + irrStart.toFixed(0) + ' W/m²</div><div class="ms-ctx-kpi-sub">Ls ' + ctxNavState.lsDeg + '° · El ' + sp.el.toFixed(1) + '°</div></div>',
+        '  <div class="ms-ctx-kpi"><div class="ms-ctx-kpi-lbl">RF Line-of-Sight</div><div class="ms-ctx-kpi-val" style="color:' + (rf.ok ? '#34d399' : '#f87171') + '">' + (rf.ok ? 'CLEAR' : 'BLOCKED') + '</div><div class="ms-ctx-kpi-sub">' + Math.round(rf.d) + 'm · Ant ' + ctxNavState.antennaM + 'm</div></div>',
+        '  <div class="ms-ctx-kpi"><div class="ms-ctx-kpi-lbl">Outpost Site</div><div class="ms-ctx-kpi-val" style="color:' + (site.pass ? '#34d399' : '#fbbf24') + '">' + (site.pass ? 'PASS' : 'WARN') + '</div><div class="ms-ctx-kpi-sub">' + site.slopeDeg + '° · ' + site.roughM + 'm · ' + site.daylightPct + '% sun</div></div>',
+        '</div>'
+      ].join('');
+    }
+
+    drawer.innerHTML = [
+      '<div class="ms-drawer-head"><div><span class="ms-drawer-kicker">USGS CTX DTM · 80M LIVE SOLVER</span><h3>Dynamic A* Route Planner, Solar Optics &amp; RF Viewshed</h3></div>',
+      '<div style="display:flex;align-items:center;gap:8px"><span class="ms-source-badge src-nasa">REAL CTX DEM</span><button class="ms-drawer-close" id="ms-drw-x">✕</button></div></div>',
+      '<div class="ms-ctx-layout">',
+      '  <div>',
+      '    <div class="ms-ctx-modes">',
+      '      <button class="ms-ctrl-btn' + (ctxNavState.overlay === 'imagery' ? ' primary' : '') + '" data-ctxm="imagery">Imagery</button>',
+      '      <button class="ms-ctrl-btn' + (ctxNavState.overlay === 'hazard' ? ' primary' : '') + '" data-ctxm="hazard">Hazard</button>',
+      '      <button class="ms-ctrl-btn' + (ctxNavState.overlay === 'sun' ? ' primary' : '') + '" data-ctxm="sun">Sun</button>',
+      '      <button class="ms-ctrl-btn' + (ctxNavState.overlay === 'radio' ? ' primary' : '') + '" data-ctxm="radio">RF View</button>',
+      '    </div>',
+      '    <canvas id="ms-ctx-canvas" width="399" height="378"></canvas>',
+      '    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px"><span class="mono-mini" style="color:#94a3b8">Click map to set <strong style="color:#fff">' + ctxNavState.pickTarget.toUpperCase() + '</strong></span><button class="ms-ctrl-btn" id="ms-ctx-pick-toggle" style="padding:3px 9px;font-size:10.5px">Pick ' + (ctxNavState.pickTarget === 'goal' ? 'Start' : 'Goal') + '</button></div>',
+      '  </div>',
+      '  <div>',
+      '    <div class="ms-ctx-toolbar">',
+      '      <select id="ms-ctx-preset" class="ms-ctx-select">' + presetsHtml + '</select>',
+      '      <button class="ms-ctrl-btn primary ms-ctx-recalc" id="ms-ctx-recalc">↻ Solve A*</button>',
+      '    </div>',
+      '    <div class="ms-ctx-sliders">',
+      '      <label><span>Ls Season <strong id="ms-ls-val">' + ctxNavState.lsDeg + '°</strong></span><input id="ms-ls-sl" type="range" min="0" max="355" step="5" value="' + ctxNavState.lsDeg + '"></label>',
+      '      <label><span>Solar Time <strong id="ms-lt-val">' + ctxNavState.solarHour.toFixed(1) + 'h</strong></span><input id="ms-lt-sl" type="range" min="0" max="24" step="0.5" value="' + ctxNavState.solarHour + '"></label>',
+      '      <label><span>Antenna <strong id="ms-ant-val">' + ctxNavState.antennaM + 'm</strong></span><input id="ms-ant-sl" type="range" min="2" max="25" step="1" value="' + ctxNavState.antennaM + '"></label>',
+      '    </div>',
+      telemetryHtml,
+      '  </div>',
+      '</div>'
+    ].join('');
+
+    if (g) drawCtxNavCanvas();
+
+    drawer.querySelectorAll('[data-ctxm]').forEach((b) => {
+      b.onclick = () => {
+        ctxNavState.overlay = b.getAttribute('data-ctxm');
+        renderCtxNavDrawer(drawer);
+      };
+    });
+    const pickBtn = document.getElementById('ms-ctx-pick-toggle');
+    if (pickBtn) pickBtn.onclick = () => {
+      ctxNavState.pickTarget = ctxNavState.pickTarget === 'goal' ? 'start' : 'goal';
+      renderCtxNavDrawer(drawer);
+    };
+    const presetSel = document.getElementById('ms-ctx-preset');
+    if (presetSel) presetSel.onchange = () => {
+      ctxNavState.presetIdx = Number(presetSel.value) || 0;
+      const p = eng.PRESETS[ctxNavState.presetIdx];
+      ctxNavState.start = p.start.slice();
+      ctxNavState.goal = p.goal.slice();
+      recomputeCtxRoutes();
+      renderCtxNavDrawer(drawer);
+    };
+    const recalcBtn = document.getElementById('ms-ctx-recalc');
+    if (recalcBtn) recalcBtn.onclick = () => { recomputeCtxRoutes(); renderCtxNavDrawer(drawer); };
+
+    const lsSl = document.getElementById('ms-ls-sl');
+    const ltSl = document.getElementById('ms-lt-sl');
+    const antSl = document.getElementById('ms-ant-sl');
+    if (lsSl) lsSl.oninput = () => { ctxNavState.lsDeg = Number(lsSl.value); renderCtxNavDrawer(drawer); };
+    if (ltSl) ltSl.oninput = () => { ctxNavState.solarHour = Number(ltSl.value); renderCtxNavDrawer(drawer); };
+    if (antSl) antSl.oninput = () => { ctxNavState.antennaM = Number(antSl.value); renderCtxNavDrawer(drawer); };
+
+    const cvEl = document.getElementById('ms-ctx-canvas');
+    if (cvEl && g) {
+      cvEl.onclick = (ev) => {
+        const rect = cvEl.getBoundingClientRect();
+        const col = Math.max(0, Math.min(g.C - 1, Math.floor(((ev.clientX - rect.left) / rect.width) * g.C)));
+        const row = Math.max(0, Math.min(g.R - 1, Math.floor(((ev.clientY - rect.top) / rect.height) * g.R)));
+        ctxNavState[ctxNavState.pickTarget] = [row, col];
+        recomputeCtxRoutes();
+        renderCtxNavDrawer(drawer);
+      };
+    }
+
+    const closeBtn = document.getElementById('ms-drw-x');
+    if (closeBtn) closeBtn.onclick = () => selectDockTab(null);
   }
 
   function selectDockTab(tab) {
@@ -2607,6 +2854,9 @@
     const btn = document.querySelector('.ms-v10-tab[data-tab="demo30"]');
     if (btn) btn.classList.toggle('active', v10State.demoActive);
     if (!v10State.demoActive) {
+      if (v10State.recorder && v10State.recorder.state === 'recording') {
+        try { v10State.recorder.stop(); } catch (_) {}
+      }
       if (sub) sub.classList.remove('visible');
       const pop = document.getElementById('ms-omni-popup');
       if (pop) pop.classList.remove('visible');
@@ -2693,12 +2943,12 @@
       hudBtn.type = 'button';
       hudBtn.id = 'btn-toggle-full-hud';
       hudBtn.className = 'action-btn';
-      hudBtn.textContent = '⊞ Full HUD: OFF';
+      hudBtn.textContent = '⊞ HUD';
       hudBtn.title = 'Switch between Clean 3D-First Mode and Full Telemetry Side Panels';
       hudBtn.addEventListener('click', () => {
         const isFull = document.body.classList.toggle('ms-full-hud');
         hudBtn.classList.toggle('hud-active', isFull);
-        hudBtn.textContent = isFull ? '⊞ Full HUD: ON' : '⊞ Full HUD: OFF';
+        hudBtn.textContent = isFull ? '⊞ Full HUD' : '⊞ HUD';
         if (isFull && (v10State.activeTab === 'routes-panel' || v10State.activeTab === 'agri-panel')) {
           selectDockTab(null);
         }
@@ -2706,19 +2956,69 @@
       topActions.appendChild(hudBtn);
     }
 
-    // 1. Inject Bottom-Center Unified v10 Command Dock & Drawer
+    if (topActions && !document.getElementById('btn-record-28s')) {
+      const recBtn = document.createElement('button');
+      recBtn.type = 'button';
+      recBtn.id = 'btn-record-28s';
+      recBtn.className = 'action-btn';
+      recBtn.textContent = '● Rec 28s';
+      recBtn.title = 'Capture a 28-second automated WebM demo video from the live 3D canvas';
+      recBtn.addEventListener('click', () => {
+        if (v10State.recorder && v10State.recorder.state === 'recording') {
+          if (v10State.demoActive) toggle30SecDemo();
+          else try { v10State.recorder.stop(); } catch (_) {}
+          return;
+        }
+        const marsCanvas = document.getElementById('mars-canvas');
+        if (!marsCanvas || typeof marsCanvas.captureStream !== 'function' || typeof MediaRecorder === 'undefined') {
+          recBtn.textContent = '⚠ MediaRecorder N/A';
+          return;
+        }
+        try {
+          const stream = marsCanvas.captureStream(30);
+          const mime = MediaRecorder.isTypeSupported('video/webm;codecs=vp9') ? 'video/webm;codecs=vp9' : 'video/webm';
+          const chunks = [];
+          const mr = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 4500000 });
+          v10State.recorder = mr;
+          mr.ondataavailable = (ev) => { if (ev.data && ev.data.size > 0) chunks.push(ev.data); };
+          mr.onstop = () => {
+            recBtn.classList.remove('recording');
+            recBtn.textContent = '● Rec 28s';
+            const blob = new Blob(chunks, { type: mime });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'ORBITX_Mars_Sentinel_28s_Demo.webm';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            setTimeout(() => URL.revokeObjectURL(url), 4000);
+          };
+          mr.start(500);
+          recBtn.classList.add('recording');
+          recBtn.textContent = '⏹ Recording 28s...';
+          if (!v10State.demoActive) toggle30SecDemo();
+        } catch (err) {
+          recBtn.textContent = '⚠ Rec Failed';
+        }
+      });
+      topActions.appendChild(recBtn);
+    }
+
+    // 1. Inject Bottom-Center Unified VisionOS Command Dock & Drawer
     if (!document.getElementById('ms-v10-command-dock')) {
       const dock = document.createElement('div');
       dock.id = 'ms-v10-command-dock';
       dock.innerHTML = [
-        '<button type="button" class="ms-v10-tab" data-tab="routes-panel">⌁ Routes &amp; Weather</button>',
-        '<button type="button" class="ms-v10-tab" data-tab="omni">⌖ Omni-Probe X-Ray</button>',
-        '<button type="button" class="ms-v10-tab" data-tab="rover">◈ Rover Control</button>',
-        '<button type="button" class="ms-v10-tab" data-tab="drones">⚑ Drones &amp; Hazards</button>',
-        '<button type="button" class="ms-v10-tab" data-tab="agri-panel">❖ Agri &amp; Geology</button>',
-        '<button type="button" class="ms-v10-tab" data-tab="lifesupport">▤ v10 Telemetry</button>',
-        '<button type="button" class="ms-v10-tab demo-hot" data-tab="demo30">▶ 30s NASA Demo</button>',
-        '<button type="button" class="ms-v10-tab" data-tab="slides">◫ 7-Slide Deck</button>'
+        '<button type="button" class="ms-v10-tab" data-tab="routes-panel">Routes</button>',
+        '<button type="button" class="ms-v10-tab" data-tab="ctxnav">CTX Nav &amp; RF</button>',
+        '<button type="button" class="ms-v10-tab" data-tab="omni">Omni-Probe</button>',
+        '<button type="button" class="ms-v10-tab" data-tab="rover">Rover</button>',
+        '<button type="button" class="ms-v10-tab" data-tab="drones">Drones</button>',
+        '<button type="button" class="ms-v10-tab" data-tab="agri-panel">Geology &amp; Agri</button>',
+        '<button type="button" class="ms-v10-tab" data-tab="lifesupport">Life Support</button>',
+        '<button type="button" class="ms-v10-tab demo-hot" data-tab="demo30">▶ 30s Demo</button>',
+        '<button type="button" class="ms-v10-tab" data-tab="slides">7 Slides</button>'
       ].join('');
       document.body.appendChild(dock);
       dock.addEventListener('click', (e) => {

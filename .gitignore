@@ -30,6 +30,13 @@ data/jez_hirise_site_detail_4m.json
 data/jez_hirise_1m_overview_grid.json
 data/jez_ctx_20m_grid.json
 
+# Nav-module heavy binary/scratch archives (keep core nav.py, routes.json, test_nav.py, blender_view_routes.py)
+nav-module/Base Idea/*.zip
+nav-module/Base Idea/**/*.tif
+nav-module/Base Idea/**/*.tiff
+nav-module/Base Idea/*.blend
+nav-module/Base Idea/*.blend1
+
 # Stale / ephemeral preview renders & diagnostics
 previews/test_*.png
 previews/*thumb*.png

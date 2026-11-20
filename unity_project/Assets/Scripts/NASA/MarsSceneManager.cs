@@ -118,8 +118,33 @@ namespace MarsSentinel.NASA
         private float hudRefreshTimer = 0f;
         private Text txtMuteBtnLabel;
         private Text txtRoverBtnLabel;
+        private Text txtAutoBtnLabel;
+        private Text txtHudToggleBtnLabel;
         private Text txtDemoBtnLabel;
         private Text txtNasaDemoBtnLabel;
+
+        // Modern 3D-First HUD elements (Clean by default; [M] toggles Full Telemetry drawers)
+        private bool isFullHudVisible = false;
+        private GameObject panelTelemetry;
+        private GameObject panelRoutes;
+        private GameObject panelGeology;
+        private GameObject panelStatus;
+        private GameObject panelAlertToast;
+        private Text txtAlertToast;
+        private RectTransform objectiveMarkerRect;
+        private Text txtObjectiveMarker;
+        private RectTransform barFillO2;
+        private RectTransform barFillPwr;
+        private RectTransform barFillRad;
+        private RectTransform barFillRf;
+        private Image imgFillO2;
+        private Image imgFillRad;
+        private Image imgFillRf;
+        private Text txtVitalO2;
+        private Text txtVitalPwr;
+        private Text txtVitalRad;
+        private Text txtVitalRf;
+        private Text txtMissionObjective;
 
         private void Update()
         {
@@ -131,6 +156,8 @@ namespace MarsSentinel.NASA
             {
                 UpdatePresentationDirector();
             }
+
+            UpdateSurvivalBarsAndObjectiveMarker();
 
             hudRefreshTimer += Time.deltaTime;
             if (hudRefreshTimer >= 0.25f)
@@ -149,6 +176,10 @@ namespace MarsSentinel.NASA
             bool pressedH = false;
             bool pressedP = false;
             bool pressedN = false;
+            bool pressedY = false;
+            bool pressedQ = false;
+            bool pressedJ = false;
+            bool pressedR = false;
 
             bool exploreActive = MarsVisualRealismPolish.Instance != null && MarsVisualRealismPolish.Instance.IsExploreModeActive;
 
@@ -163,11 +194,16 @@ namespace MarsSentinel.NASA
                 if (kb.hKey.wasPressedThisFrame) pressedH = true;
                 if (kb.pKey.wasPressedThisFrame) pressedP = true;
                 if (kb.nKey.wasPressedThisFrame) pressedN = true;
+                if (kb.yKey.wasPressedThisFrame) pressedY = true;
+                if (kb.qKey.wasPressedThisFrame) pressedQ = true;
+                if (kb.jKey.wasPressedThisFrame) pressedJ = true;
+                if (kb.rKey.wasPressedThisFrame && (MarsRoverVehicleController.Instance == null || !MarsRoverVehicleController.Instance.IsDriverSeated)) pressedR = true;
             }
 #endif
 #if ENABLE_LEGACY_INPUT_MANAGER
             if (Input.GetKeyDown(KeyCode.P)) pressedP = true;
             if (Input.GetKeyDown(KeyCode.N)) pressedN = true;
+            if (Input.GetKeyDown(KeyCode.Y)) pressedY = true;
 #endif
 
             if (pressedL)
@@ -208,6 +244,42 @@ namespace MarsSentinel.NASA
             else if (pressedN)
             {
                 ToggleNasa30SecDemo();
+            }
+            else if (pressedY)
+            {
+                ToggleFullHud();
+            }
+            else if (pressedQ)
+            {
+                MarsCtxNavSolarEngine.Instance?.CyclePreset();
+            }
+            else if (pressedJ)
+            {
+                MarsCtxNavSolarEngine.Instance?.AdvanceSolarSeason(30f);
+            }
+            else if (pressedR)
+            {
+                MarsVisualRealismPolish.Instance?.EnterExploreMode();
+                MarsRoverVehicleController.Instance?.ToggleAutopilot();
+            }
+        }
+
+        public void ToggleFullHud()
+        {
+            SetFullHudVisible(!isFullHudVisible);
+            MarsAudioManager.Instance?.PlayUiClick();
+        }
+
+        public void SetFullHudVisible(bool visible)
+        {
+            isFullHudVisible = visible;
+            if (panelTelemetry != null) panelTelemetry.SetActive(visible);
+            if (panelRoutes != null) panelRoutes.SetActive(visible);
+            if (panelGeology != null) panelGeology.SetActive(visible);
+            if (panelStatus != null) panelStatus.SetActive(visible);
+            if (txtHudToggleBtnLabel != null)
+            {
+                txtHudToggleBtnLabel.text = visible ? "HUD: FULL [Y]" : "HUD: CLEAN [Y]";
             }
         }
 
@@ -712,6 +784,24 @@ namespace MarsSentinel.NASA
                 GameObject go = new GameObject("MS_InteractionSystem");
                 go.AddComponent<MarsInteractionSystem>();
             }
+
+            if (FindAnyObjectByType<MarsCtxNavSolarEngine>() == null)
+            {
+                GameObject go = new GameObject("MS_CtxNavSolarEngine");
+                go.AddComponent<MarsCtxNavSolarEngine>();
+            }
+
+            if (FindAnyObjectByType<MarsSurvivalMissionController>() == null)
+            {
+                GameObject go = new GameObject("MS_SurvivalMissionController");
+                go.AddComponent<MarsSurvivalMissionController>();
+            }
+
+            if (FindAnyObjectByType<MarsCinematicVfxAndPost>() == null)
+            {
+                GameObject go = new GameObject("MS_CinematicVfxAndPost");
+                go.AddComponent<MarsCinematicVfxAndPost>();
+            }
         }
 
         private void EnsureFleetHierarchy()
@@ -958,10 +1048,14 @@ namespace MarsSentinel.NASA
                              $"{(step4HydroponicsO2 ? "[+]" : "[ ]")}O2 " +
                              $"{(step5StormShelter ? "[+]" : "[ ]")}Storm";
 
+                string ctxSummary = MarsCtxNavSolarEngine.Instance != null
+                    ? MarsCtxNavSolarEngine.Instance.GetCompactHudSummary()
+                    : "CTX A* Engine Ready";
+
                 txtRoutes.text = $"A* TRAVERSE ({r.safest.distance_m:F0}m) · MISSION {doneSteps}/5\n" +
                                  $"• [H] {layerName} | Offset {liveDistToRouteM:F1}m | Goal {liveDistToGoalM:F0}m\n" +
-                                 $"• Site: {liveNearestOutcrop} ({liveNearestOutcropDistM:F0}m) | Tubes {tubes}/22 | MSL {curKm:F1}km | 72 Flt | Fix {dropouts}\n" +
-                                 $"• {chk}";
+                                 $"• {ctxSummary}\n" +
+                                 $"• {chk} | Tubes {tubes}/22 | MSL {curKm:F1}km | 72 Flt | Fix {dropouts}";
             }
         }
 
@@ -1041,9 +1135,90 @@ namespace MarsSentinel.NASA
             }
             if (txtRoverBtnLabel != null && MarsRoverVehicleController.Instance != null)
             {
-                txtRoverBtnLabel.text = MarsRoverVehicleController.Instance.IsDriverSeated ? "Exit Rover" : "Drive Rover";
+                txtRoverBtnLabel.text = MarsRoverVehicleController.Instance.IsDriverSeated ? "Exit [E]" : "Rover [E]";
+            }
+            if (txtAutoBtnLabel != null && MarsRoverVehicleController.Instance != null)
+            {
+                txtAutoBtnLabel.text = MarsRoverVehicleController.Instance.IsAutopilotActive ? "Auto: ON" : "Auto [R]";
             }
             UpdateDirectorButtonLabel();
+        }
+
+        private void UpdateSurvivalBarsAndObjectiveMarker()
+        {
+            var surv = MarsSurvivalMissionController.Instance;
+            var ctx = MarsCtxNavSolarEngine.Instance;
+            if (surv != null)
+            {
+                float o2 = Mathf.Clamp01(surv.OxygenPercent / 100f);
+                float pwr = Mathf.Clamp01(surv.PowerPercent / 100f);
+                float rad = Mathf.Clamp01(surv.RadiationTraumaPercent / 100f);
+                float rf = ctx != null && ctx.IsLoaded ? Mathf.Clamp01(ctx.ActiveRfLos.signalPercent / 100f) : 0.96f;
+                bool rfClear = ctx == null || !ctx.IsLoaded || ctx.ActiveRfLos.clear;
+
+                if (barFillO2 != null) barFillO2.anchorMax = new Vector2(o2, 1f);
+                if (barFillPwr != null) barFillPwr.anchorMax = new Vector2(pwr, 1f);
+                if (barFillRad != null) barFillRad.anchorMax = new Vector2(rad, 1f);
+                if (barFillRf != null) barFillRf.anchorMax = new Vector2(rf, 1f);
+
+                if (imgFillO2 != null) imgFillO2.color = o2 < 0.28f ? new Color(0.95f, 0.24f, 0.24f) : new Color(0.18f, 0.85f, 0.90f);
+                if (imgFillRad != null) imgFillRad.color = rad > 0.60f ? new Color(0.95f, 0.22f, 0.22f) : new Color(0.96f, 0.66f, 0.18f);
+                if (imgFillRf != null) imgFillRf.color = rfClear ? new Color(0.18f, 0.86f, 0.48f) : new Color(0.95f, 0.30f, 0.26f);
+
+                if (txtVitalO2 != null) txtVitalO2.text = $"O2   {surv.OxygenPercent:F0}%";
+                if (txtVitalPwr != null) txtVitalPwr.text = $"PWR  {surv.PowerPercent:F0}%";
+                if (txtVitalRad != null) txtVitalRad.text = $"RAD  {surv.RadiationTraumaPercent:F0}%";
+                if (txtVitalRf != null) txtVitalRf.text = rfClear ? $"RF   {rf * 100f:F0}% CLR" : $"RF   {rf * 100f:F0}% BLK";
+
+                if (txtMissionObjective != null)
+                {
+                    string ctxSnippet = ctx != null && ctx.IsLoaded
+                        ? $"  |  CTX {ctx.ActivePresetName}: {ctx.SafestRoute.distanceMeters:F0}m ({ctx.SafestRoute.maxSlopeDeg:F1}°) · Ls {ctx.SolarLongitudeLs:F0}°"
+                        : "";
+                    txtMissionObjective.text = $"OBJ: {surv.ActiveObjectiveLabel} ({surv.ActiveObjectiveDistanceM:F0}m · {surv.ActiveObjectiveBearingDeg:F0}°) · {surv.MissionScore} PTS{ctxSnippet}";
+                }
+
+                if (panelAlertToast != null && txtAlertToast != null)
+                {
+                    bool showAlert = !string.IsNullOrEmpty(surv.ActiveAlertBanner);
+                    if (!showAlert && ctx != null && ctx.IsLoaded && !ctx.ActiveRfLos.clear)
+                    {
+                        showAlert = true;
+                        txtAlertToast.text = "RF LINK OCCLUDED BY JEZERO TERRAIN — MOVE TO HIGHER ELEVATION";
+                    }
+                    else if (showAlert)
+                    {
+                        txtAlertToast.text = surv.ActiveAlertBanner;
+                    }
+                    panelAlertToast.SetActive(showAlert);
+                }
+
+                // Project 3D objective waypoint onto screen space
+                if (objectiveMarkerRect != null && txtObjectiveMarker != null && Camera.main != null)
+                {
+                    bool explore = MarsVisualRealismPolish.Instance == null || MarsVisualRealismPolish.Instance.IsExploreModeActive;
+                    bool inSpace = Camera.main.transform.position.y > 400f;
+                    if (!explore || inSpace || isPresentationDirectorActive)
+                    {
+                        objectiveMarkerRect.gameObject.SetActive(false);
+                    }
+                    else
+                    {
+                        Vector3 sp = Camera.main.WorldToViewportPoint(surv.ActiveObjectiveWorldPos);
+                        bool inFront = sp.z > 0.5f;
+                        objectiveMarkerRect.gameObject.SetActive(inFront && surv.ActiveObjectiveDistanceM > 3.5f);
+                        if (inFront)
+                        {
+                            float cx = Mathf.Clamp(sp.x, 0.06f, 0.94f);
+                            float cy = Mathf.Clamp(sp.y, 0.14f, 0.86f);
+                            objectiveMarkerRect.anchorMin = new Vector2(cx, cy);
+                            objectiveMarkerRect.anchorMax = new Vector2(cx, cy);
+                            objectiveMarkerRect.anchoredPosition = Vector2.zero;
+                            txtObjectiveMarker.text = $"◈ {surv.ActiveObjectiveDistanceM:F0}m";
+                        }
+                    }
+                }
+            }
         }
 
         private void UpdateTelemetryDisplay(RoverTelemetry t)
@@ -1127,147 +1302,224 @@ namespace MarsSentinel.NASA
             Font defaultFont = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
             if (defaultFont == null) defaultFont = Resources.GetBuiltinResource<Font>("Arial.ttf");
 
-            // Visor Header Panel (Top-Center)
+            // Compact Modern Visor Header Strip (Top-Center, sleek glass — >88% open 3D viewport!)
             GameObject headerPanel = CreatePanel("VisorHeaderPanel", canvasGo.transform,
                 new Vector2(0.5f, 1.0f), new Vector2(0.5f, 1.0f), new Vector2(0.5f, 1.0f),
-                new Vector2(0, -20), new Vector2(830, 90));
-            txtVisorTitle = CreateText("TxtTitle", headerPanel.transform, "ORBITX · MARS SENTINEL | SITES 0/50 | MISSION 1/5",
-                17, FontStyle.Bold, new Color(1.0f, 0.85f, 0.5f), TextAnchor.MiddleCenter, defaultFont);
-            txtVisorTitle.rectTransform.anchoredPosition = new Vector2(0, 18);
-            txtCoordinates = CreateText("TxtCoordinates", headerPanel.transform, "SOL 100 | COORDS: 77.4508°E, 18.4447°N | ELEV: -2569.9m",
-                14, FontStyle.Normal, new Color(0.3f, 0.9f, 1.0f), TextAnchor.MiddleCenter, defaultFont);
-            txtCoordinates.rectTransform.anchoredPosition = new Vector2(0, -18);
+                new Vector2(0, -14), new Vector2(960, 74));
+            headerPanel.GetComponent<Image>().color = new Color(0.05f, 0.08f, 0.13f, 0.72f);
 
-            // Telemetry Panel (Top-Left)
-            GameObject telemPanel = CreatePanel("TelemetryPanel", canvasGo.transform,
-                new Vector2(0.0f, 1.0f), new Vector2(0.0f, 1.0f), new Vector2(0.0f, 1.0f),
-                new Vector2(25, -25), new Vector2(380, 200));
-            txtTelemetry = CreateText("TxtTelemetry", telemPanel.transform,
-                "ROVER TELEMETRY (PERSEVERANCE M20)\n• Speed: 0.12 m/s\n• Heading: 284.5° WNW\n• Slope: 4.2° (Safe)\n• Traveled: 1159.95 m\n• Power: RTG Nominal (94%)",
-                13, FontStyle.Normal, Color.white, TextAnchor.UpperLeft, defaultFont);
+            txtVisorTitle = CreateText("TxtTitle", headerPanel.transform, "ORBITX · MARS SENTINEL | JEZERO SURVIVAL TWIN",
+                14, FontStyle.Bold, new Color(1.0f, 0.85f, 0.52f), TextAnchor.MiddleCenter, defaultFont);
+            txtVisorTitle.rectTransform.anchoredPosition = new Vector2(0, 22);
 
-            // Traverse Routes Panel (Bottom-Left)
-            GameObject routesPanel = CreatePanel("RoutesPanel", canvasGo.transform,
+            txtCoordinates = CreateText("TxtCoordinates", headerPanel.transform, "SOL 100 | LMST 12.0h | SUN 45.0° | DUST τ=0.45",
+                12, FontStyle.Normal, new Color(0.32f, 0.90f, 0.96f), TextAnchor.MiddleCenter, defaultFont);
+            txtCoordinates.rectTransform.anchoredPosition = new Vector2(0, 1);
+
+            txtMissionObjective = CreateText("TxtMissionObjective", headerPanel.transform, "OBJ: Collect Jezero Core Samples (0/3)",
+                11, FontStyle.Bold, new Color(0.52f, 0.96f, 0.74f), TextAnchor.MiddleCenter, defaultFont);
+            txtMissionObjective.rectTransform.anchoredPosition = new Vector2(0, -21);
+
+            // Dynamic Alert Toast Banner (hidden unless triggered by pickup/RF/storm/MedEvac)
+            panelAlertToast = CreatePanel("AlertToastPanel", canvasGo.transform,
+                new Vector2(0.5f, 1.0f), new Vector2(0.5f, 1.0f), new Vector2(0.5f, 1.0f),
+                new Vector2(0, -96), new Vector2(640, 34));
+            panelAlertToast.GetComponent<Image>().color = new Color(0.55f, 0.18f, 0.08f, 0.88f);
+            txtAlertToast = CreateText("TxtAlertToast", panelAlertToast.transform, "",
+                12, FontStyle.Bold, new Color(1.0f, 0.95f, 0.82f), TextAnchor.MiddleCenter, defaultFont);
+            txtAlertToast.rectTransform.sizeDelta = new Vector2(-12, -4);
+            panelAlertToast.SetActive(false);
+
+            // 3D World-Space Objective Screen Marker
+            GameObject markerGo = new GameObject("ObjectiveWaypointMarker");
+            markerGo.transform.SetParent(canvasGo.transform, false);
+            objectiveMarkerRect = markerGo.AddComponent<RectTransform>();
+            objectiveMarkerRect.sizeDelta = new Vector2(96f, 26f);
+            Image mBg = markerGo.AddComponent<Image>();
+            mBg.color = new Color(0.05f, 0.14f, 0.18f, 0.78f);
+            mBg.raycastTarget = false;
+            txtObjectiveMarker = CreateText("TxtObjMarker", markerGo.transform, "◈ 20m",
+                12, FontStyle.Bold, new Color(0.22f, 0.95f, 0.88f), TextAnchor.MiddleCenter, defaultFont);
+            txtObjectiveMarker.rectTransform.sizeDelta = new Vector2(-6f, -2f);
+
+            // Sleek Bottom-Left Survival Vitals Gauges Card (always clean & compact!)
+            GameObject vitalsPanel = CreatePanel("SurvivalVitalsPanel", canvasGo.transform,
                 new Vector2(0.0f, 0.0f), new Vector2(0.0f, 0.0f), new Vector2(0.0f, 0.0f),
-                new Vector2(25, 25), new Vector2(410, 170));
-            txtRoutes = CreateText("TxtRoutes", routesPanel.transform,
-                "A* TRAVERSE · MISSION 1/5\n• [H] Safest A* Route\n• Tubes: 22/22 | 72 Flights",
-                13, FontStyle.Normal, new Color(0.2f, 1.0f, 0.8f), TextAnchor.UpperLeft, defaultFont);
+                new Vector2(18, 18), new Vector2(215, 114));
+            vitalsPanel.GetComponent<Image>().color = new Color(0.05f, 0.08f, 0.13f, 0.76f);
+            CreateVitalBarRow(vitalsPanel.transform, defaultFont, 88f, "O2   100%", new Color(0.18f, 0.85f, 0.90f), out txtVitalO2, out barFillO2, out imgFillO2);
+            CreateVitalBarRow(vitalsPanel.transform, defaultFont, 62f, "PWR  96%", new Color(0.95f, 0.76f, 0.22f), out txtVitalPwr, out barFillPwr, out _);
+            CreateVitalBarRow(vitalsPanel.transform, defaultFont, 36f, "RAD  4%", new Color(0.96f, 0.66f, 0.18f), out txtVitalRad, out barFillRad, out imgFillRad);
+            CreateVitalBarRow(vitalsPanel.transform, defaultFont, 10f, "RF   96% CLR", new Color(0.18f, 0.86f, 0.48f), out txtVitalRf, out barFillRf, out imgFillRf);
 
-            // Geology Panel (Bottom-Right)
-            GameObject geoPanel = CreatePanel("GeologyPanel", canvasGo.transform,
+            // Collapsible Full Telemetry Panels (Hidden by default in Clean 3D-First Mode; press [M] to expand!)
+            panelTelemetry = CreatePanel("TelemetryPanel", canvasGo.transform,
+                new Vector2(0.0f, 1.0f), new Vector2(0.0f, 1.0f), new Vector2(0.0f, 1.0f),
+                new Vector2(18, -104), new Vector2(365, 180));
+            txtTelemetry = CreateText("TxtTelemetry", panelTelemetry.transform,
+                "EVA ASTRONAUT + BASE TELEMETRY",
+                12, FontStyle.Normal, Color.white, TextAnchor.UpperLeft, defaultFont);
+
+            panelRoutes = CreatePanel("RoutesPanel", canvasGo.transform,
+                new Vector2(0.0f, 0.0f), new Vector2(0.0f, 0.0f), new Vector2(0.0f, 0.0f),
+                new Vector2(18, 140), new Vector2(415, 165));
+            txtRoutes = CreateText("TxtRoutes", panelRoutes.transform,
+                "A* TRAVERSE · MISSION 1/5",
+                12, FontStyle.Normal, new Color(0.2f, 1.0f, 0.8f), TextAnchor.UpperLeft, defaultFont);
+
+            panelGeology = CreatePanel("GeologyPanel", canvasGo.transform,
                 new Vector2(1.0f, 0.0f), new Vector2(1.0f, 0.0f), new Vector2(1.0f, 0.0f),
-                new Vector2(-25, 25), new Vector2(425, 170));
-            txtGeology = CreateText("TxtGeology", geoPanel.transform,
+                new Vector2(-18, 76), new Vector2(410, 165));
+            txtGeology = CreateText("TxtGeology", panelGeology.transform,
                 "USGS SIM 3292 GEOLOGY\nLoading geological dataset...",
-                13, FontStyle.Normal, new Color(1.0f, 0.8f, 0.4f), TextAnchor.UpperLeft, defaultFont);
+                12, FontStyle.Normal, new Color(1.0f, 0.8f, 0.4f), TextAnchor.UpperLeft, defaultFont);
 
-            // UGS Identity Status & Camera Legend Panel (Top-Right)
-            GameObject statusPanel = CreatePanel("StatusAndControlsPanel", canvasGo.transform,
+            panelStatus = CreatePanel("StatusAndControlsPanel", canvasGo.transform,
                 new Vector2(1.0f, 1.0f), new Vector2(1.0f, 1.0f), new Vector2(1.0f, 1.0f),
-                new Vector2(-25, -25), new Vector2(420, 225));
-            txtUgsStatus = CreateText("TxtUgsStatus", statusPanel.transform,
+                new Vector2(-18, -104), new Vector2(405, 205));
+            txtUgsStatus = CreateText("TxtUgsStatus", panelStatus.transform,
                 "UGS IDENTITY: CONNECTING...",
-                13, FontStyle.Bold, new Color(0.4f, 0.8f, 1.0f), TextAnchor.UpperLeft, defaultFont);
-            SetTopTextSlot(txtUgsStatus.rectTransform, 10f, 44f);
+                12, FontStyle.Bold, new Color(0.4f, 0.8f, 1.0f), TextAnchor.UpperLeft, defaultFont);
+            SetTopTextSlot(txtUgsStatus.rectTransform, 10f, 38f);
 
-            txtActiveCamera = CreateText("TxtActiveCamera", statusPanel.transform,
-                "ACTIVE VIEW: [1] SURFACEFLEETOVERVIEW",
-                13, FontStyle.Bold, new Color(1.0f, 0.95f, 0.2f), TextAnchor.UpperLeft, defaultFont);
-            SetTopTextSlot(txtActiveCamera.rectTransform, 58f, 42f);
+            txtActiveCamera = CreateText("TxtActiveCamera", panelStatus.transform,
+                "ACTIVE VIEW: [F] EVA EXPLORER",
+                12, FontStyle.Bold, new Color(1.0f, 0.95f, 0.2f), TextAnchor.UpperLeft, defaultFont);
+            SetTopTextSlot(txtActiveCamera.rectTransform, 50f, 36f);
 
-                txtControlsLegend = CreateText("TxtControlsLegend", statusPanel.transform,
-                "CAMERAS: [1]-[5] | [X] Omni-Probe X-Ray | [L] Solar | [D/C] Dust τ | [G] Geo\n[H] Data Layers | [N] 30s NASA Demo | [P] 1m Demo | [F] Explore",
-                12, FontStyle.Normal, new Color(0.85f, 0.85f, 0.9f), TextAnchor.UpperLeft, defaultFont);
-            SetTopTextSlot(txtControlsLegend.rectTransform, 106f, 110f);
+            txtControlsLegend = CreateText("TxtControlsLegend", panelStatus.transform,
+                "[WASD] Move | [E] Rover/Sample | [R] Autopilot | [X] X-Ray\n[Q] CTX A* Preset | [J] Mars Ls Season | [Y] Full HUD\n[1-5] Cams | [H] Layers | [D/C] Storm | [K] Mute | [N] 30s Demo",
+                11, FontStyle.Normal, new Color(0.85f, 0.88f, 0.92f), TextAnchor.UpperLeft, defaultFont);
+            SetTopTextSlot(txtControlsLegend.rectTransform, 92f, 100f);
 
             BuildQuickNavBar(canvasGo.transform, defaultFont);
+            SetFullHudVisible(false);
+        }
+
+        private void CreateVitalBarRow(Transform parent, Font font, float yFromBottom, string label, Color fillCol,
+            out Text lblTxt, out RectTransform fillRt, out Image fillImg)
+        {
+            GameObject row = new GameObject("VitalRow_" + label.Substring(0, 3));
+            row.transform.SetParent(parent, false);
+            RectTransform rt = row.AddComponent<RectTransform>();
+            rt.anchorMin = new Vector2(0f, 0f);
+            rt.anchorMax = new Vector2(1f, 0f);
+            rt.pivot = new Vector2(0.5f, 0f);
+            rt.anchoredPosition = new Vector2(0f, yFromBottom);
+            rt.sizeDelta = new Vector2(-18f, 20f);
+
+            lblTxt = CreateText("Lbl", row.transform, label, 11, FontStyle.Bold, Color.white, TextAnchor.MiddleLeft, font);
+            lblTxt.rectTransform.anchorMin = new Vector2(0f, 0f);
+            lblTxt.rectTransform.anchorMax = new Vector2(0.46f, 1f);
+            lblTxt.rectTransform.sizeDelta = Vector2.zero;
+
+            GameObject track = new GameObject("Track");
+            track.transform.SetParent(row.transform, false);
+            RectTransform trt = track.AddComponent<RectTransform>();
+            trt.anchorMin = new Vector2(0.48f, 0.22f);
+            trt.anchorMax = new Vector2(1f, 0.78f);
+            trt.sizeDelta = Vector2.zero;
+            Image tImg = track.AddComponent<Image>();
+            tImg.color = new Color(1f, 1f, 1f, 0.14f);
+            tImg.raycastTarget = false;
+
+            GameObject fill = new GameObject("Fill");
+            fill.transform.SetParent(track.transform, false);
+            fillRt = fill.AddComponent<RectTransform>();
+            fillRt.anchorMin = Vector2.zero;
+            fillRt.anchorMax = Vector2.one;
+            fillRt.sizeDelta = Vector2.zero;
+            fillImg = fill.AddComponent<Image>();
+            fillImg.color = fillCol;
+            fillImg.raycastTarget = false;
         }
 
         private void BuildQuickNavBar(Transform canvasTransform, Font font)
         {
             GameObject navBar = CreatePanel("ORBITX_QuickNavBar", canvasTransform,
                 new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0.5f, 0f),
-                new Vector2(0f, 22f), new Vector2(1060f, 44f));
+                new Vector2(72f, 18f), new Vector2(1140f, 40f));
+            navBar.GetComponent<Image>().color = new Color(0.05f, 0.08f, 0.13f, 0.78f);
 
             HorizontalLayoutGroup hlg = navBar.AddComponent<HorizontalLayoutGroup>();
-            hlg.padding = new RectOffset(8, 8, 5, 5);
-            hlg.spacing = 6f;
+            hlg.padding = new RectOffset(6, 6, 4, 4);
+            hlg.spacing = 5f;
             hlg.childControlWidth = true;
             hlg.childControlHeight = true;
             hlg.childForceExpandWidth = true;
             hlg.childForceExpandHeight = true;
 
-            AddNavButton(navBar.transform, font, "Explore [F]", new Color(0.12f, 0.45f, 0.65f, 0.92f), () =>
+            AddNavButton(navBar.transform, font, "Explore [F]", new Color(0.12f, 0.45f, 0.65f, 0.90f), () =>
             {
                 MarsVisualRealismPolish.Instance?.EnterExploreMode();
                 MarsAstronautController.Instance?.TeleportToFacility("Spawn");
             });
 
-            txtRoverBtnLabel = AddNavButton(navBar.transform, font, "Drive Rover", new Color(0.75f, 0.40f, 0.14f, 0.92f), () =>
+            txtRoverBtnLabel = AddNavButton(navBar.transform, font, "Rover [E]", new Color(0.75f, 0.40f, 0.14f, 0.90f), () =>
             {
                 MarsVisualRealismPolish.Instance?.EnterExploreMode();
                 MarsRoverVehicleController.Instance?.ToggleBoardOrDismount();
                 RefreshLiveExplorationHud();
             });
 
-            AddNavButton(navBar.transform, font, "Agri Dome", new Color(0.14f, 0.52f, 0.36f, 0.92f), () =>
+            txtAutoBtnLabel = AddNavButton(navBar.transform, font, "Auto [R]", new Color(0.16f, 0.52f, 0.42f, 0.90f), () =>
+            {
+                MarsVisualRealismPolish.Instance?.EnterExploreMode();
+                MarsRoverVehicleController.Instance?.ToggleAutopilot();
+            });
+
+            AddNavButton(navBar.transform, font, "CTX [Q]", new Color(0.14f, 0.44f, 0.56f, 0.90f), () =>
+            {
+                MarsCtxNavSolarEngine.Instance?.CyclePreset();
+                MarsSurvivalMissionController.Instance?.ShowAlert(
+                    MarsCtxNavSolarEngine.Instance != null ? MarsCtxNavSolarEngine.Instance.GetCompactHudSummary() : "CTX Nav", 3.5f);
+            });
+
+            AddNavButton(navBar.transform, font, "Agri Dome", new Color(0.14f, 0.52f, 0.36f, 0.90f), () =>
             {
                 MarsVisualRealismPolish.Instance?.EnterExploreMode();
                 MarsAstronautController.Instance?.TeleportToFacility("Agri");
             });
 
-            AddNavButton(navBar.transform, font, "Med Bay", new Color(0.68f, 0.18f, 0.22f, 0.92f), () =>
+            AddNavButton(navBar.transform, font, "Med Bay", new Color(0.68f, 0.18f, 0.22f, 0.90f), () =>
             {
                 MarsVisualRealismPolish.Instance?.EnterExploreMode();
                 MarsAstronautController.Instance?.TeleportToFacility("Medical");
             });
 
-            AddNavButton(navBar.transform, font, "NASA HDU", new Color(0.22f, 0.34f, 0.52f, 0.92f), () =>
+            AddNavButton(navBar.transform, font, "NASA HDU", new Color(0.22f, 0.34f, 0.52f, 0.90f), () =>
             {
                 MarsVisualRealismPolish.Instance?.EnterExploreMode();
                 MarsAstronautController.Instance?.TeleportToFacility("Habitat");
             });
 
-            AddNavButton(navBar.transform, font, "EDL Craft", new Color(0.32f, 0.30f, 0.48f, 0.92f), () =>
-            {
-                MarsVisualRealismPolish.Instance?.EnterExploreMode();
-                MarsAstronautController.Instance?.TeleportToFacility("EDL");
-            });
-
-            AddNavButton(navBar.transform, font, "Rocket Pad", new Color(0.45f, 0.32f, 0.20f, 0.92f), () =>
-            {
-                MarsVisualRealismPolish.Instance?.EnterExploreMode();
-                MarsAstronautController.Instance?.TeleportToFacility("Rocket");
-            });
-
-            AddNavButton(navBar.transform, font, "Orbit [5]", new Color(0.18f, 0.25f, 0.42f, 0.92f), () =>
+            AddNavButton(navBar.transform, font, "Orbit [5]", new Color(0.18f, 0.25f, 0.42f, 0.90f), () =>
             {
                 MarsAudioManager.Instance?.PlayUiClick();
                 MarsVisualRealismPolish.Instance?.TriggerViewMode(5);
             });
 
-            AddNavButton(navBar.transform, font, "X-Ray [X]", new Color(0.08f, 0.48f, 0.44f, 0.92f), () =>
+            AddNavButton(navBar.transform, font, "X-Ray [X]", new Color(0.08f, 0.48f, 0.44f, 0.90f), () =>
             {
                 MarsInteractionSystem.Instance?.InspectPointUnderPlayer();
             });
 
-            AddNavButton(navBar.transform, font, "Scan Next", new Color(0.16f, 0.44f, 0.52f, 0.92f), () =>
+            txtHudToggleBtnLabel = AddNavButton(navBar.transform, font, "HUD: CLEAN [Y]", new Color(0.26f, 0.30f, 0.40f, 0.90f), () =>
             {
-                MarsInteractionSystem.Instance?.InspectNextTarget();
+                ToggleFullHud();
             });
 
-            txtNasaDemoBtnLabel = AddNavButton(navBar.transform, font, "[N] 30s NASA", new Color(0.09f, 0.42f, 0.62f, 0.92f), () =>
+            txtNasaDemoBtnLabel = AddNavButton(navBar.transform, font, "[N] 30s NASA", new Color(0.09f, 0.42f, 0.62f, 0.90f), () =>
             {
                 ToggleNasa30SecDemo();
             });
 
-            txtDemoBtnLabel = AddNavButton(navBar.transform, font, "[P] 1m Demo", new Color(0.32f, 0.22f, 0.54f, 0.92f), () =>
+            txtDemoBtnLabel = AddNavButton(navBar.transform, font, "[P] 1m Demo", new Color(0.32f, 0.22f, 0.54f, 0.90f), () =>
             {
                 TogglePresentationDirector();
             });
 
-            txtMuteBtnLabel = AddNavButton(navBar.transform, font, "Audio: ON", new Color(0.20f, 0.24f, 0.30f, 0.92f), () =>
+            txtMuteBtnLabel = AddNavButton(navBar.transform, font, "Audio: ON", new Color(0.20f, 0.24f, 0.30f, 0.90f), () =>
             {
                 MarsAudioManager.Instance?.ToggleMute();
                 RefreshLiveExplorationHud();

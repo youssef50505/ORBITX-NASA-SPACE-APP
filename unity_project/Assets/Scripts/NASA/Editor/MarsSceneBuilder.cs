@@ -130,6 +130,15 @@ namespace MarsSentinel.Editor
             if (orchestrator.GetComponent<MarsSimulationAnimator>() == null)
                 orchestrator.AddComponent<MarsSimulationAnimator>();
 
+            if (orchestrator.GetComponent<MarsCtxNavSolarEngine>() == null)
+                orchestrator.AddComponent<MarsCtxNavSolarEngine>();
+
+            if (orchestrator.GetComponent<MarsSurvivalMissionController>() == null)
+                orchestrator.AddComponent<MarsSurvivalMissionController>();
+
+            if (orchestrator.GetComponent<MarsCinematicVfxAndPost>() == null)
+                orchestrator.AddComponent<MarsCinematicVfxAndPost>();
+
             // Remove duplicate stray MarsCameraRigs or *_OrbitTrail GameObjects if re-running on existing scene
             var allTransforms = Object.FindObjectsByType<Transform>(FindObjectsSortMode.None);
             bool keptCameraRigs = false;
@@ -322,6 +331,99 @@ namespace MarsSentinel.Editor
                 Debug.LogError($"[MarsSceneBuilder] WebGL Build failed with {report.summary.totalErrors} errors");
                 if (Application.isBatchMode) EditorApplication.Exit(1);
             }
+        }
+
+        [MenuItem("MarsSentinel/Verify Overhaul & Capture GPU Frames")]
+        public static void VerifyOverhaulAndCapture()
+        {
+            string outDir = @"C:\Users\yhsn5\.gemini\antigravity\brain\d720beb4-3e60-4444-b362-918df577fc42\scratch\unity_editor_captures";
+            Directory.CreateDirectory(outDir);
+
+            EditorSceneManager.OpenScene("Assets/Scenes/MarsSentinelHeroScene.unity", OpenSceneMode.Single);
+
+            // 1. Verify URP & Post-Processing pipeline setup
+            var urpAsset = UniversalRenderPipeline.asset;
+            bool hdrOn = urpAsset != null && urpAsset.supportsHDR;
+            Camera mainCam = Camera.main;
+            var camData = mainCam != null ? mainCam.GetComponent<UniversalAdditionalCameraData>() : null;
+            bool camPp = camData != null && camData.renderPostProcessing;
+            Volume vol = Object.FindAnyObjectByType<Volume>();
+            VolumeProfile prof = vol != null ? vol.sharedProfile : null;
+
+            // Ensure SampleSceneProfile carries our tuned Martian ACES + Bloom + ColorAdjustments + Vignette overrides
+            if (prof != null)
+            {
+                if (!prof.TryGet(out Tonemapping tone)) tone = prof.Add<Tonemapping>(true);
+                tone.active = true; tone.mode.overrideState = true; tone.mode.value = TonemappingMode.ACES;
+                if (!prof.TryGet(out Bloom bloom)) bloom = prof.Add<Bloom>(true);
+                bloom.active = true; bloom.threshold.overrideState = true; bloom.threshold.value = 1.15f;
+                bloom.intensity.overrideState = true; bloom.intensity.value = 0.34f;
+                if (!prof.TryGet(out ColorAdjustments ca)) ca = prof.Add<ColorAdjustments>(true);
+                ca.active = true; ca.postExposure.overrideState = true; ca.postExposure.value = 0.08f;
+                ca.contrast.overrideState = true; ca.contrast.value = 7.0f; ca.saturation.overrideState = true; ca.saturation.value = 8.0f;
+                if (!prof.TryGet(out WhiteBalance wb)) wb = prof.Add<WhiteBalance>(true);
+                wb.active = true; wb.temperature.overrideState = true; wb.temperature.value = 6.0f;
+                if (!prof.TryGet(out Vignette vig)) vig = prof.Add<Vignette>(true);
+                vig.active = true; vig.intensity.overrideState = true; vig.intensity.value = 0.24f;
+                EditorUtility.SetDirty(prof);
+                AssetDatabase.SaveAssets();
+            }
+
+            Debug.Log($"[OverhaulVerify] URP HDR={hdrOn} | CamPostProcess={camPp} | VolumeProfile={(prof != null ? prof.name : "null")} | Components={(prof != null ? prof.components.Count : 0)}");
+
+            // 2. Verify MarsCtxNavSolarEngine real 399x378 CTX A* + Solar Optics + RF LOS + SiteCheck
+            var ctxGo = new GameObject("_TempCtxVerify");
+            var ctx = ctxGo.AddComponent<MarsCtxNavSolarEngine>();
+            var loadMethod = typeof(MarsCtxNavSolarEngine).GetMethod("LoadCtxGrid", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            loadMethod?.Invoke(ctx, null);
+            if (ctx.IsLoaded)
+            {
+                ctx.RecomputePreset(0);
+                MarsCtxNavSolarEngine.ComputeSolarPos(18.4447, 90.0, 12.0, out double el, out double az);
+                Debug.Log($"[OverhaulVerify] CTX A* Loaded=True | Shortest={ctx.ShortestRoute.distanceMeters:F1}m (maxSlope={ctx.ShortestRoute.maxSlopeDeg:F1}°, wpts={ctx.ShortestRoute.waypointCount}) | Safest={ctx.SafestRoute.distanceMeters:F1}m (maxSlope={ctx.SafestRoute.maxSlopeDeg:F1}°, wpts={ctx.SafestRoute.waypointCount}) | NoonEl={el:F1}° Az={az:F1}° | RF_Clear={ctx.ActiveRfLos.clear} | SitePass={ctx.ActiveSiteCheck.pass} (slope={ctx.ActiveSiteCheck.slopeDeg:F1}°, rough={ctx.ActiveSiteCheck.roughMeters:F2}m, sun={ctx.ActiveSiteCheck.daylightPercent}%)");
+            }
+            else
+            {
+                Debug.LogError("[OverhaulVerify] CTX A* grid failed to load!");
+            }
+            Object.DestroyImmediate(ctxGo);
+
+            // 3. Render 3 GPU screenshots of upgraded Hero Scene (Campus, Perseverance Rover GLB, Terrain Shader)
+            if (mainCam != null)
+            {
+                Vector3 origPos = mainCam.transform.position;
+                Quaternion origRot = mainCam.transform.rotation;
+
+                CaptureCameraFrame(mainCam, new Vector3(-8f, 9.5f, -24f), new Vector3(0f, 1.5f, 4f), Path.Combine(outDir, "unity_overhaul_01_campus.png"));
+                CaptureCameraFrame(mainCam, new Vector3(4.2f, 2.6f, -5.2f), new Vector3(0f, 1.1f, 0f), Path.Combine(outDir, "unity_overhaul_02_rover_glb.png"));
+                CaptureCameraFrame(mainCam, new Vector3(24f, 16f, -34f), new Vector3(0f, 2f, 14f), Path.Combine(outDir, "unity_overhaul_03_terrain_overview.png"));
+
+                mainCam.transform.position = origPos;
+                mainCam.transform.rotation = origRot;
+                Debug.Log($"[OverhaulVerify] Saved 3 GPU verification captures to {outDir}");
+            }
+        }
+
+        private static void CaptureCameraFrame(Camera cam, Vector3 pos, Vector3 lookAt, string filePath)
+        {
+            int w = 1280, h = 720;
+            RenderTexture rt = new RenderTexture(w, h, 24, RenderTextureFormat.ARGB32);
+            Texture2D tex = new Texture2D(w, h, TextureFormat.RGB24, false);
+            cam.transform.position = pos;
+            cam.transform.LookAt(lookAt);
+            RenderTexture prevTarget = cam.targetTexture;
+            RenderTexture prevActive = RenderTexture.active;
+            cam.targetTexture = rt;
+            cam.Render();
+            RenderTexture.active = rt;
+            tex.ReadPixels(new Rect(0, 0, w, h), 0, 0);
+            tex.Apply();
+            File.WriteAllBytes(filePath, tex.EncodeToPNG());
+            cam.targetTexture = prevTarget;
+            RenderTexture.active = prevActive;
+            Object.DestroyImmediate(tex);
+            rt.Release();
+            Object.DestroyImmediate(rt);
         }
 
         private static void InstantiateFleetModel(string modelFile, string nodeName, Transform parent, Vector3 localPos)

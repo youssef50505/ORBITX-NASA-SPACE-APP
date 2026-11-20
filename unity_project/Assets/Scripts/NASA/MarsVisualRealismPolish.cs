@@ -356,7 +356,7 @@ namespace MarsSentinel.NASA
                 }
             }
 
-            // Center Top Title Banner
+            // Center Top Title Banner (preserve modern 3-line slim 960x74 strip)
             GameObject topGo = GameObject.Find("VisorHeaderPanel") ?? GameObject.Find("TopBannerPanel");
             if (topGo != null)
             {
@@ -366,8 +366,8 @@ namespace MarsSentinel.NASA
                     rt.anchorMin = new Vector2(0.5f, 1f);
                     rt.anchorMax = new Vector2(0.5f, 1f);
                     rt.pivot = new Vector2(0.5f, 1f);
-                    rt.anchoredPosition = new Vector2(0f, -18f);
-                    rt.sizeDelta = new Vector2(830f, 90f);
+                    rt.anchoredPosition = new Vector2(0f, -14f);
+                    rt.sizeDelta = new Vector2(960f, 74f);
                 }
             }
 
@@ -469,13 +469,13 @@ namespace MarsSentinel.NASA
 
             Material terrainMat = CreateLitMaterial(
                 "MS_Polished_Regolith_Mat",
-                new Color(0.98f, 0.94f, 0.90f, 1f),
-                0.01f,
-                0.06f,
+                new Color(0.96f, 0.90f, 0.84f, 1f),
+                0.02f,
+                0.09f,
                 regolithTex,
                 regolithBump,
-                new Vector2(12f, 12f),
-                0.65f
+                new Vector2(48f, 48f),
+                1.18f
             );
             mr.sharedMaterial = terrainMat;
             mr.shadowCastingMode = ShadowCastingMode.On;
@@ -876,6 +876,20 @@ namespace MarsSentinel.NASA
                         (vCount <= 24 && (n.Contains("cam") || n.Contains("box") || n.Contains("dummy"))) ||
                         (r.gameObject == root && n.Contains("curiosity")));
                     if (isHelper)
+                    {
+                        r.enabled = false;
+                    }
+                }
+            }
+
+            // 1b. Hide legacy low-poly placeholder rover/boulder meshes inside MARS_SENTINEL_HERO_WEB so authentic NASA GLBs shine
+            GameObject heroWeb = GameObject.Find("MARS_SENTINEL_HERO_WEB");
+            if (heroWeb != null)
+            {
+                foreach (Renderer r in heroWeb.GetComponentsInChildren<Renderer>(true))
+                {
+                    string hn = r.gameObject.name.ToLowerInvariant();
+                    if (hn.Contains("rover") || hn.Contains("persev") || hn.Contains("mars_globe") || hn.Contains("phobos") || hn.Contains("deimos"))
                     {
                         r.enabled = false;
                     }

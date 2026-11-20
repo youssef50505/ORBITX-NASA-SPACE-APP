@@ -52,6 +52,12 @@ namespace MarsSentinel.NASA
         private float smoothedCamYaw = 15f;
         private float smoothedCamPitch = 16f;
         private bool rigBuilt = false;
+        private bool wasGroundedLastFrame = true;
+        private float landSquashTimer = 0f;
+        private float smoothTurnBank = 0f;
+        private float prevYawForBank = 15f;
+        private Vector3 baseVisualScale = Vector3.one;
+        private Vector3 baseVisualLocalPos = Vector3.zero;
 
         private void Awake()
         {
@@ -509,50 +515,113 @@ namespace MarsSentinel.NASA
             else
             {
                 Quaternion rot = Quaternion.Euler(smoothedCamPitch, smoothedCamYaw, 0f);
-                Vector3 focus = transform.position + new Vector3(0f, 1.48f, 0f) + rot * new Vector3(0.42f, 0f, 0f);
-                Vector3 desiredPos = focus - rot * Vector3.forward * camDistance;
+                Vector3 focus = transform.position + new Vector3(0f, 1.52f, 0f) + rot * new Vector3(0.42f, 0f, 0f);
+                Vector3 backDir = -(rot * Vector3.forward);
+                float resolvedDist = camDistance;
+
+                // SphereCast keeps 3rd-person camera outside Habitat / Agri / Medical walls
+                if (Physics.SphereCast(focus, 0.28f, backDir, out RaycastHit camHit, camDistance, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore))
+                {
+                    if (camHit.collider != null && !camHit.collider.transform.IsChildOf(transform))
+                    {
+                        resolvedDist = Mathf.Clamp(camHit.distance - 0.25f, 1.35f, camDistance);
+                    }
+                }
+
+                Vector3 desiredPos = focus + backDir * resolvedDist;
 
                 // Keep camera above terrain
                 float camFloor = MarsVisualRealismPolish.SampleTerrainElevation(desiredPos.x, desiredPos.z) + 0.55f;
                 if (desiredPos.y < camFloor) desiredPos.y = camFloor;
 
-                mainCam.transform.position = desiredPos;
+                mainCam.transform.position = Vector3.Lerp(mainCam.transform.position, desiredPos, Time.deltaTime * 16f);
                 mainCam.transform.LookAt(focus);
+                float targetFov = CurrentSpeedMps > 5.5f ? 65f : 60f;
+                mainCam.fieldOfView = Mathf.Lerp(mainCam.fieldOfView, targetFov, Time.deltaTime * 7f);
             }
         }
 
         private void AnimateLimbsAndFootsteps(float speed, bool sprinting)
         {
+            bool grounded = charCtrl != null && charCtrl.isGrounded;
+            if (grounded && !wasGroundedLastFrame)
+            {
+                landSquashTimer = 0.14f;
+                bool deck = MarsAudioManager.Instance != null && MarsAudioManager.Instance.IsInsideFacility;
+                MarsAudioManager.Instance?.PlayFootstep(deck);
+                if (!deck) MarsCinematicVfxAndPost.Instance?.EmitDustPuff(transform.position, 6, 1.3f);
+            }
+            wasGroundedLastFrame = grounded;
+            if (landSquashTimer > 0f) landSquashTimer -= Time.deltaTime;
+
+            float yawDelta = Mathf.DeltaAngle(prevYawForBank, transform.eulerAngles.y) / Mathf.Max(0.01f, Time.deltaTime);
+            prevYawForBank = transform.eulerAngles.y;
+            smoothTurnBank = Mathf.Lerp(smoothTurnBank, Mathf.Clamp(-yawDelta * 0.045f, -7f, 7f), Time.deltaTime * 8f);
+
             if (leftArmPivot == null || rightArmPivot == null || leftLegPivot == null || rightLegPivot == null)
             {
-                if (visualRoot != null)
+                Transform targetVis = visualRoot != null ? visualRoot : transform.Find("EVA_NASA_Astronaut_GLB");
+                if (targetVis != null)
                 {
-                    if (speed > 0.25f && charCtrl.isGrounded)
+                    if (baseVisualScale == Vector3.one && targetVis.localScale != Vector3.one)
                     {
-                        float rate = sprinting ? 11.2f : 7.6f;
+                        baseVisualScale = targetVis.localScale;
+                        baseVisualLocalPos = targetVis.localPosition;
+                    }
+
+                    // Squash & stretch on Mars 0.38g jump / landing
+                    float sy = 1f;
+                    float sxz = 1f;
+                    if (!grounded)
+                    {
+                        sy = 1.055f;
+                        sxz = 0.965f;
+                    }
+                    else if (landSquashTimer > 0f)
+                    {
+                        float t = landSquashTimer / 0.14f;
+                        sy = Mathf.Lerp(1f, 0.89f, t);
+                        sxz = Mathf.Lerp(1f, 1.07f, t);
+                    }
+
+                    Vector3 targetScale = new Vector3(baseVisualScale.x * sxz, baseVisualScale.y * sy, baseVisualScale.z * sxz);
+                    targetVis.localScale = Vector3.Lerp(targetVis.localScale, targetScale, Time.deltaTime * 18f);
+
+                    if (speed > 0.25f && grounded)
+                    {
+                        float rate = sprinting ? 11.4f : 7.8f;
                         walkCycle += Time.deltaTime * rate;
-                        float bob = Mathf.Abs(Mathf.Sin(walkCycle)) * 0.045f;
-                        float roll = Mathf.Cos(walkCycle) * 2.2f;
-                        float pitch = sprinting ? 6.5f : 3.2f;
-                        visualRoot.localPosition = new Vector3(0f, bob, 0f);
-                        visualRoot.localRotation = Quaternion.Euler(pitch, 0f, roll);
+                        float bob = Mathf.Abs(Mathf.Sin(walkCycle)) * (sprinting ? 0.085f : 0.052f);
+                        float roll = Mathf.Cos(walkCycle) * (sprinting ? 4.2f : 2.6f) + smoothTurnBank;
+                        float pitch = sprinting ? 9.5f : 4.8f;
+                        float yawTwist = Mathf.Sin(walkCycle) * (sprinting ? 7.0f : 4.2f);
+                        targetVis.localPosition = Vector3.Lerp(targetVis.localPosition, baseVisualLocalPos + new Vector3(0f, bob, 0f), Time.deltaTime * 16f);
+                        targetVis.localRotation = Quaternion.Slerp(targetVis.localRotation, Quaternion.Euler(pitch, yawTwist, roll), Time.deltaTime * 14f);
                         if (walkCycle >= nextStepAt)
                         {
                             nextStepAt += Mathf.PI;
                             bool deck = MarsAudioManager.Instance != null && MarsAudioManager.Instance.IsInsideFacility;
                             MarsAudioManager.Instance?.PlayFootstep(deck);
+                            if (!deck) MarsCinematicVfxAndPost.Instance?.EmitDustPuff(transform.position, sprinting ? 5 : 3, sprinting ? 1.15f : 0.85f);
                         }
+                    }
+                    else if (!grounded)
+                    {
+                        targetVis.localRotation = Quaternion.Slerp(targetVis.localRotation, Quaternion.Euler(-6f, 0f, smoothTurnBank), Time.deltaTime * 8f);
                     }
                     else
                     {
-                        visualRoot.localPosition = Vector3.Lerp(visualRoot.localPosition, Vector3.zero, Time.deltaTime * 10f);
-                        visualRoot.localRotation = Quaternion.Slerp(visualRoot.localRotation, Quaternion.identity, Time.deltaTime * 10f);
+                        // Subtle alive idle breathing & visor sway (never frozen like a statue)
+                        float breatheY = Mathf.Sin(Time.time * 1.9f) * 0.012f;
+                        float swayZ = Mathf.Sin(Time.time * 0.85f) * 0.9f;
+                        targetVis.localPosition = Vector3.Lerp(targetVis.localPosition, baseVisualLocalPos + new Vector3(0f, breatheY, 0f), Time.deltaTime * 7f);
+                        targetVis.localRotation = Quaternion.Slerp(targetVis.localRotation, Quaternion.Euler(0.8f * Mathf.Sin(Time.time * 1.9f), 0f, swayZ), Time.deltaTime * 7f);
                     }
                 }
                 return;
             }
 
-            if (speed > 0.25f && charCtrl.isGrounded)
+            if (speed > 0.25f && grounded)
             {
                 float rate = sprinting ? 11.5f : 7.8f;
                 walkCycle += Time.deltaTime * rate;
@@ -568,6 +637,7 @@ namespace MarsSentinel.NASA
                     nextStepAt += Mathf.PI;
                     bool deck = MarsAudioManager.Instance != null && MarsAudioManager.Instance.IsInsideFacility;
                     MarsAudioManager.Instance?.PlayFootstep(deck);
+                    if (!deck) MarsCinematicVfxAndPost.Instance?.EmitDustPuff(transform.position, sprinting ? 5 : 3, 0.9f);
                 }
             }
             else if (!charCtrl.isGrounded)

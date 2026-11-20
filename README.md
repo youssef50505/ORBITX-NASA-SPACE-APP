@@ -1,69 +1,70 @@
-# MARS SENTINEL
+# ORBITX · MARS SENTINEL
 
 **Interplanetary Survival Guide: Martian Map**  
-*NASA Space Apps Challenge 2026*  
-**Target Location:** Jezero Crater, Mars (`18.42875° N, 77.44215° E`)
+*NASA Space Apps Challenge 2026 — Team ORBITX (`orbitX00`)*  
+**Target Location:** Jezero Crater, Mars (`18.4447° N, 77.4508° E · -2,569.9 m MOLA`)
 
 ---
 
-## Overview
+## Vision: Toward "Google Earth for Mars" (Web + 3D + Game)
 
-MARS SENTINEL is an EVA tactical planning and decision-support platform for crewed Martian exploration. Built upon verified NASA/USGS orbital elevation models and HiRISE imagery, it bridges high-fidelity 3D tactical simulation in Blender 5.2 with a lightweight, client-side Three.js digital twin.
+Our long-term goal is to scale **ORBITX: Mars Sentinel** into a unified **"Google Earth for Mars"** — an open, planetary-scale exploration, navigation, and mission-planning ecosystem that seamlessly connects **three synchronized surfaces** backed by real NASA & USGS science:
+
+1. **Interactive Web Digital Twin (`web/index.html`)** — Zero-install, browser-based 3D Mars globe & Jezero Crater twin with a modern 3D-first aerospace glass HUD, live dynamic 8-connected A\* traverse planner (`nav_sun_engine.js`), Mars orbital solar/shadow optics (`Ls 0°–355°`), terrain-occluded RF Line-of-Sight viewshed, Outpost Site Check, **Omni-Probe Planetary X-Ray Scanner**, 7-Slide Pitch Deck, and one-click **`● Rec 28s`** WebM video capture.
+2. **Playable Game & Survival Simulation (`unity_project/` — Unity 6 `6000.6.9f1`)** — Standalone Windows 64-bit simulation (`MarsSentinel.exe`) featuring authentic NASA GLB hardware (`mars-2020-perseverance-rover.glb`, `Astronaut.glb`, `Ingenuity`, `Curiosity`, `HDU`, `Saturn V`, orbiters), 6-point Rocker-Bogie rover suspension & A\* Autopilot (`[R]`), procedural astronaut motion & camera collision, live EVA Survival Loop (`O2`, `Power`, `Radiation`, `RF Signal`, MedEvac, 3 collectible Jezero core samples), URP ACES Post-Processing + pooled Martian dust VFX, FBM sand-slope terrain shading, and full C# `nav-module` integration (`MarsCtxNavSolarEngine`).
+3. **High-Fidelity Scientific 3D Master Pipeline (`MARS_SENTINEL_HERO_PRODUCTION.blend` — Blender 5.2)** — 4 m resolution USGS HiRISE DTM (`1,132,096` vertices, SHA-256 verified) and 80 m USGS CTX DTM mosaic (`399×378`) feeding both Web and Unity assets.
 
 ---
 
 ## Quick Navigation & Architecture Links
 
-- 📖 **Single Source of Truth (SSOT)**: [`docs/SYSTEM_GUIDE.md`](docs/SYSTEM_GUIDE.md) — Comprehensive technical guide covering architecture, GIS data provenance, coordinates, A* routes, asset maps, and telemetry.
-- 🛡️ **Mandatory Agent Rules**: [`docs/AGENTS.md`](docs/AGENTS.md) — In-place editing rules, protected baselines, and operational guardrails for all AI agents.
-- 🚀 **Active 3D Master Scene**: `MARS_SENTINEL_HERO_PRODUCTION.blend` (Blender 5.2 production environment).
-- 🌐 **Interactive Web Platform**: [`web/index.html`](web/index.html) (Pure client-side Three.js digital twin).
-- 🎮 **Unified Startup Controller**: [`tools/mars_front_view.py`](tools/mars_front_view.py) (Blender N-panel dashboard and hotkey bindings).
+- 🌐 **Interactive Web Digital Twin:** [`web/index.html`](web/index.html) (serve locally via `python -m http.server 8080` and open `http://127.0.0.1:8080/web/index.html`)
+- 🧭 **Core Navigation & Solar/RF Module:** [`nav-module/nav.py`](nav-module/nav.py), [`web/nav_sun_engine.js`](web/nav_sun_engine.js), and [`unity_project/Assets/Scripts/NASA/MarsCtxNavSolarEngine.cs`](unity_project/Assets/Scripts/NASA/MarsCtxNavSolarEngine.cs)
+- 🎮 **Unity 6 Survival Game Scripts:** [`unity_project/Assets/Scripts/NASA/`](unity_project/Assets/Scripts/NASA/)
+- 📊 **Presentation Deck (7 Slides):** [`docs/presentation/ORBITX_Deck.pdf`](docs/presentation/ORBITX_Deck.pdf) & [`Mars_Sentinel_OrbitX00.pptx`](Mars_Sentinel_OrbitX00.pptx)
+- 📖 **Single Source of Truth (SSOT):** [`docs/SYSTEM_GUIDE.md`](docs/SYSTEM_GUIDE.md)
+- 🛡️ **Agent Guardrails:** [`docs/AGENTS.md`](docs/AGENTS.md)
 
 ---
 
-## Core Features
+## Core Capabilities
 
-### 1. High-Fidelity 3D Simulation (Blender 5.2)
-- **Active Master Scene**: `MARS_SENTINEL_HERO_PRODUCTION.blend`
-- **Scientific Terrain**: 4 m resolution USGS HiRISE DTM mesh (`NASA_HiRISE_DTM_Jezero_FieldSite_4m`, 1,132,096 vertices) anchored to verified NASA coordinates.
-- **Base Camp & Agriculture**: 513 assets in `MS_Agriculture_Zone` featuring vaulted hydroponics greenhouse, geodesic aeroponics dome, water/nutrient recycling, and perchlorate remediation.
-- **Vehicles & Crew**: Perseverance Rover, Exploration Vehicle, Reconnaissance Drone, InSight Lander, and 4 crew members.
-- **Viewport Hotkeys (`tools/mars_front_view.py`)**:
-  - `Key 1`: Surface Base Camp, Crew, Rovers & Agriculture Zone
-  - `Key 2`: Orbital Mars Globe with Jezero Pin & Milky Way Starfield
-  - `Key 3`: Mars Agriculture, Hydroponics & Aeroponics Dome
-  - `Key 4`: Habitat Base Pod & Rover Fleet Close-up
-  - `Key 5`: Live Martian Day/Night Cycle (Day → Sunset → Twilight → Night → Sunrise)
-  - `Key 6`: Mars Exploration Fleet Showcase (`MS_Mars_Fleet_Surface`)
+### 1. Live Dynamic A\* Navigation, Solar Optics & RF Viewshed (`nav-module` + `web/` + `Unity 6`)
+- **8-Connected 3D A\* Pathfinding** over the real USGS Mars 2020 CTX DTM Mosaic (`399×378`, `80 m` cells, DOI `10.5066/P906QQT8`): dynamically solves **Shortest** vs. **Safest** routes (penalizing slope `<= 25°` and surface roughness rock-proxy) with **Douglas-Peucker (`120 m`)** waypoint simplification.
+- **Mars Orbital Solar & Shadow Optics:** Computes solar elevation/azimuth and Beer-Lambert irradiance across Solar Longitude `Ls (0°–355°)` and Martian solar hour `(0–24 h)` with 75-step terrain shadow ray-marching.
+- **Radio Line-of-Sight (RF Viewshed):** Flags terrain-occluded valleys between rover/astronaut and base antenna in real time.
+- **Outpost Site Suitability Check:** Evaluates candidate landing/outpost locations against `Slope <= 10°`, `Roughness <= 2.0 m`, and `Daylight >= 50%`.
 
-### 2. Interactive Web Platform (`web/`)
-- Pure client-side Three.js application with zero backend dependencies.
-- Open `web/index.html` directly in any modern browser or serve via `python -m http.server 8000`.
-- Real-time A* route evaluation (Shortest, Safest, Science).
-- Dynamic solar cycle slider matching atmospheric Mie scattering.
-- Real-time life-support and agriculture telemetry HUD.
+### 2. Omni-Probe Planetary X-Ray Scanner (`[X]` / Click Anywhere)
+- Click any point on the Martian surface, rock outcrop, iron-nickel meteorite (`Cacao`, `Lebanon`), `Belva` Crater, base facility, or sky body (`Sol`, `Phobos`, `Deimos`, `Earth/DSN`) to inspect live IAU2000 coordinates, elevation, slope, Thermal Inertia (TIU), USGS SIM 3292 geologic unit (all 44 units), PIXL/SHERLOC oxide chemistry, and a 3-layer RIMFAX subsurface radar depth profile (`0–15 m`).
 
-### 3. Game Engine Simulation (Unity 6 — `6000.6.9f1` & `Unity CLI 1.0.0`)
-- **Primary Game Engine**: Unity Engine (`6000.6.9f1`) managed via `Unity CLI 1.0.0`.
-- **3D & Data Pipeline**: Imports the 1:1 Blender master scene (`MARS_SENTINEL_HERO_PRODUCTION.blend`) via FBX/GLB alongside NASA Space Apps datasets (`data/routes_traverses/`, `data/geology/`, `data/elevation_dtm/`, `data/imagery/`).
-- **Target Builds**: Unity WebGL, Windows Standalone (URP/HDRP), and OpenXR.
+### 3. Playable Unity 6 Mars Survival & Exploration Game (`MarsSentinel.exe`)
+- **Controls:**
+  - `[F]` Explore / Showcase · `WASD`/Arrows walk & drive (`3.72 m/s²` Mars gravity, `Shift` sprint, `Space` jump)
+  - `[E]` Board/Dismount NASA Perseverance GLB Rover or collect glowing Jezero Core Samples
+  - `[R]` Toggle Rover A\* Safest Route Autopilot · `[V]` 1st/3rd-Person Visor · `[B]` Headlamp/Lights
+  - `[X]` Omni-Probe X-Ray · `[Q]` Cycle CTX A\* Preset · `[J]` Advance Mars `Ls` Season · `[Y]` Toggle Clean/Full HUD
+  - `[1–5]` Cameras · `[H]` Data Layer Isolation · `[D/C]` Dust Storm `τ` · `[N]` 28s NASA Demo · `[P]` 60s Demo · `[K]` Audio Mute
+- **Survival Loop:** Live Oxygen (`O2 %`), Solar/Battery Power (`PWR %`), Radiation Trauma (`RAD %`), RF Signal (`RF %`), shelter recharging in **Hydroponics Dome / NASA HDU / Medical Bay**, 3 collectible Jezero core samples with score/rank, and automatic **Emergency MedEvac**.
 
 ---
 
-## Protected Baselines
-
-The following scientific baselines are permanently protected and immutable:
-- `archive/Mars_backup_before_quality_pass.blend` (Historical reference backup)
-- `data/JEZ_hirise_soc_006_DTM_1m.tif` (USGS HiRISE DTM GeoTIFF, DOI `10.5066/P9REJ9JN`)
-- `data/JEZ_ctx_B_soc_008_DTM_20m.tif` (USGS Mars 2020 CTX DTM GeoTIFF, DOI `10.5066/P906QQT8`)
-- HiRISE mesh coordinate hash: `ed5e2c9e0d23cb45dfbaf7c11deee3e168ea59d9681d8a094e3b514b32b354dd`
-
+## Authentic NASA & USGS Datasets
+- **MRO HiRISE 4 m DTM** (`DTEEC_048842_1985_048908_1985_A01`, `1,132,096` vertices, SHA-256 verified) & **MOLA MEGDR**
+- **USGS Mars 2020 TRN CTX DTM Mosaic** (DOI `10.5066/P906QQT8`) & **USGS SIM 3292 Geologic Map of Mars** (44 units, Tanaka et al., 2014)
+- **Mars 2020 Perseverance** (559 traverse legs with 15 altitude dropouts filtered, 22 Sample Tubes, 12 Outcrops, Mastcam-Z, PIXL, SHERLOC, RIMFAX, MOXIE)
+- **Ingenuity Mars Helicopter** (72 flights), **MSL Curiosity** (1,316 segments), **MEDA / RAD / InSight / NASA DONKI**, and official **NASA 3D Resources** (`14 CFR 1221` compliant, educational entry, not NASA-endorsed).
 
 ---
 
-## 4. Playable Exploration, NASA Science & Facilities (`Unity 6` + `Web`)
+## Verification & Automated Testing
+```bash
+# 1. Workspace & Unity C# / .meta integrity audit
+python -B scripts/audit_workspace_integrity.py --json
 
-- **Unity Controls**: `[F]` Explore/Showcase, `WASD`/Arrows walk/drive (`3.72 m/s^2`, `Shift` sprint, `Space` jump), `[E]` inspect/board 6x6 Pressurized Rover, `[V]` visor 1st/3rd-person, `[B]` headlamp/lights, `[Tab]` cursor, `[K]` audio mute.
-- **NASA Science & Hardware**: Click/scan **50 targets** (12 Jezero outcrops, 22 sample tubes, 10 spacecraft, facilities) for Mastcam-Z photos, coordinates, mineralogy, geochemistry, and MEDA/RAD/Mount Sharp data alongside walkable **Hydroponics Dome**, **Medical Bay**, **NASA HDU + Mark III Suit**, **EDL Craft**, and **Ascent Rocket Pad** (`Saturn V`, `Ares 1`, `Mobile Launcher`). Public NASA data used under `14 CFR 1221` (educational entry, not NASA-endorsed).
-- **Web Digital Twin (`web/index.html`)**: Mirrored Medical Bay, EDL craft, Ascent Pad, clickable outcrops, MEDA/RAD readouts, WASD pan, and WebAudio toggle.
+# 2. Nav-module + Web JS + Unity overhaul integration tests
+python -B -m unittest tests/test_nav_module_integration.py -v
+
+# 3. Full cross-platform regression & live Edge CDP test suite
+python -B -m unittest tests/test_e2e_suite.py tests/test_milestone4_empirical_challenge.py tests/test_milestone6_empirical_challenge.py tests/test_m10_crossplatform_adversarial_challenge.py tests/test_milestone11_resources_and_integration.py tests/test_milestone8_empirical_challenge.py -v
+```

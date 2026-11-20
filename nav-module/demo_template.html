@@ -1,0 +1,22 @@
+<!doctype html><meta charset=utf-8><title>MARS SENTINEL - Navigation</title>
+<style>body{margin:0;background:#12100e;color:#eee;font:14px system-ui}main{max-width:1000px;margin:auto;padding:12px}
+canvas{width:100%;image-rendering:pixelated;border-radius:8px;background:#000}select,button{font:inherit;padding:6px 10px;margin-right:6px}
+table{border-collapse:collapse;margin:10px 0}td,th{padding:5px 12px;border-bottom:1px solid #444;text-align:left}small{color:#aaa}</style>
+<main><h2>Navigation &amp; Hazard Detection - Jezero (real CTX DEM)</h2>
+<select id=p></select><button id=a>Shortest</button><button id=b>Safest</button>
+<canvas id=c></canvas><table id=t></table>
+<small id=n></small></main>
+<script>
+const D=__DATA__,img=new Image(),cv=document.getElementById('c'),x=cv.getContext('2d'),on={s:1,f:1};
+img.onload=draw;img.src="__IMG__";cv.width=img.width||399;
+const sel=document.getElementById('p');D.presets.forEach((_,i)=>sel.add(new Option('Preset '+(i+1),i)));
+sel.onchange=draw;
+for(const[id,k]of[['a','s'],['b','f']])document.getElementById(id).onclick=()=>{on[k]^=1;draw()};
+function draw(){cv.width=img.width;cv.height=img.height;x.drawImage(img,0,0);const p=D.presets[sel.value],rows=[];
+ for(const[k,key,col,lab]of[['s','shortest','#38bdf8','Shortest'],['f','safest','#fff','Safest']]){const r=p[key];if(!on[k])continue;
+  x.strokeStyle=col;x.lineWidth=2;x.beginPath();r.path.forEach(([c,y],i)=>i?x.lineTo(c+.5,y+.5):x.moveTo(c+.5,y+.5));x.stroke();
+  x.fillStyle=col;r.waypoints.forEach(w=>x.fillRect(w.col-2,w.row-2,5,5));
+  rows.push(`<tr><td style="color:${col}">${lab}</td><td>${r.distanceMeters} m</td><td>${r.maxSlopeDeg}&deg;</td><td>${r.meanRisk}</td><td>${r.etaMinutes} min</td><td>${r.waypoints.length}</td></tr>`)}
+ document.getElementById('t').innerHTML='<tr><th>Route<th>Distance<th>Max slope<th>Mean risk<th>ETA<th>Waypoints</tr>'+rows.join('');
+ document.getElementById('n').textContent=`Map: green=low risk, red=high, dark=slope>${D.cfg.MAX_SLOPE_DEG}deg (impassable). Cell ${D.cell} m. ETA assumes ${D.cfg.SPEED_MS} m/s (assumption). Rocks are NOT visible in a 80 m DEM: roughness is a proxy. Data: ${D.src}, DOI ${D.doi}.`}
+</script>

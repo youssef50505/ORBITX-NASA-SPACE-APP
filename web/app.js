@@ -681,22 +681,52 @@
   });
   surfaceGroup.add(roverGroup);
 
-  // Heavy Exploration Crew Vehicle at (15.5, y, 20.5)
+  // Heavy Exploration Pressurized Crew Vehicle parked cleanly in base motor pool
   const heavyVeh = new THREE.Group();
-  heavyVeh.position.set(15.5, sampleHeight(15.5, 20.5), 20.5);
-  const hvBody = new THREE.Mesh(
-    new THREE.BoxGeometry(4.8, 2.4, 7.2),
-    new THREE.MeshStandardMaterial({ color: 0x9a3412, metalness: 0.45, roughness: 0.4 })
+  heavyVeh.position.set(22.5, sampleHeight(22.5, 13.5), 13.5);
+  heavyVeh.rotation.y = -0.65;
+  const hvChassis = new THREE.Mesh(
+    new THREE.BoxGeometry(2.6, 0.45, 5.2),
+    frameMat
   );
-  hvBody.position.y = 1.85;
+  hvChassis.position.y = 0.85;
+  hvChassis.castShadow = true;
+  heavyVeh.add(hvChassis);
+  const hvBody = new THREE.Mesh(
+    new THREE.BoxGeometry(2.5, 1.35, 3.8),
+    whiteCompMat
+  );
+  hvBody.position.set(0, 1.72, -0.35);
   hvBody.castShadow = true;
   heavyVeh.add(hvBody);
+  const hvTrim = new THREE.Mesh(
+    new THREE.BoxGeometry(2.56, 0.22, 3.84),
+    new THREE.MeshStandardMaterial({ color: 0xea580c, metalness: 0.25, roughness: 0.45 })
+  );
+  hvTrim.position.set(0, 1.32, -0.35);
+  heavyVeh.add(hvTrim);
+  const hvCockpit = new THREE.Mesh(
+    new THREE.BoxGeometry(2.2, 0.95, 1.15),
+    new THREE.MeshStandardMaterial({ color: 0x0f172a, metalness: 0.85, roughness: 0.14 })
+  );
+  hvCockpit.position.set(0, 1.66, 1.65);
+  hvCockpit.rotation.x = 0.28;
+  heavyVeh.add(hvCockpit);
   const hvHeadlight = new THREE.Mesh(
-    new THREE.BoxGeometry(3.2, 0.35, 0.2),
+    new THREE.BoxGeometry(1.9, 0.18, 0.12),
     new THREE.MeshStandardMaterial({ color: 0xe0f2fe, emissive: 0x38bdf8, emissiveIntensity: 2.0 })
   );
-  hvHeadlight.position.set(0, 1.5, -3.62);
+  hvHeadlight.position.set(0, 1.05, 2.62);
   heavyVeh.add(hvHeadlight);
+  [-1.45, 1.45].forEach(wx => {
+    [-1.75, 0, 1.75].forEach(wz => {
+      const w = new THREE.Mesh(new THREE.CylinderGeometry(0.56, 0.56, 0.38, 16), frameMat);
+      w.rotation.z = Math.PI / 2;
+      w.position.set(wx, 0.56, wz);
+      w.castShadow = true;
+      heavyVeh.add(w);
+    });
+  });
   surfaceGroup.add(heavyVeh);
 
   const nasaData = (typeof window !== 'undefined' && window.MARS_NASA_DATA) ? window.MARS_NASA_DATA : null;
