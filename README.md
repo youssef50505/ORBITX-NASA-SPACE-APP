@@ -3,8 +3,8 @@
 **Multi-Engine Martian Survival, Astrodynamics, Autonomous A* Navigation and 3D Geospatial Simulation — Toward "Google Earth for Mars"**  
 *2026 NASA Space Apps Challenge · Team ORBITX (orbitX00) · Octavia E. Butler Landing Site, Jezero Crater, Mars (18.4447°N, 77.4508°E)*
 
-![Figure 1](showcase/blender_3d_night_starfield.png)
-*Figure 1 — **Blender 5.2 Production Master (`MARS_SENTINEL_HERO_PRODUCTION.blend`)**: 3D Jezero Crater base at night under the Martian starfield featuring the 4-legged NASA Habitat Pod, glowing Geodesic Hydroponics Dome, Perseverance, Curiosity, Crew Rover, EVA Astronauts, and illuminated A* traverses.*
+![Figure 1](showcase/unreal_ue5_jezero_lumen.png)
+*Figure 1 — **Unreal Engine 5.8 DX12 SM6 Lumen GI & Nanite Simulation (`unreal_project/MarsSentinelUE.uproject`)**: Golden-hour Martian surface simulation over the 4m NASA HiRISE Jezero Crater DTM featuring high-poly Perseverance Rover, Ingenuity Helicopter, EVA Astronaut, NASA HDU Pressurized Habitat, Ribbed Medical Bay, and Geodesic Hydroponics Agri-Dome.*
 
 > **Executive Summary for Judges:** Surviving on Mars is not a single-discipline problem — it requires **simultaneously simulating orbital astrodynamics, real 1-meter planetary topography, autonomous hazard-avoiding rover pathfinding, solar dust attenuation, terrain-occluded radio communications, closed-loop hydroponic life support, and 0.38g human-rover EVA operations**. Instead of building a static map or a single prototype, **Team ORBITX** engineered an integrated **six-module simulation ecosystem** spanning **Blender 5.2**, **WebGL Three.js**, **Python and JavaScript (`nav-module`)**, **Unity 6 (`6000.6.9f1`)**, and **Unreal Engine 5.8 (Lumen & Nanite)** — all locked to the exact same cryptographically verified NASA HiRISE and USGS CTX Digital Terrain Models of Jezero Crater.
 
@@ -25,8 +25,8 @@ Every image below is a **live, ground-truth capture** from inside its respective
 | **Figure 8 — Interactive 5-Chapter Story Mode & Live 3D Slope Hazard Projection**<br>Real-time 3D terrain heatmap draping slope hazards directly over Jezero Crater during Chapter 2 (Cheyava Falls Biosignature). | **Figure 9 — Full Bilingual Arabic RTL (العربية) WebGL Simulation & Mission Control**<br>Native Right-to-Left Arabic interface, planetary bookmarks (فوهة جيزيرو, جبل أوليمبوس مونس, وادي مارينيريس), and Arabic Story Comms. |
 | ![Figure 10](showcase/unity_game_live.png) | ![Figure 11](showcase/unity_game_xray_story.png) |
 | **Figure 10 — Unity 6 (6000.6.9f1) Playable Standalone Survival Game (`MarsSentinel.exe`)**<br>Live 0.38g EVA gameplay with skeletal-rigged Astronaut EVA-01, Co-op Wingman EVA-02 (Dr. Nadia), drivable 6-wheel Rocker-Bogie Perseverance Rover, and live O2, Power, and Radiation HUD. | **Figure 11 — Unity 6 Custom URP 17.6 Render Graph [X] RIMFAX Subsurface X-Ray Scanner**<br>Live GPU shader pass projecting a world-space subsurface radar wave to detect buried water-ice aquifers and mudstone strata. |
-| ![Figure 12](showcase/unreal_ue5_jezero_lumen.png) | ![Figure 13](previews/final_key3_agriculture_zone.png) |
-| **Figure 12 — Unreal Engine 5.8 ([`unreal_project/`](unreal_project/README.md)) DX12 SM6 Lumen GI & Nanite Simulation**<br>Museum-grade high-poly Perseverance, Ingenuity, NASA HDU, Ribbed MedBay, and Geodesic Agri-Dome under physically calibrated Martian CO2 and dust SkyAtmosphere. | **Figure 13 — Closed-Loop Martian Hydroponics & Aeroponics Simulation (Key 3, 513 Objects)**<br>Pressurized bioregenerative agriculture complex (MS_GH1 and MS_GH2) simulating 98.4% water recovery and 2400 kcal/sol crew nutrition. |
+| ![Figure 12](showcase/blender_3d_night_starfield.png) | ![Figure 13](previews/final_key3_agriculture_zone.png) |
+| **Figure 12 — Blender 5.2 Rendered Nocturnal Base Under Crisp Pinpoint Starfield (Key 5)**<br>1920x1080 night render from `MARS_SENTINEL_HERO_PRODUCTION.blend` using the procedural `Mars_Sky_NASA` starfield, Geodesic & Vaulted Greenhouses, Recon Drone, Perseverance, Crew Rover, and EVA crew. | **Figure 13 — Closed-Loop Martian Hydroponics & Aeroponics Simulation (Key 3, 513 Objects)**<br>Pressurized bioregenerative agriculture complex (MS_GH1 and MS_GH2) simulating 98.4% water recovery and 2400 kcal/sol crew nutrition. |
 
 ---
 
