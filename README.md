@@ -1,5 +1,6 @@
 <p align="center">
-  <img src="showcase/orbitx_team_banner.png" alt="Team OrbitX — Explore • Innovate • Build a Safer Tomorrow" width="560" />
+  <img src="showcase/orbitx_team_banner.png" alt="Team OrbitX — Explore • Innovate • Build a Safer Tomorrow" width="560" /><br />
+  <em><strong>"Hope you read to the end"</strong></em>
 </p>
 
 <h1 align="center">ORBITX · MARS SENTINEL</h1>
