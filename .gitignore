@@ -18,8 +18,7 @@ __pycache__/
 !unity_project/Assets/**/*.glb
 !unity_project/Assets/**/*.glb.meta
 !data/missions_3d/**/*.glb
-!assets/models/*.glb
-!web/assets/models/*.glb
+!**/assets/models/*.glb
 
 # Raw scientific GIS datasets and huge numerical grids (>100 MB)
 data/*.tif
