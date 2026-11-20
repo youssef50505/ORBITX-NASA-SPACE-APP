@@ -4,7 +4,7 @@
 *2026 NASA Space Apps Challenge · Team ORBITX (orbitX00) · Octavia E. Butler Landing Site, Jezero Crater, Mars (18.4447°N, 77.4508°E)*
 
 ![Figure 1](showcase/unreal_ue5_jezero_lumen.png)
-*Figure 1 — **Unreal Engine 5.8 DX12 SM6 Lumen GI & Nanite Simulation (`unreal_project/MarsSentinelUE.uproject`)**: Golden-hour Martian surface simulation over the 4m NASA HiRISE Jezero Crater DTM featuring high-poly Perseverance Rover, Ingenuity Helicopter, EVA Astronaut, NASA HDU Pressurized Habitat, Ribbed Medical Bay, and Geodesic Hydroponics Agri-Dome.*
+*Figure 1 — **Unreal Engine 5.8 DX12 SM6 Lumen GI & Nanite Simulation (`unreal_project/MarsSentinelUE.uproject`)**: Golden-hour Martian surface simulation over the 4m NASA HiRISE Jezero Crater DTM featuring high-poly Perseverance Rover, Ingenuity Helicopter, EVA Astronaut, NASA HDU Habitat, Ribbed Medical Bay, and Geodesic Agri-Dome.*
 
 > **Executive Summary for Judges:** Surviving on Mars is not a single-discipline problem — it requires **simultaneously simulating orbital astrodynamics, real 1-meter planetary topography, autonomous hazard-avoiding rover pathfinding, solar dust attenuation, terrain-occluded radio communications, closed-loop hydroponic life support, and 0.38g human-rover EVA operations**. Instead of building a static map or a single prototype, **Team ORBITX** engineered an integrated **six-module simulation ecosystem** spanning **Blender 5.2**, **WebGL Three.js**, **Python and JavaScript (`nav-module`)**, **Unity 6 (`6000.6.9f1`)**, and **Unreal Engine 5.8 (Lumen & Nanite)** — all locked to the exact same cryptographically verified NASA HiRISE and USGS CTX Digital Terrain Models of Jezero Crater.
 
