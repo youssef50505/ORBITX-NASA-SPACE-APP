@@ -90,6 +90,8 @@ class UnrealAndStoryQualityTests(unittest.TestCase):
             "hero_mars_planet_and_sun_orbit.png",
             "blender_3d_night_starfield.png",
             "blender_3d_day_closeup.png",
+            "blender_viewport_night_moons_simulation.png",
+            "blender_viewport_mars_sun_orbit_simulation.png",
             "web_hero_glbs.png",
             "nav_module_ctx_rf.png",
             "web_story_3d_hazard.png",
