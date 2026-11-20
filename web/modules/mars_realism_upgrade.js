@@ -469,14 +469,14 @@
         '  if (d.y < 0.0) {',
         '    sky = mix(uHorizonColor, uHorizonColor * 0.42, clamp(-d.y * 4.5, 0.0, 1.0));',
         '  }',
-        '  // Authentic Martian Mie forward scattering around Sun (butterscotch -> dusty steel-blue halo)',
+        '  // Authentic Martian Mie forward scattering around Sun (crisp solar disk + warm dusty sienna rim)',
         '  float sunCos = max(dot(d, normalize(uSunDir)), 0.0);',
-        '  float wideMie = pow(sunCos, 3.5) * (0.28 + uDust * 0.25);',
-        '  float blueAureole = pow(sunCos, 18.0) * (0.35 + uTwilight * 0.55);',
-        '  float solarBloom = pow(sunCos, 160.0) * 1.1;',
-        '  sky = mix(sky, uSunHaloColor, clamp(blueAureole, 0.0, 0.72));',
-        '  sky += vec3(0.95, 0.72, 0.48) * wideMie * (1.0 - uTwilight * 0.5);',
-        '  sky += vec3(1.0, 0.96, 0.88) * solarBloom;',
+        '  float wideMie = pow(sunCos, 9.0) * (0.14 + uDust * 0.10);',
+        '  float blueAureole = pow(sunCos, 36.0) * (0.18 + uTwilight * 0.35);',
+        '  float solarBloom = pow(sunCos, 650.0) * 0.65;',
+        '  sky = mix(sky, uSunHaloColor, clamp(blueAureole, 0.0, 0.38));',
+        '  sky += vec3(0.92, 0.56, 0.30) * wideMie * (1.0 - uTwilight * 0.5);',
+        '  sky += vec3(1.0, 0.92, 0.78) * solarBloom;',
         '  gl_FragColor = vec4(sky, 1.0);',
         '}'
       ].join('\n')
@@ -1671,8 +1671,8 @@
         const dustVal = Number.isFinite(rawDust) ? (rawDust > 2.5 ? rawDust * 0.01 : rawDust) : 0.45;
 
         state.skyUniforms.uSunDir.value.copy(sunDir);
-        state.skyUniforms.uHorizonColor.value.copy(bgCol).lerp(new THREE.Color(0xdca070), 0.25 * (1 - twi));
-        state.skyUniforms.uZenithColor.value.copy(bgCol).multiplyScalar(0.56).lerp(new THREE.Color(0x0a1026), twi * 0.78);
+        state.skyUniforms.uHorizonColor.value.copy(bgCol).lerp(new THREE.Color(0xc86434), 0.38 * (1 - twi));
+        state.skyUniforms.uZenithColor.value.setHex(0x281015).lerp(new THREE.Color(0x070b1a), twi * 0.85);
         state.skyUniforms.uTwilight.value = twi;
         state.skyUniforms.uDust.value = dustVal;
       }
@@ -1690,7 +1690,10 @@
         }
         state.sunGroup.children.forEach((c) => {
           if (c.isSprite) {
-            c.scale.set(136, 136, 1);
+            c.scale.set(26, 26, 1);
+            if (c.material) c.material.opacity = 0.65;
+          } else if (c.isMesh) {
+            c.scale.set(0.45, 0.45, 0.45);
           }
         });
       }
@@ -1849,15 +1852,19 @@
           const horizSun = new THREE.Vector3(sunDir.x, 0, sunDir.z);
           if (horizSun.lengthSq() < 0.01) horizSun.set(-0.7, 0, 0.3);
           horizSun.normalize();
-          const baseCenter = new THREE.Vector3(-1.5, 2.0, 11.5);
-          state.desiredCamPos.copy(baseCenter).addScaledVector(horizSun, -29.0).add(new THREE.Vector3(2.0, 3.8, -4.5));
+          // Rotate camera azimuth ~28 deg off-axis from sun so 3D models get rich 3/4 key lighting
+          // and the sun + Phobos + Deimos sit cleanly in the upper-right sky instead of glaring dead-center
+          const sideVec = new THREE.Vector3(-horizSun.z, 0, horizSun.x);
+          const camBackDir = horizSun.clone().multiplyScalar(0.84).addScaledVector(sideVec, 0.54).normalize();
+          const baseCenter = new THREE.Vector3(-1.2, 1.8, 10.8);
+          state.desiredCamPos.copy(baseCenter).addScaledVector(camBackDir, -24.5).add(new THREE.Vector3(0.0, 4.4, 0.0));
           if (state.terrainHeightFn) {
             const gy = state.terrainHeightFn(state.desiredCamPos.x, state.desiredCamPos.z);
-            state.desiredCamPos.y = Math.max(state.desiredCamPos.y, gy + 4.0);
+            state.desiredCamPos.y = Math.max(state.desiredCamPos.y, gy + 4.4);
           }
-          // Balanced upward pitch framing Base Camp (Hab, Astronauts, Greenhouse, Rover) + Crater Rim + Sun/Moons below HUD!
-          const sunHeightBias = Math.max(7.2, Math.min(13.5, sunDir.y * 28.0));
-          state.desiredLookAt.copy(baseCenter).addScaledVector(horizSun, 26.0).add(new THREE.Vector3(-1.2, sunHeightBias, 0));
+          // Frame Base Camp (Perseverance, NASA HDU, Agri-Dome, MedBay, Astronauts) + Crater Rim + upper-right Sun/Moons
+          const sunHeightBias = Math.max(2.6, Math.min(4.8, sunDir.y * 11.5));
+          state.desiredLookAt.copy(baseCenter).addScaledVector(horizSun, 18.0).addScaledVector(sideVec, -5.5).add(new THREE.Vector3(0, sunHeightBias, 0));
         }
       }
     }

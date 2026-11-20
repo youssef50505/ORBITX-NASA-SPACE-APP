@@ -143,18 +143,112 @@
         if (node.material) {
           const mats = Array.isArray(node.material) ? node.material : [node.material];
           mats.forEach(m => {
-            if (typeof m.metalness === 'number') m.metalness = Math.min(m.metalness, 0.45);
-            if (typeof m.roughness === 'number') m.roughness = Math.max(m.roughness, 0.35);
+            // Prevent chalk-white overexposure on untextured white GLB materials under Martian sun
+            if (m.color && !m.map) {
+              const lum = m.color.r * 0.3 + m.color.g * 0.59 + m.color.b * 0.11;
+              if (lum > 0.82) {
+                if (options.tintMode === 'rover') {
+                  m.color.setHex(0xdcd0be); // Warm NASA titanium-cream thermal paint
+                } else if (options.tintMode === 'astronaut') {
+                  m.color.setHex(0xe5ddd0); // Crisp NASA xEMU suit cream-white
+                } else {
+                  m.color.setHex(0xd8cbb8); // Warm aerospace composite
+                }
+              }
+            }
+            if (typeof m.metalness === 'number') m.metalness = Math.min(m.metalness, 0.48);
+            if (typeof m.roughness === 'number') m.roughness = Math.max(m.roughness, 0.38);
             m.needsUpdate = true;
           });
         }
       }
     });
 
+    // For Perseverance & Astronaut single-material GLBs, apply vertex-color shading (dark titanium wheels, gold visor/foil, warm shadows)
+    if (options.tintMode === 'rover' || options.tintMode === 'astronaut') {
+      applyVertexColorRealismToGlb(glbScene, targetSize, options.tintMode);
+    }
+
     if (options.offset) wrapper.position.set(options.offset[0], options.offset[1], options.offset[2]);
     if (options.rotY) wrapper.rotation.y = options.rotY;
     parentGroup.add(wrapper);
     return wrapper;
+  }
+
+  function applyVertexColorRealismToGlb(glbScene, targetSize, mode) {
+    const worldBox = new THREE.Box3().setFromObject(glbScene);
+    const minY = worldBox.min.y;
+    const spanY = Math.max(0.1, worldBox.max.y - minY);
+    const vWorld = new THREE.Vector3();
+
+    glbScene.traverse(node => {
+      if (!node.isMesh || !node.geometry || !node.geometry.attributes.position) return;
+      const pos = node.geometry.attributes.position;
+      const norm = node.geometry.attributes.normal;
+      const colors = new Float32Array(pos.count * 3);
+
+      for (let i = 0; i < pos.count; i++) {
+        vWorld.fromBufferAttribute(pos, i).applyMatrix4(node.matrixWorld);
+        const hNorm = Math.max(0, Math.min(1, (vWorld.y - minY) / spanY));
+        const ny = norm ? norm.getY(i) : 0.5;
+        const ao = 0.76 + 0.24 * Math.max(0, ny * 0.5 + 0.5);
+
+        if (mode === 'rover') {
+          if (hNorm < 0.27) {
+            // Anodized dark titanium-aluminum cleated wheels & lower rocker-bogie hubs
+            colors[i * 3] = 0.20 * ao;
+            colors[i * 3 + 1] = 0.19 * ao;
+            colors[i * 3 + 2] = 0.21 * ao;
+          } else if (hNorm < 0.44 && Math.abs(vWorld.x) > 0.55) {
+            // Rocker-bogie titanium suspension struts
+            colors[i * 3] = 0.34 * ao;
+            colors[i * 3 + 1] = 0.33 * ao;
+            colors[i * 3 + 2] = 0.36 * ao;
+          } else if (hNorm > 0.78) {
+            // Mastcam-Z camera head & gold Kapton neck accents
+            colors[i * 3] = 0.88 * ao;
+            colors[i * 3 + 1] = 0.68 * ao;
+            colors[i * 3 + 2] = 0.36 * ao;
+          } else {
+            // Warm NASA Perseverance deck & MMRTG housing with subtle Martian dust gradient
+            colors[i * 3] = 0.86 * ao;
+            colors[i * 3 + 1] = 0.79 * ao;
+            colors[i * 3 + 2] = 0.69 * ao;
+          }
+        } else if (mode === 'astronaut') {
+          if (hNorm > 0.82) {
+            // Gold-tinted helmet & upper visor region
+            colors[i * 3] = 0.90 * ao;
+            colors[i * 3 + 1] = 0.72 * ao;
+            colors[i * 3 + 2] = 0.36 * ao;
+          } else if (hNorm < 0.16) {
+            // Dusty Martian regolith-coated EVA boots
+            colors[i * 3] = 0.42 * ao;
+            colors[i * 3 + 1] = 0.25 * ao;
+            colors[i * 3 + 2] = 0.18 * ao;
+          } else if (hNorm > 0.52 && hNorm < 0.64) {
+            // NASA rust-orange chest/PLSS harness stripe
+            colors[i * 3] = 0.84 * ao;
+            colors[i * 3 + 1] = 0.44 * ao;
+            colors[i * 3 + 2] = 0.24 * ao;
+          } else {
+            // Crisp xEMU spacesuit fabric
+            colors[i * 3] = 0.88 * ao;
+            colors[i * 3 + 1] = 0.84 * ao;
+            colors[i * 3 + 2] = 0.78 * ao;
+          }
+        }
+      }
+      node.geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+      const mats = Array.isArray(node.material) ? node.material : [node.material];
+      mats.forEach(m => {
+        m.vertexColors = true;
+        if (m.color) m.color.setHex(0xffffff);
+        m.roughness = mode === 'rover' ? 0.44 : 0.52;
+        m.metalness = mode === 'rover' ? 0.32 : 0.18;
+        m.needsUpdate = true;
+      });
+    });
   }
 
   function loadAllNasaWebGlbs(api) {
@@ -185,6 +279,7 @@
         normalizeAndMountGlb(sc, api.roverGroup, 3.6, {
           name: 'NASA_Perseverance_GLB',
           hideLegacyMeshes: true,
+          tintMode: 'rover',
           rotY: Math.PI
         });
       });
@@ -194,14 +289,14 @@
       mountJob('assets/models/ingenuity_web.glb', 'ingenuity', sc => {
         normalizeAndMountGlb(sc, api.ingenuity.group, 1.55, {
           name: 'NASA_Ingenuity_GLB',
-          hideLegacyMeshes: true
+          hideLegacyMeshes: true,
+          tintMode: 'rover'
         });
       });
     }
 
     if (api.habGroup) {
       mountJob('assets/models/hdu_habitat_web.glb', 'hdu_habitat', sc => {
-        // Hide stylized procedural habitat override anywhere in scene so authentic NASA HDU renders unobstructed
         const legacyHab = (api.scene && api.scene.getObjectByName('MS_Realism_NASA_Habitat')) ||
                           (api.surfaceGroup && api.surfaceGroup.getObjectByName('MS_Realism_NASA_Habitat'));
         if (legacyHab) legacyHab.visible = false;
@@ -225,14 +320,59 @@
 
     if (Array.isArray(api.astronautGroups) && api.astronautGroups.length > 0) {
       mountJob('assets/models/astronaut_web.glb', 'astronaut', sc => {
+        // Also hide any extra procedural astronauts added by mars_realism_upgrade
+        if (api.scene) {
+          api.scene.traverse(o => {
+            if (o.name === 'MS_Realism_Astronaut') o.visible = false;
+          });
+        }
         api.astronautGroups.forEach((ag, idx) => {
           const clone = idx === 0 ? sc : sc.clone(true);
           normalizeAndMountGlb(clone, ag, 1.92, {
             name: 'NASA_Astronaut_GLB_' + idx,
             hideLegacyMeshes: true,
+            tintMode: 'astronaut',
             rotY: idx * 1.15
           });
         });
+      });
+    }
+
+    // Mount PBR Hero Medical Bay, EDL Lander & Launch Pad GLBs, replacing primitive white boxes in surfaceGroup!
+    if (api.surfaceGroup) {
+      const hFn = typeof api.sampleHeight === 'function' ? api.sampleHeight : (() => 0);
+      const hidePrimitiveFacilityAt = (tx, tz, rad) => {
+        api.surfaceGroup.children.forEach(ch => {
+          if (ch.isGroup && !ch.userData.isHeroGlb && ch !== api.roverGroup && ch !== api.habGroup && ch !== api.agriGroup) {
+            const dx = ch.position.x - tx;
+            const dz = ch.position.z - tz;
+            if (dx * dx + dz * dz < rad * rad) ch.visible = false;
+          }
+        });
+      };
+
+      mountJob('assets/models/medbay_web.glb', 'medbay', sc => {
+        hidePrimitiveFacilityAt(-9.5, 23.0, 4.5);
+        const g = new THREE.Group();
+        g.position.set(-9.5, hFn(-9.5, 23.0), 23.0);
+        api.surfaceGroup.add(g);
+        normalizeAndMountGlb(sc, g, 8.6, { name: 'ORBITX_MedBay_GLB', rotY: -0.15 });
+      });
+
+      mountJob('assets/models/edl_lander_web.glb', 'edl_lander', sc => {
+        hidePrimitiveFacilityAt(24.0, -11.0, 4.5);
+        const g = new THREE.Group();
+        g.position.set(24.0, hFn(24.0, -11.0), -11.0);
+        api.surfaceGroup.add(g);
+        normalizeAndMountGlb(sc, g, 8.2, { name: 'ORBITX_EDL_Lander_GLB', rotY: -0.65 });
+      });
+
+      mountJob('assets/models/launchpad_web.glb', 'launchpad', sc => {
+        hidePrimitiveFacilityAt(26.5, 13.5, 6.5);
+        const g = new THREE.Group();
+        g.position.set(42.0, hFn(42.0, 24.0), 24.0);
+        api.surfaceGroup.add(g);
+        normalizeAndMountGlb(sc, g, 13.5, { name: 'ORBITX_LaunchPad_GLB', rotY: 0.0 });
       });
     }
   }
@@ -491,12 +631,199 @@
     }
   }
 
+  // --- STUDIO-GRADE MARTIAN 3D COLOR, LIGHTING, ROCK & TERRAIN OVERHAUL ---
+  function buildOrganicSandNormalMap() {
+    const size = 512;
+    const c = document.createElement('canvas');
+    c.width = size; c.height = size;
+    const ctx = c.getContext('2d');
+    const img = ctx.createImageData(size, size);
+    const d = img.data;
+    const h = new Float32Array(size * size);
+    const tau = Math.PI * 2;
+    for (let y = 0; y < size; y++) {
+      const v = (y / size) * tau;
+      for (let x = 0; x < size; x++) {
+        const u = (x / size) * tau;
+        // Organic curved wind-carved Martian ripples (warped domain — zero straight corduroy lines!)
+        const warp = Math.sin(v * 2.0 + Math.cos(u * 2.0) * 1.2) * 1.35 + Math.cos(u * 3.0 - v * 2.0) * 0.65;
+        const r1 = Math.sin(u * 5.0 + v * 2.0 + warp) * 0.45;
+        const r2 = Math.sin(u * 11.0 - v * 5.0 + warp * 1.4) * 0.22;
+        const grit = Math.sin(u * 29.0 + v * 23.0) * Math.cos(u * 37.0 - v * 31.0) * 0.14;
+        h[y * size + x] = r1 + r2 + grit;
+      }
+    }
+    const scale = 2.1;
+    for (let y = 0; y < size; y++) {
+      const yp = (y - 1 + size) % size, yn = (y + 1) % size;
+      for (let x = 0; x < size; x++) {
+        const xp = (x - 1 + size) % size, xn = (x + 1) % size;
+        const dx = (h[y * size + xn] - h[y * size + xp]) * scale;
+        const dy = (h[yn * size + x] - h[yp * size + x]) * scale;
+        const dz = 1.0;
+        const inv = 1.0 / Math.sqrt(dx * dx + dy * dy + dz * dz);
+        const i = (y * size + x) * 4;
+        d[i] = Math.floor((-dx * inv * 0.5 + 0.5) * 255);
+        d[i + 1] = Math.floor((-dy * inv * 0.5 + 0.5) * 255);
+        d[i + 2] = Math.floor((dz * inv * 0.5 + 0.5) * 255);
+        d[i + 3] = 255;
+      }
+    }
+    ctx.putImageData(img, 0, 0);
+    const tex = new THREE.CanvasTexture(c);
+    tex.wrapS = THREE.RepeatWrapping;
+    tex.wrapT = THREE.RepeatWrapping;
+    tex.repeat.set(22, 22);
+    return tex;
+  }
+
+  function applyStudioGradeMars3dColorsAndLighting(api) {
+    if (!api || !api.scene) return;
+
+    // 1. Rich Martian Terracotta-Ochre & Dark Basalt Terrain Color Grading + Organic Wind-Ripple Normal Map
+    if (api.terrainMesh && api.terrainMesh.geometry) {
+      const geo = api.terrainMesh.geometry;
+      const pos = geo.attributes.position;
+      const norm = geo.attributes.normal;
+      const col = geo.attributes.color;
+      if (pos && col) {
+        for (let i = 0; i < pos.count; i++) {
+          const vx = pos.getX(i), vy = pos.getY(i), vz = pos.getZ(i);
+          const ny = norm ? Math.max(0, Math.min(1, norm.getY(i))) : 1.0;
+          const slope = Math.max(0, Math.min(1, (1.0 - ny) / 0.16));
+          const n1 = Math.sin(vx * 0.08 + Math.cos(vz * 0.07) * 2.1) * Math.cos(vz * 0.09 - vx * 0.05);
+          const n2 = Math.sin(vx * 0.28 - vz * 0.22) * 0.5 + Math.cos(vx * 0.65 + vz * 0.55) * 0.25;
+          const v = 0.88 + 0.18 * n1 + 0.09 * n2;
+
+          // Deep authentic NASA Curated Martian Iron-Oxide Terracotta & Dark Basalt Scree
+          const sandR = 0.56 * v;
+          const sandG = 0.23 * v;
+          const sandB = 0.11 * v;
+
+          const basaltR = 0.20 * v;
+          const basaltG = 0.10 * v;
+          const basaltB = 0.07 * v;
+
+          const dust = Math.max(-0.04, Math.min(0.06, vy * 0.018));
+          col.setXYZ(
+            i,
+            THREE.MathUtils.clamp(sandR * (1 - slope) + basaltR * slope + dust, 0.08, 0.78),
+            THREE.MathUtils.clamp(sandG * (1 - slope) + basaltG * slope + dust * 0.45, 0.04, 0.42),
+            THREE.MathUtils.clamp(sandB * (1 - slope) + basaltB * slope + dust * 0.25, 0.02, 0.24)
+          );
+        }
+        col.needsUpdate = true;
+      }
+      if (api.terrainMesh.material) {
+        api.terrainMesh.material.normalMap = buildOrganicSandNormalMap();
+        api.terrainMesh.material.normalScale = new THREE.Vector2(0.55, 0.55);
+        api.terrainMesh.material.roughness = 0.91;
+        api.terrainMesh.material.metalness = 0.03;
+        api.terrainMesh.material.needsUpdate = true;
+      }
+    }
+
+    // 2. Golden-Hour Martian Lighting & Rich Dusty Sienna Atmosphere (prevents chalk-white washout!)
+    const siennaBg = new THREE.Color(0x9e4b28);
+    if (api.scene.background && api.scene.background.isColor) {
+      api.scene.background.copy(siennaBg);
+    }
+    if (api.scene.fog) {
+      api.scene.fog.color.copy(siennaBg);
+      if (typeof api.scene.fog.density === 'number') api.scene.fog.density = 0.0026;
+    }
+    if (api.sunLight) {
+      api.sunLight.color.setHex(0xffcca0);
+      api.sunLight.intensity = 1.48;
+      api.sunLight.position.set(-52, 34, -36);
+    }
+    if (api.hemiLight) {
+      api.hemiLight.color.setHex(0xeb925e);
+      api.hemiLight.groundColor.setHex(0x3d180c);
+      api.hemiLight.intensity = 0.56;
+    }
+
+    // 3. Convert Smooth Tan Egg Blobs (DodecahedronGeometry detail=1) into Sharp Angular Faceted Dark Martian Basalt Boulders!
+    api.scene.traverse(obj => {
+      if (!obj.isMesh || !obj.geometry) return;
+      if (obj.geometry.type === 'DodecahedronGeometry') {
+        if (!obj.geometry.userData.facetedBasalt) {
+          const nonIdx = obj.geometry.toNonIndexed();
+          const p = nonIdx.attributes.position;
+          for (let i = 0; i < p.count; i++) {
+            const x = p.getX(i), y = p.getY(i), z = p.getZ(i);
+            // Deterministic craggy rock fracture perturbation
+            const crag = 0.84 + 0.28 * Math.sin(x * 9.3 + z * 7.1) * Math.cos(y * 11.7 - x * 5.3);
+            p.setXYZ(i, x * crag, y * crag * 0.78, z * crag);
+          }
+          nonIdx.computeVertexNormals();
+          nonIdx.userData.facetedBasalt = true;
+          obj.geometry = nonIdx;
+        }
+        if (obj.material && obj.material.color) {
+          // Rich dark Martian volcanic basalt & iron-stained breccia (never smooth tan skin-tone!)
+          const isMetallicBolide = typeof obj.material.metalness === 'number' && obj.material.metalness > 0.5;
+          if (!isMetallicBolide) {
+            obj.material.color.setHex(0x472315);
+            obj.material.roughness = 0.93;
+            obj.material.metalness = 0.05;
+          }
+          obj.material.flatShading = true;
+          obj.material.needsUpdate = true;
+        }
+      }
+    });
+
+    // 4. Scale down giant 1.35m yellow sample-tube pillars into realistic 0.32m NASA Titanium Sample Cache Tubes
+    if (api.tubesOverlayGroup) {
+      api.tubesOverlayGroup.children.forEach(m => {
+        m.scale.set(0.38, 0.24, 0.38);
+        if (typeof api.sampleHeight === 'function') {
+          m.position.y = api.sampleHeight(m.position.x, m.position.z) + 0.18;
+        }
+      });
+    }
+
+    // 5. Hide the 72 jagged cyan Ingenuity flight spiderweb lines in default 3D surface view (only show when Drones tab active)
+    if (api.ingenuityOverlayGroup) {
+      api.ingenuityOverlayGroup.visible = false;
+    }
+
+    // 6. Refine A* Route Ribbons from thick opaque neon tubes into sleek translucent ground-hugging telemetry paths
+    if (api.routeMeshes) {
+      const routePalette = { safest: 0x10b981, shortest: 0xf59e0b, science: 0x06b6d4 };
+      Object.keys(api.routeMeshes).forEach(k => {
+        const rm = api.routeMeshes[k];
+        if (rm && rm.material) {
+          rm.material.color.setHex(routePalette[k] || 0x10b981);
+          if (rm.material.emissive) rm.material.emissive.setHex(routePalette[k] || 0x10b981);
+          rm.material.emissiveIntensity = 0.45;
+          rm.material.transparent = true;
+          rm.material.opacity = 0.82;
+          rm.position.y = -0.07; // Hug regolith contour closely
+          rm.material.needsUpdate = true;
+        }
+      });
+    }
+
+    // 7. Hide legacy boxy procedural truck at (22.5, 13.5) so only authentic NASA GLB spacecraft & facilities appear
+    if (api.surfaceGroup) {
+      api.surfaceGroup.children.forEach(ch => {
+        if (ch.isGroup && !ch.userData.isHeroGlb && Math.abs(ch.position.x - 22.5) < 3.5 && Math.abs(ch.position.z - 13.5) < 3.5) {
+          ch.visible = false;
+        }
+      });
+    }
+  }
+
   function bootstrap() {
     const api = getApi();
     if (!api) {
       setTimeout(bootstrap, 150);
       return;
     }
+    applyStudioGradeMars3dColorsAndLighting(api);
+    setTimeout(() => applyStudioGradeMars3dColorsAndLighting(api), 900);
     loadAllNasaWebGlbs(api);
     ensureTerrainOverlayMesh(api);
     installSeamlessOrbitSurfaceZoom(api);

@@ -97,7 +97,10 @@ class Phase1To5ImprovementTests(unittest.TestCase):
         self.assertNotIn("cdnjs.cloudflare.com", html)
 
         models_dir = os.path.join(WEB, "assets", "models")
-        web_glbs = ["perseverance_web.glb", "ingenuity_web.glb", "hdu_habitat_web.glb", "agridome_web.glb", "astronaut_web.glb"]
+        web_glbs = [
+            "perseverance_web.glb", "ingenuity_web.glb", "hdu_habitat_web.glb", "agridome_web.glb",
+            "astronaut_web.glb", "medbay_web.glb", "edl_lander_web.glb", "launchpad_web.glb",
+        ]
         total_bytes = 0
         for name in web_glbs:
             jdata, size = read_glb_json(os.path.join(models_dir, name))
@@ -106,7 +109,7 @@ class Phase1To5ImprovementTests(unittest.TestCase):
         self.assertLess(total_bytes, 4_500_000, f"Web GLBs bundle too heavy: {total_bytes} B")
 
         js = read_text(WEB, "modules", "mars_earth_3d_upgrade.js")
-        for sym in ("GLTFLoader", "MS_3D_TerrainHeatmapOverlay", "olympus", "valles", "ms-rtl-ar", "flyToBookmark"):
+        for sym in ("GLTFLoader", "MS_3D_TerrainHeatmapOverlay", "olympus", "valles", "ms-rtl-ar", "flyToBookmark", "applyStudioGradeMars3dColorsAndLighting"):
             self.assertIn(sym, js)
 
     def test_06_physics_ai_audio_localization_persistence_and_coop(self):

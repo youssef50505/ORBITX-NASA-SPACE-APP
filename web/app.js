@@ -97,10 +97,10 @@
   scene.add(starField);
 
   // --- LIGHTING ---
-  const hemiLight = new THREE.HemisphereLight(0xd99b72, 0x4a2c1d, 0.65);
+  const hemiLight = new THREE.HemisphereLight(0xe58754, 0x3b160a, 0.54);
   scene.add(hemiLight);
 
-  const sunLight = new THREE.DirectionalLight(0xffebd1, 2.2);
+  const sunLight = new THREE.DirectionalLight(0xffcfa3, 1.38);
   sunLight.position.set(-45, 55, -30);
   sunLight.castShadow = true;
   sunLight.shadow.mapSize.width = 2048;
@@ -146,10 +146,10 @@
     fog: false
   });
   const sunCoronaSprite = new THREE.Sprite(sunSpriteMat);
-  sunCoronaSprite.scale.set(260, 260, 1.0);
+  sunCoronaSprite.scale.set(64, 64, 1.0);
   sunGroup.add(sunCoronaSprite);
 
-  const sunCoreGeo = new THREE.CircleGeometry(30, 48);
+  const sunCoreGeo = new THREE.CircleGeometry(13, 48);
   const sunCoreMat = new THREE.MeshBasicMaterial({
     color: 0xfff8e6,
     transparent: true,
@@ -1330,15 +1330,15 @@
   // --- MARTIAN DAY & NIGHT CYCLE (KEY 5) ---
   const TIME_CONFIGS = {
     SUNRISE: {
-      sky: 0xb86b43, fog: 0.005, sunCol: 0xffa86b, sunInt: 1.4, sunPos: [-65, 18, -20],
+      sky: 0x8f3d1e, fog: 0.0028, sunCol: 0xff9b54, sunInt: 1.18, sunPos: [-65, 18, -20],
       stars: 0.18, label: 'SUNRISE (06:15 LMST)', skyDesc: 'Amber Horizon Scattering', icon: '🌅', slider: 15
     },
     DAY: {
-      sky: 0xb5835a, fog: 0.0042, sunCol: 0xffebd1, sunInt: 2.3, sunPos: [-45, 58, -30],
+      sky: 0x9c4522, fog: 0.0022, sunCol: 0xffcfa3, sunInt: 1.38, sunPos: [-45, 58, -30],
       stars: 0.0, label: 'DAYTIME (13:20 LMST)', skyDesc: 'Butterscotch Mie Dust', icon: '☀', slider: 38
     },
     SUNSET: {
-      sky: 0x8c563c, fog: 0.0055, sunCol: 0xf59e6c, sunInt: 1.1, sunPos: [65, 14, 25],
+      sky: 0x73321c, fog: 0.0030, sunCol: 0xf2854b, sunInt: 0.98, sunPos: [65, 14, 25],
       stars: 0.32, label: 'SUNSET (18:05 LMST)', skyDesc: 'Forward-Scattered Slate Glow', icon: '🌇', slider: 65
     },
     TWILIGHT: {
