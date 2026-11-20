@@ -304,6 +304,7 @@ namespace MarsSentinel.Editor
         [MenuItem("MarsSentinel/Build Windows Standalone")]
         public static void BuildWindowsPlayer()
         {
+            EditorUserBuildSettings.SwitchActiveBuildTarget(BuildTargetGroup.Standalone, BuildTarget.StandaloneWindows64);
             Debug.Log("[MarsSceneBuilder] Building Windows Standalone 64-bit Player...");
             string buildPath = "Builds/Windows/MarsSentinel.exe";
             string dir = Path.GetDirectoryName(buildPath);

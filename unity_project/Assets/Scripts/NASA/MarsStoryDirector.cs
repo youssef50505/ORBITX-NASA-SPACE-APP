@@ -1,4 +1,6 @@
 using System;
+using System.Collections;
+using System.IO;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
@@ -68,6 +70,47 @@ namespace MarsSentinel.NASA
             {
                 MarsLocalizationManager.Instance.OnLanguageChanged += _ => RefreshChapterCopy();
             }
+
+            StartCoroutine(RunShowcaseCaptureIfRequested());
+        }
+
+        private IEnumerator RunShowcaseCaptureIfRequested()
+        {
+            string[] args = Environment.GetCommandLineArgs();
+            string outDir = null;
+            for (int i = 0; i < args.Length - 1; i++)
+            {
+                if (string.Equals(args[i], "-capture-showcase", StringComparison.OrdinalIgnoreCase))
+                {
+                    outDir = args[i + 1];
+                    break;
+                }
+            }
+            if (string.IsNullOrEmpty(outDir)) yield break;
+
+            Directory.CreateDirectory(outDir);
+            yield return new WaitForSecondsRealtime(1.5f);
+
+            // Enter live gameplay with sleek HUD + Chapter 1 Story Comms + sunlit Jezero base
+            MarsGameShellUI.Instance?.SetState(MarsGameState.Playing);
+            BeginCampaign();
+            MarsSceneManager.Instance?.SetFullHudVisible(false);
+            yield return new WaitForSecondsRealtime(0.9f);
+            yield return new WaitForEndOfFrame();
+            ScreenCapture.CaptureScreenshot(Path.Combine(outDir, "unity_game_live.png"));
+
+            // Advance to Chapter 2 (Cheyava Falls Biosignature) + Full Telemetry HUD + LIVE URP Render Graph [X] X-Ray Scanner
+            yield return new WaitForSecondsRealtime(0.6f);
+            MarsSceneManager.Instance?.SetFullHudVisible(true);
+            EnterChapter(MarsStoryChapter.Ch2_CheyavaBiosignature);
+            Vector3 scanOrigin = Camera.main != null ? Camera.main.transform.position + Camera.main.transform.forward * 14f : Vector3.zero;
+            MarsXRayScannerRendererFeature.TogglePersistentOverlay(scanOrigin);
+            yield return new WaitForSecondsRealtime(0.55f);
+            yield return new WaitForEndOfFrame();
+            ScreenCapture.CaptureScreenshot(Path.Combine(outDir, "unity_game_xray_story.png"));
+
+            yield return new WaitForSecondsRealtime(0.8f);
+            Application.Quit(0);
         }
 
         public void BeginCampaign()
@@ -363,8 +406,8 @@ namespace MarsSentinel.NASA
             rt.anchorMin = new Vector2(0.5f, 0f);
             rt.anchorMax = new Vector2(0.5f, 0f);
             rt.pivot = new Vector2(0.5f, 0f);
-            rt.anchoredPosition = new Vector2(0f, 18f);
-            rt.sizeDelta = new Vector2(960f, 118f);
+            rt.anchoredPosition = new Vector2(0f, 64f);
+            rt.sizeDelta = new Vector2(960f, 114f);
 
             var bg = commsBanner.AddComponent<Image>();
             bg.color = new Color(0.045f, 0.065f, 0.11f, 0.84f);

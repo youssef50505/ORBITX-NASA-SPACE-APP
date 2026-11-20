@@ -5,15 +5,15 @@
 
 ![ORBITX Mars Sentinel WebGL](showcase/web_hero_glbs.png)
 
-## Visual Showcase (Web + Unity 6 + Unreal Engine 5.8 + Blender 5.2)
+## Live In-App Module Showcase (Web + `nav-module` + Unity 6 + Unreal 5.8 + Blender 5.2)
 
-| WebGL 5-Chapter Story & 3D Hazard Map | Bilingual Arabic RTL Interface |
+| `nav-module` — Live CTX A\* & RF Viewshed | WebGL — Bilingual Arabic RTL & 5-Ch Story |
 | :---: | :---: |
-| ![WebGL Story & Hazard](showcase/web_story_3d_hazard.png) | ![WebGL Arabic RTL](showcase/web_arabic_rtl.png) |
-| **Unity 6 — Jezero Crater & NASA Rover Base** | **Unreal Engine 5.8 — Lumen & Nanite Jezero** |
-| ![Unity 6 Jezero Base](showcase/unity_jezero_rover_base.png) | ![Unreal Engine 5.8](showcase/unreal_ue5_jezero_lumen.png) |
-| **Unity 6 — Agri-Dome, Fleet & Launch Pad** | **Blender 5.2 — Mars Globe, Phobos & Deimos** |
-| ![Unity 6 Overview](showcase/unity_jezero_overview.png) | ![Blender Orbit](previews/final_key2_planet_starfield.png) |
+| ![CTX Nav & RF](showcase/nav_module_ctx_rf.png) | ![WebGL Arabic RTL](showcase/web_arabic_rtl.png) |
+| **Unity 6 (`MarsSentinel.exe`) — Live Gameplay & HUD** | **Unity 6 — Live URP Render Graph `[X]` X-Ray** |
+| ![Unity 6 Live Gameplay](showcase/unity_game_live.png) | ![Unity 6 Live X-Ray](showcase/unity_game_xray_story.png) |
+| **Unreal Engine 5.8 — Lumen GI & Nanite Jezero** | **Blender 5.2 — 3D Master Surface Base** |
+| ![Unreal Engine 5.8](showcase/unreal_ue5_jezero_lumen.png) | ![Blender 5.2 Master](previews/final_key1_surface_day.png) |
 
 ## Four Synchronized Platforms & 5-Chapter Story (*"Sol 1042: Echoes of Jezero"*)
 

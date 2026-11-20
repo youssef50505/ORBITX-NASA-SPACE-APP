@@ -1,47 +1,42 @@
 import os, html
 D = os.path.dirname(os.path.abspath(__file__))
-S = os.path.join(D, "shots")
-FB = ["01_hero_glass_ui.png", "03_omni_xray.png"]
 
-def img(name, i=0):
-    if name.startswith("../"):
-        return name
-    f = name if os.path.exists(os.path.join(S, name)) else FB[i % 2]
-    return f"shots/{f}"
+def img(rel_path):
+    return rel_path
 
 slides = [
- dict(t="ORBITX: Mars Sentinel", sub="Toward 'Google Earth for Mars' — Web + 3D + Playable Game",
+ dict(t="ORBITX: Mars Sentinel", sub="Toward 'Google Earth for Mars' — Web + 3D + Unity 6 + Unreal 5.8",
       b=["Team ORBITX · NASA Space Apps Challenge 2026 (orbitX00)",
          "Anchor: Jezero Crater, Mars (18.4447°N, 77.4508°E)",
-         "Synchronized WebGL digital twin + Unity 6 game + Blender 5.2 master"], im=img("01_hero_glass_ui.png", 0), title=True),
+         "Synchronized WebGL twin + Unity 6 game + Unreal 5.8 + Blender 5.2"], im=img("../showcase/web_hero_glbs.png"), title=True),
  dict(t="The Problem & Verified NASA Stack", sub="Earth is 15–22 light-minutes away. No GPS. Dust, radiation, steep slopes.",
       b=["MRO HiRISE 4 m DTM (1,132,096 vertices, SHA-256 verified) + CTX 20 m + MOLA",
          "USGS SIM 3292: 44 geologic units with slope & trafficability hazards",
          "Perseverance (559 legs, 22 tubes), Ingenuity (72 flights), MEDA, RAD, DONKI"], im=None,
       note="Honest limit: orbital DEM resolution cannot resolve meter-scale boulders. Panels separate measured NASA data vs. simulation."),
- dict(t="CTX A* Routing, Solar & RF Viewshed", sub="Shared nav-module running live in WebGL & Unity 6",
+ dict(t="CTX A* Routing, Solar & RF Viewshed", sub="Shared nav-module running live in WebGL, Unity 6 & UE 5.8",
       b=["8-connected A* over 399×378 CTX grid: Shortest 5,367 m (13.1°) vs. Safest 6,483 m (8.1°)",
          "Mars orbital solar & shadow model (Ls 0°–355°, 75-step raymarch) + RF LOS viewshed",
-         "Automated Outpost Site Check (Slope ≤ 10°, Roughness ≤ 2 m, Daylight ≥ 50%)"], im=img("02_ctx_nav_rf.png", 0),
+         "Automated Outpost Site Check (Slope ≤ 10°, Roughness ≤ 2 m, Daylight ≥ 50%)"], im=img("../showcase/nav_module_ctx_rf.png"),
       note="Slope thresholds and risk weights are configurable operational parameters."),
- dict(t="Omni-Probe Planetary X-Ray", sub="Inspect Jezero terrain beyond fixed map pins",
-      b=["Click terrain, outcrops, meteorites (Cacao, Lebanon), or Belva Crater",
-         "Live lat/lon, elevation, slope, thermal inertia, and USGS unit",
-         "PIXL elemental chemistry + 3-layer RIMFAX radar profile (0–15 m)"], im=img("03_omni_xray.png", 1)),
- dict(t="Space Weather & Survival Loop", sub="Beer-Lambert: I = 586.2 · exp(−τ / sin(elevation))",
-      b=["Dust optical depth τ from 0.45 (nominal) to 2.80 (global storm) + Phobos/Deimos orbit",
-         "Live EVA survival loop: Suit O2, Power, Radiation (0.67 mSv/d), RF link & MedEvac",
-         "Point-of-No-Return EVA safety envelope contracts dynamically during dust storms"], im=img("../previews/final_key2_planet_starfield.png", 0),
+ dict(t="5-Chapter Story & 3D Hazard X-Ray", sub="Sol 1042: Echoes of Jezero — Bilingual EN/AR Live Comms",
+      b=["Live 3D Hazard/Solar/RF terrain projection + Omni-Probe PIXEL/RIMFAX scanner",
+         "Unity 6 URP 17.6 Render Graph [X] world-space subsurface radar wave",
+         "Full bilingual Arabic RTL + English campaign synchronized across Web & Game"], im=img("../showcase/unity_game_xray_story.png")),
+ dict(t="Unity 6 Playable Survival Game", sub="Live MarsSentinel.exe — 0.38g EVA, Rover & Space Weather",
+      b=["Beer-Lambert dust optical depth τ (0.45 → 2.80) + live Suit O2, Power, Radiation & RF",
+         "Authentic NASA Perseverance GLB with 6-point suspension, [R] A* Autopilot & Co-op EVA-02",
+         "5-Chapter Story Director with DONKI Dust Storm Triage & Mars Ascent Rocket Ignition"], im=img("../showcase/unity_game_live.png"),
       note="Atmospheric and solar values are parameterized by NASA MEDA/RAD/DONKI datasets."),
- dict(t="Unity 6, UE 5.8 & Base Ops", sub="Playable MarsSentinel.exe + Unreal 5.8 Lumen/Nanite",
-      b=["Authentic NASA Perseverance GLB with 6-point Rocker-Bogie suspension & [R] A* Autopilot",
-         "URP ACES + Render Graph X-Ray + 5-Chapter Story ('Sol 1042: Echoes of Jezero')",
-         "Hydroponics + aeroponics dome (98.4% water recycling) + Unreal Engine 5.8 module"], im=img("../previews/final_key3_agriculture_zone.png", 1),
-      note="Rover handling speeds and base production figures are simulation parameters."),
+ dict(t="Unreal Engine 5.8 Lumen & Nanite", sub="MarsSentinelUE.uproject — DX12 SM6 Next-Gen Module",
+      b=["Lumen Global Illumination, Nanite Virtualized Geometry & Martian SkyAtmosphere",
+         "Physically calibrated Mars gravity (-372.076 cm/s²) + C++ EVA & CTX A* subsystems",
+         "Automated Blender 5.2 → UE 5.8 Interchange pipeline with 10 real NASA assets"], im=img("../showcase/unreal_ue5_jezero_lumen.png"),
+      note="Open unreal_project/MarsSentinelUE.uproject directly in UE 5.8 to explore JezeroCrater_Hero."),
  dict(t="Verified, Open Source & Scalable", sub="github.com/youssef50505/ORBITX-NASA-SPACE-APP",
-      b=["Zero-build WebGL twin + Unity 6 desktop game + Blender 5.2 pipeline",
-         "120/120 workspace integrity checks · 231 automated tests passing (0 failures)",
-         "Built-in WebM recorder (● Rec 28s) + [N] 28 s / [P] 60 s Unity directors"], im=img("01_hero_glass_ui.png", 0), last=True),
+      b=["Zero-CDN WebGL twin + Unity 6 .exe + Unreal 5.8 + Blender 5.2 + nav-module",
+         "121/121 workspace integrity checks · 236 automated tests passing (0 failures)",
+         "Built-in WebM recorder (● Rec 28s) + Arabic RTL + [N] 28 s / [P] 60 s Unity directors"], im=img("../showcase/web_arabic_rtl.png"), last=True),
 ]
 
 CSS = """

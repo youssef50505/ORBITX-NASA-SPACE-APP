@@ -12,7 +12,7 @@ UE_DIR = os.path.join(REPO_ROOT, "unreal_project")
 SRC_DIR = os.path.join(UE_DIR, "SourceAssets")
 SHOWCASE_DIR = os.path.join(REPO_ROOT, "showcase")
 MAP_PATH = "/Game/Maps/JezeroCrater_Hero"
-ASSET_DEST = "/Game/MarsSentinel/HeroAssets"
+ASSET_DEST = "/Game/MarsSentinel/MuseumHeroAssets"
 
 
 def sample_jezero_cm(x_m, y_m):
@@ -61,13 +61,14 @@ def import_and_spawn(label, glb_file, loc_m, yaw_deg=0.0, is_terrain=False):
         unreal.log_warning(f"[MarsSentinelUE] No StaticMesh in {dest}")
         return False
 
-    # Keep Nanite disabled during headless SceneCapture2D so capture renders 100% full-res triangles,
-    # then enable Nanite on saved assets right after capture for real-time UE 5.8 Editor viewport.
+    # Explicitly rebuild with Nanite OFF during headless SceneCapture2D via StaticMeshEditorSubsystem
+    # so capture renders 100% razor-sharp full-res NASA geometry (never coarse Nanite fallback proxies!)
     try:
+        sm_sub = unreal.get_editor_subsystem(unreal.StaticMeshEditorSubsystem)
         ns = sm.get_editor_property("nanite_settings")
-        if ns is not None:
+        if ns is not None and sm_sub is not None:
             ns.enabled = False
-            sm.set_editor_property("nanite_settings", ns)
+            sm_sub.set_nanite_settings(sm, ns, apply_changes=True)
     except Exception:
         pass
 
@@ -180,9 +181,9 @@ def build_level():
     ps = editor_sub.spawn_actor_from_class(unreal.PlayerStart, unreal.Vector(-350.0, -1100.0, 120.0), unreal.Rotator(0.0, 0.0, 70.0))
     ps.set_actor_label("PlayerStart_OctaviaButlerBase")
 
-    # Hero framing capturing Perseverance, Astronaut, Ingenuity, Agri-Dome, NASA HDU, MedBay, Launch Pad & boulders!
-    cam_loc = unreal.Vector(-180.0, -2250.0, 680.0)
-    cam_rot = unreal.MathLibrary.find_look_at_rotation(cam_loc, unreal.Vector(180.0, 420.0, 220.0))
+    # Ground-level realistic EVA framing capturing razor-sharp Perseverance, Astronaut, Ingenuity, Agri-Dome, NASA HDU, MedBay, EDL & Launch Pad!
+    cam_loc = unreal.Vector(-260.0, -1820.0, 390.0)
+    cam_rot = unreal.MathLibrary.find_look_at_rotation(cam_loc, unreal.Vector(160.0, 420.0, 210.0))
     cam = editor_sub.spawn_actor_from_class(unreal.CameraActor, cam_loc, cam_rot)
     cam.set_actor_label("CineCamera_JezeroHero")
 
@@ -202,15 +203,16 @@ def build_level():
     except Exception as ex:
         unreal.log_warning(f"[MarsSentinelUE] Capture error: {ex}")
 
-    # Enable Nanite for opaque high-poly assets in the saved UE 5.8 project
+    # Enable Nanite for opaque high-poly assets in the saved UE 5.8 project (with 100% fallback fidelity)
+    sm_sub = unreal.get_editor_subsystem(unreal.StaticMeshEditorSubsystem)
     for lbl, sm in spawned:
         if lbl == "AgriDome":
             continue
         try:
             ns = sm.get_editor_property("nanite_settings")
-            if ns is not None:
+            if ns is not None and sm_sub is not None:
                 ns.enabled = True
-                sm.set_editor_property("nanite_settings", ns)
+                sm_sub.set_nanite_settings(sm, ns, apply_changes=True)
         except Exception:
             pass
 

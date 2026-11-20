@@ -44,10 +44,8 @@ def build_terrain_glb():
         for i in range(res + 1):
             x = (i / res) * size - half
             verts.append((x, y, sample_jezero_z(x, y)))
-            # Smooth mirror-tiled 4x4 UV so 1m NASA HiRISE craters & regolith detail stay sharp up close with zero seams
-            u = abs(((i / res) * 4.0) % 2.0 - 1.0)
-            v = abs(((j / res) * 4.0) % 2.0 - 1.0)
-            uvs_raw.append((u, v))
+            # Standard seamless repeating 6x6 UV so normal-mapped Martian sand ripples never show a mirror seam
+            uvs_raw.append(((i / res) * 6.0, (j / res) * 6.0))
     stride = res + 1
     for j in range(res):
         for i in range(res):
@@ -82,6 +80,37 @@ def build_terrain_glb():
         tex_node = nt.nodes.new("ShaderNodeTexImage")
         tex_node.image = img
         nt.links.new(tex_node.outputs["Color"], bsdf.inputs["Base Color"])
+
+    # Bake a crisp 512x512 seamless Martian sand-ripple & pebble tangent-space normal map directly into the GLB
+    nres = 512
+    nimg = bpy.data.images.new("JezeroSandRipple_NRM", width=nres, height=nres, alpha=False)
+    nimg.colorspace_settings.name = "Non-Color"
+    import numpy as np
+    yy, xx = np.mgrid[0:nres, 0:nres].astype(np.float32) / nres * math.tau
+    # Multi-frequency wind-carved Martian ripples + fine regolith grit
+    h = (
+        0.55 * np.sin(xx * 6.0 + np.sin(yy * 2.0) * 1.4)
+        + 0.28 * np.sin(xx * 13.0 - yy * 4.0)
+        + 0.14 * np.cos(xx * 23.0 + yy * 19.0)
+        + 0.08 * np.sin(xx * 47.0 - yy * 41.0)
+    )
+    dx = (np.roll(h, -1, axis=1) - np.roll(h, 1, axis=1)) * 2.4
+    dy = (np.roll(h, -1, axis=0) - np.roll(h, 1, axis=0)) * 2.4
+    dz = np.ones_like(dx)
+    inv_len = 1.0 / np.sqrt(dx * dx + dy * dy + dz * dz)
+    rgba = np.empty((nres, nres, 4), dtype=np.float32)
+    rgba[:, :, 0] = (-dx * inv_len) * 0.5 + 0.5
+    rgba[:, :, 1] = (-dy * inv_len) * 0.5 + 0.5
+    rgba[:, :, 2] = (dz * inv_len) * 0.5 + 0.5
+    rgba[:, :, 3] = 1.0
+    nimg.pixels.foreach_set(rgba.ravel())
+    nimg.pack()
+    n_tex = nt.nodes.new("ShaderNodeTexImage")
+    n_tex.image = nimg
+    n_map = nt.nodes.new("ShaderNodeNormalMap")
+    n_map.inputs["Strength"].default_value = 0.85
+    nt.links.new(n_tex.outputs["Color"], n_map.inputs["Color"])
+    nt.links.new(n_map.outputs["Normal"], bsdf.inputs["Normal"])
     obj.data.materials.append(mat)
 
     # Scatter 24 grounded Jezero basalt boulders on the perimeter for authentic geological scale
@@ -133,14 +162,21 @@ def bake_single_mesh_glb(src_paths, out_name, target_span_m):
     meshes = [o for o in bpy.context.scene.objects if o.type == "MESH" and o.data and o.data.vertices]
     if not meshes:
         return
-    # Bake world transforms cleanly (preserving face winding if scale determinant < 0)
+    # TWO-PASS world-transform bake:
+    # Pass 1: Detach ALL meshes with CLEAR_KEEP_TRANSFORM *before* any transform_apply so nested children keep exact poses!
     import bmesh
+    for o in meshes:
+        if o.parent is not None:
+            bpy.ops.object.select_all(action="DESELECT")
+            o.select_set(True)
+            bpy.context.view_layer.objects.active = o
+            bpy.ops.object.parent_clear(type="CLEAR_KEEP_TRANSFORM")
+    # Pass 2: Apply transforms cleanly on each independent mesh & fix negative-scale winding
     for o in meshes:
         bpy.ops.object.select_all(action="DESELECT")
         o.select_set(True)
         bpy.context.view_layer.objects.active = o
         neg_det = o.matrix_world.determinant() < 0
-        bpy.ops.object.parent_clear(type="CLEAR_KEEP_TRANSFORM")
         bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
         if neg_det:
             bm = bmesh.new()

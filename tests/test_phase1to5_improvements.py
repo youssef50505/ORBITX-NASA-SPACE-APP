@@ -66,7 +66,9 @@ class Phase1To5ImprovementTests(unittest.TestCase):
         self.assertIn("m_ShadowDistance: 360", rp)
         self.assertIn("m_MainLightShadowmapResolution: 4096", rp)
         self.assertIn("m_MSAA: 4", rp)
-        self.assertIn("m_GPUResidentDrawerMode: 1", rp)
+        self.assertIn("m_UseSRPBatcher: 1", rp)
+        # Keep GPU Resident Drawer disabled so Intel Arc Pro DX12 standalone builds never cull MeshRenderers
+        self.assertIn("m_GPUResidentDrawerMode: 0", rp)
 
         rend = read_text(UNITY, "Assets", "Settings", "PC_Renderer.asset")
         self.assertIn("MarsXRayScannerRendererFeature", rend)

@@ -77,20 +77,28 @@ class UnrealAndStoryQualityTests(unittest.TestCase):
         self.assertIn("modules/mars_story_mode.js", html)
 
     def test_05_duplicate_pngs_removed_and_showcase_gallery_valid(self):
-        # Verify removed duplicate PNGs are absent
-        self.assertFalse(os.path.exists(os.path.join(ROOT, "presentation", "shots", "04_orbit_globe.png")))
-        self.assertFalse(os.path.exists(os.path.join(ROOT, "presentation", "shots", "05_agri_base.png")))
+        # Verify stale presentation/shots/ and duplicate Fleet thumbnail PNGs are completely removed
+        self.assertFalse(os.path.exists(os.path.join(ROOT, "presentation", "shots")), "Stale presentation/shots/ should be removed")
         fleet_dir = os.path.join(UNITY, "Assets", "Models", "Fleet")
         fleet_pngs = [f for f in os.listdir(fleet_dir) if f.endswith(".png")]
         self.assertEqual(fleet_pngs, [], f"Duplicate thumbnail PNGs still in Fleet/: {fleet_pngs}")
 
-        # Verify curated showcase gallery images exist and have valid PNG headers
+        # Verify curated live ground-truth showcase gallery images exist for EVERY module with valid PNG headers
         showcase_dir = os.path.join(ROOT, "showcase")
         self.assertTrue(os.path.isdir(showcase_dir), "showcase/ directory missing")
-        pngs = sorted(f for f in os.listdir(showcase_dir) if f.endswith(".png"))
-        self.assertGreaterEqual(len(pngs), 4, f"Expected >=4 showcase PNGs, found {pngs}")
-        for f in pngs:
-            with open(os.path.join(showcase_dir, f), "rb") as fh:
+        required = (
+            "web_hero_glbs.png",
+            "nav_module_ctx_rf.png",
+            "web_story_3d_hazard.png",
+            "web_arabic_rtl.png",
+            "unity_game_live.png",
+            "unity_game_xray_story.png",
+            "unreal_ue5_jezero_lumen.png",
+        )
+        for f in required:
+            p = os.path.join(showcase_dir, f)
+            self.assertTrue(os.path.isfile(p), f"Missing live module screenshot: showcase/{f}")
+            with open(p, "rb") as fh:
                 self.assertEqual(fh.read(8), b"\x89PNG\r\n\x1a\n", f"Invalid PNG header: {f}")
 
         readme = read_text(ROOT, "README.md")
