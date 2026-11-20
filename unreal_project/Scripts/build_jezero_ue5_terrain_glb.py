@@ -44,8 +44,8 @@ def build_terrain_glb():
         for i in range(res + 1):
             x = (i / res) * size - half
             verts.append((x, y, sample_jezero_z(x, y)))
-            # Standard seamless repeating 6x6 UV so normal-mapped Martian sand ripples never show a mirror seam
-            uvs_raw.append(((i / res) * 6.0, (j / res) * 6.0))
+            # 1:1 seamless UV across the 800m Jezero Crater basin so NASA HiRISE imagery never shows a tile seam
+            uvs_raw.append((i / res, j / res))
     stride = res + 1
     for j in range(res):
         for i in range(res):
@@ -68,12 +68,24 @@ def build_terrain_glb():
     mat.use_nodes = True
     nt = mat.node_tree
     bsdf = nt.nodes.get("Principled BSDF")
-    bsdf.inputs["Base Color"].default_value = (0.72, 0.39, 0.21, 1.0)
-    bsdf.inputs["Roughness"].default_value = 0.88
-    bsdf.inputs["Metallic"].default_value = 0.02
+    bsdf.inputs["Base Color"].default_value = (0.62, 0.24, 0.10, 1.0)
+    bsdf.inputs["Roughness"].default_value = 0.90
+    bsdf.inputs["Metallic"].default_value = 0.01
     if os.path.isfile(NASA_TEX):
         img = bpy.data.images.load(NASA_TEX)
         try:
+            # Enrich HiRISE texture into authentic deep Martian iron-oxide ochre & dark basalt contrast
+            import numpy as np
+            w, h = img.size
+            px = np.empty(w * h * 4, dtype=np.float32)
+            img.pixels.foreach_get(px)
+            px = px.reshape((h, w, 4))
+            lum = 0.299 * px[:, :, 0] + 0.587 * px[:, :, 1] + 0.114 * px[:, :, 2]
+            c = np.clip((lum - 0.45) * 1.65 + 0.50, 0.08, 0.96)
+            px[:, :, 0] = np.clip(c * 0.74, 0.08, 0.86)
+            px[:, :, 1] = np.clip((c ** 1.18) * 0.34, 0.03, 0.44)
+            px[:, :, 2] = np.clip((c ** 1.35) * 0.16, 0.01, 0.22)
+            img.pixels.foreach_set(px.ravel())
             img.pack()
         except Exception:
             pass

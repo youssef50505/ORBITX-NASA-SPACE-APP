@@ -34,6 +34,11 @@ namespace MarsSentinel.NASA
             Instance = this;
         }
 
+        private Transform boneUpperLegL, boneLowerLegL, boneUpperLegR, boneLowerLegR;
+        private Transform boneUpperArmL, boneUpperArmR, boneSpine;
+        private Quaternion restULegL, restLLegL, restULegR, restLLegR, restUArmL, restUArmR, restSpine;
+        private bool hasRiggedClone = false;
+
         private void Start()
         {
             SpawnWingman();
@@ -48,28 +53,45 @@ namespace MarsSentinel.NASA
             float y = MarsVisualRealismPolish.SampleTerrainElevation(-4.2f, -6.5f);
             wingmanRoot.position = new Vector3(-4.2f, y, -6.5f);
 
-            // Try to instantiate rigged/official Astronaut mesh if present in scene or build clean space-suit proxy
             GameObject body = new GameObject("EVA02_Visual");
             body.transform.SetParent(wingmanRoot, false);
             visualBody = body.transform;
 
-            Shader lit = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
-            Material suitWhite = new Material(lit) { color = new Color(0.92f, 0.93f, 0.96f) };
-            Material accentTeal = new Material(lit) { color = new Color(0.08f, 0.78f, 0.85f) };
-            Material visorGold = new Material(lit) { color = new Color(0.92f, 0.68f, 0.16f) };
-            if (accentTeal.HasProperty("_EmissionColor"))
+            // Clone the real rigged NASA Astronaut mesh from EVA-01 so EVA-02 (Dr. Nadia) is 100% AAA quality!
+            Transform srcSuit = null;
+            if (MarsAstronautController.Instance != null)
             {
-                accentTeal.EnableKeyword("_EMISSION");
-                accentTeal.SetColor("_EmissionColor", new Color(0.08f, 0.85f, 0.92f) * 1.6f);
+                MarsAstronautController.Instance.BuildAstronautIfNeeded();
+                srcSuit = MarsAstronautController.Instance.transform.Find("EVA_NASA_Astronaut_Rigged")
+                          ?? MarsAstronautController.Instance.transform.Find("EVA_NASA_Astronaut_GLB");
+            }
+            if (srcSuit == null)
+            {
+                GameObject found = GameObject.Find("EVA_NASA_Astronaut_Rigged");
+                if (found != null) srcSuit = found.transform;
             }
 
-            AddPart("Torso", PrimitiveType.Capsule, visualBody, new Vector3(0, 1.12f, 0), new Vector3(0.46f, 0.42f, 0.34f), suitWhite);
-            AddPart("PLSS_Pack", PrimitiveType.Cube, visualBody, new Vector3(0, 1.18f, -0.24f), new Vector3(0.38f, 0.52f, 0.22f), suitWhite);
-            AddPart("Beacon", PrimitiveType.Cube, visualBody, new Vector3(0, 1.48f, -0.24f), new Vector3(0.18f, 0.08f, 0.12f), accentTeal);
-            AddPart("Helmet", PrimitiveType.Sphere, visualBody, new Vector3(0, 1.64f, 0.02f), new Vector3(0.34f, 0.34f, 0.34f), suitWhite);
-            AddPart("Visor", PrimitiveType.Sphere, visualBody, new Vector3(0, 1.64f, 0.12f), new Vector3(0.24f, 0.19f, 0.18f), visorGold);
-            AddPart("LegL", PrimitiveType.Capsule, visualBody, new Vector3(-0.13f, 0.42f, 0), new Vector3(0.16f, 0.44f, 0.16f), suitWhite);
-            AddPart("LegR", PrimitiveType.Capsule, visualBody, new Vector3(0.13f, 0.42f, 0), new Vector3(0.16f, 0.44f, 0.16f), suitWhite);
+            if (srcSuit != null)
+            {
+                GameObject suitClone = Instantiate(srcSuit.gameObject, visualBody);
+                suitClone.name = "EVA02_Rigged_Mesh";
+                suitClone.transform.localPosition = srcSuit.localPosition;
+                suitClone.transform.localRotation = srcSuit.localRotation;
+                suitClone.transform.localScale = srcSuit.localScale;
+                BindWingmanBones(suitClone.transform);
+            }
+            else
+            {
+                Shader lit = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
+                Material suitWhite = new Material(lit) { color = new Color(0.92f, 0.93f, 0.96f) };
+                Material accentTeal = new Material(lit) { color = new Color(0.08f, 0.78f, 0.85f) };
+                Material visorGold = new Material(lit) { color = new Color(0.92f, 0.68f, 0.16f) };
+                AddPart("Torso", PrimitiveType.Capsule, visualBody, new Vector3(0, 1.12f, 0), new Vector3(0.46f, 0.42f, 0.34f), suitWhite);
+                AddPart("PLSS_Pack", PrimitiveType.Cube, visualBody, new Vector3(0, 1.18f, -0.24f), new Vector3(0.38f, 0.52f, 0.22f), suitWhite);
+                AddPart("Beacon", PrimitiveType.Cube, visualBody, new Vector3(0, 1.48f, -0.24f), new Vector3(0.18f, 0.08f, 0.12f), accentTeal);
+                AddPart("Helmet", PrimitiveType.Sphere, visualBody, new Vector3(0, 1.64f, 0.02f), new Vector3(0.34f, 0.34f, 0.34f), suitWhite);
+                AddPart("Visor", PrimitiveType.Sphere, visualBody, new Vector3(0, 1.64f, 0.12f), new Vector3(0.24f, 0.19f, 0.18f), visorGold);
+            }
 
             var insp = go.AddComponent<MarsInspectableTarget>();
             insp.Configure(
@@ -85,6 +107,22 @@ namespace MarsSentinel.NASA
                 "https://www.nasa.gov/humans-in-space/mars/",
                 "perseverance_sample_raw.jpg"
             );
+        }
+
+        private void BindWingmanBones(Transform root)
+        {
+            foreach (Transform t in root.GetComponentsInChildren<Transform>(true))
+            {
+                string n = t.name;
+                if (n == "UpperLeg.L") { boneUpperLegL = t; restULegL = t.localRotation; }
+                else if (n == "LowerLeg.L") { boneLowerLegL = t; restLLegL = t.localRotation; }
+                else if (n == "UpperLeg.R") { boneUpperLegR = t; restULegR = t.localRotation; }
+                else if (n == "LowerLeg.R") { boneLowerLegR = t; restLLegR = t.localRotation; }
+                else if (n == "UpperArm.L") { boneUpperArmL = t; restUArmL = t.localRotation; }
+                else if (n == "UpperArm.R") { boneUpperArmR = t; restUArmR = t.localRotation; }
+                else if (n == "Spine") { boneSpine = t; restSpine = t.localRotation; }
+            }
+            hasRiggedClone = boneUpperLegL != null && boneUpperLegR != null;
         }
 
         private static void AddPart(string name, PrimitiveType type, Transform parent, Vector3 pos, Vector3 scale, Material mat)
@@ -138,14 +176,28 @@ namespace MarsSentinel.NASA
                 smoothedVel = Vector3.Lerp(smoothedVel, Vector3.zero, Time.deltaTime * 6f);
             }
 
-            // Procedural Mars stride bob on wingman visual
+            // Procedural Mars stride bob + skeletal limb swing on wingman visual
             if (visualBody != null)
             {
                 walkCycle += Time.deltaTime * (speed > 0.2f ? 7.5f : 1.8f);
-                float bob = speed > 0.2f ? Mathf.Abs(Mathf.Sin(walkCycle)) * 0.075f : Mathf.Sin(walkCycle) * 0.015f;
-                float roll = speed > 0.2f ? Mathf.Sin(walkCycle) * 3.5f : 0f;
+                float bob = speed > 0.2f ? Mathf.Abs(Mathf.Sin(walkCycle)) * 0.055f : Mathf.Sin(walkCycle) * 0.012f;
+                float roll = speed > 0.2f ? Mathf.Sin(walkCycle) * 2.2f : 0f;
                 visualBody.localPosition = new Vector3(0f, bob, 0f);
-                visualBody.localRotation = Quaternion.Euler(speed * 1.4f, 0f, roll);
+                visualBody.localRotation = Quaternion.Euler(speed * 1.1f, 0f, roll);
+
+                if (hasRiggedClone)
+                {
+                    float sinP = Mathf.Sin(walkCycle);
+                    float cosP = Mathf.Cos(walkCycle);
+                    float legAmp = speed > 0.2f ? 28f : 1.5f;
+                    float armAmp = speed > 0.2f ? 18f : 1.5f;
+                    if (boneUpperLegL != null) boneUpperLegL.localRotation = restULegL * Quaternion.Euler(sinP * legAmp, 0f, 0f);
+                    if (boneUpperLegR != null) boneUpperLegR.localRotation = restULegR * Quaternion.Euler(-sinP * legAmp, 0f, 0f);
+                    if (boneLowerLegL != null) boneLowerLegL.localRotation = restLLegL * Quaternion.Euler(-Mathf.Max(0f, -cosP) * (speed > 0.2f ? 24f : 2f), 0f, 0f);
+                    if (boneLowerLegR != null) boneLowerLegR.localRotation = restLLegR * Quaternion.Euler(-Mathf.Max(0f, cosP) * (speed > 0.2f ? 24f : 2f), 0f, 0f);
+                    if (boneUpperArmL != null) boneUpperArmL.localRotation = restUArmL * Quaternion.Euler(-sinP * armAmp, 0f, 0f);
+                    if (boneUpperArmR != null) boneUpperArmR.localRotation = restUArmR * Quaternion.Euler(sinP * armAmp, 0f, 0f);
+                }
             }
 
             // Real RF distance + dust storm attenuation model (for Vivox proximity voice clarity)

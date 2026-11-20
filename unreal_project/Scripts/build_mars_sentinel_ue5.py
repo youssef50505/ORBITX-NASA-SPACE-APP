@@ -12,7 +12,7 @@ UE_DIR = os.path.join(REPO_ROOT, "unreal_project")
 SRC_DIR = os.path.join(UE_DIR, "SourceAssets")
 SHOWCASE_DIR = os.path.join(REPO_ROOT, "showcase")
 MAP_PATH = "/Game/Maps/JezeroCrater_Hero"
-ASSET_DEST = "/Game/MarsSentinel/MuseumHeroAssets"
+ASSET_DEST = "/Game/MarsSentinel/GoldenHourHeroAssets"
 
 
 def sample_jezero_cm(x_m, y_m):
@@ -119,11 +119,11 @@ def build_level():
             spawned.append((a[0], sm))
     count = len(spawned)
 
-    # Sun + Martian SkyAtmosphere + SkyLight + Warm Bounce + Fog + ACES PostProcess
-    sun = editor_sub.spawn_actor_from_class(unreal.DirectionalLight, unreal.Vector(0, 0, 5000), unreal.Rotator(0.0, -28.0, -45.0))
+    # Golden-Hour Martian Sun + SkyAtmosphere + SkyLight + Warm Bounce + Fog + ACES PostProcess (zero overexposure!)
+    sun = editor_sub.spawn_actor_from_class(unreal.DirectionalLight, unreal.Vector(0, 0, 5000), unreal.Rotator(0.0, -21.0, -48.0))
     sun.set_actor_label("Mars_DirectionalSun_Jezero")
-    sun.light_component.set_intensity(8.5)
-    sun.light_component.set_light_color(unreal.LinearColor(1.0, 0.85, 0.68, 1.0))
+    sun.light_component.set_intensity(3.6)
+    sun.light_component.set_light_color(unreal.LinearColor(1.0, 0.68, 0.42, 1.0))
     try:
         sun.light_component.set_editor_property("atmosphere_sun_light", True)
         sun.light_component.set_editor_property("cast_shadows", True)
@@ -132,8 +132,8 @@ def build_level():
 
     fill = editor_sub.spawn_actor_from_class(unreal.DirectionalLight, unreal.Vector(0, 0, 3500), unreal.Rotator(0.0, -32.0, 135.0))
     fill.set_actor_label("Mars_RegolithBounceFill")
-    fill.light_component.set_intensity(2.6)
-    fill.light_component.set_light_color(unreal.LinearColor(0.96, 0.66, 0.46, 1.0))
+    fill.light_component.set_intensity(0.95)
+    fill.light_component.set_light_color(unreal.LinearColor(0.88, 0.44, 0.24, 1.0))
     try:
         fill.light_component.set_editor_property("cast_shadows", False)
     except Exception:
@@ -144,10 +144,10 @@ def build_level():
     try:
         sac = sky_atmo.get_component_by_class(unreal.SkyAtmosphereComponent)
         if sac:
-            sac.set_editor_property("ground_albedo", unreal.Color(175, 96, 56, 255))
-            sac.set_editor_property("rayleigh_scattering", unreal.LinearColor(0.014, 0.020, 0.036, 1.0))
-            sac.set_editor_property("mie_scattering", unreal.LinearColor(0.026, 0.013, 0.006, 1.0))
-            sac.set_editor_property("mie_anisotropy", 0.76)
+            sac.set_editor_property("ground_albedo", unreal.Color(158, 72, 36, 255))
+            sac.set_editor_property("rayleigh_scattering", unreal.LinearColor(0.022, 0.014, 0.010, 1.0))
+            sac.set_editor_property("mie_scattering", unreal.LinearColor(0.032, 0.014, 0.006, 1.0))
+            sac.set_editor_property("mie_anisotropy", 0.78)
     except Exception:
         pass
 
@@ -156,8 +156,8 @@ def build_level():
     try:
         slc = sky_light.light_component
         slc.set_editor_property("real_time_capture", True)
-        slc.set_light_color(unreal.LinearColor(1.0, 0.78, 0.60, 1.0))
-        slc.set_intensity(2.2)
+        slc.set_light_color(unreal.LinearColor(0.92, 0.56, 0.36, 1.0))
+        slc.set_intensity(1.05)
         slc.recapture_sky()
     except Exception:
         pass

@@ -87,6 +87,9 @@ class UnrealAndStoryQualityTests(unittest.TestCase):
         showcase_dir = os.path.join(ROOT, "showcase")
         self.assertTrue(os.path.isdir(showcase_dir), "showcase/ directory missing")
         required = (
+            "hero_mars_planet_and_sun_orbit.png",
+            "blender_3d_night_starfield.png",
+            "blender_3d_day_closeup.png",
             "web_hero_glbs.png",
             "nav_module_ctx_rf.png",
             "web_story_3d_hazard.png",
