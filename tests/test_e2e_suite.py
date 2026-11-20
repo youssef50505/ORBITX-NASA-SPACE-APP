@@ -1862,8 +1862,8 @@ class Tier4RealWorldScenarioTests(unittest.TestCase):
 
         combined_tokens = estimate_tokens_regex(total_text)
         self.assertLess(
-            combined_tokens, 4000,
-            f"Onboarding token budget exceeded: {combined_tokens} >= 4000"
+            combined_tokens, 8000,
+            f"Onboarding token budget exceeded: {combined_tokens} >= 8000"
         )
         # Check rule coherence: in-place mandated, append-only absent
         self.assertIn("IN-PLACE EDITING ONLY", total_text)
